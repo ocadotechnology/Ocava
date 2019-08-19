@@ -1,0 +1,33 @@
+# Eclipse
+.classpath
+.project
+.settings/
+/runConfigurations
+^bin/
+
+# IntelliJ
+.idea
+*.iml
+_.swp
+
+# Mac
+.DS_Store
+
+# Maven
+target/
+*.class
+
+# Merge
+*.orig
+*.rej
+
+# Vim
+*~
+
+# JVM
+hs_err_pid*.log
+gc.log
+hotspot_pid*.log
+
+# Nexus
+cfcoutbs/settings.xml

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+        "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<!--
+See http://checkstyle.sourceforge.net/checks.html for available checks
+-->
+
+<!-- This is a living document - these rules can be altered as a result of  -->
+<!-- new code which has been peer-reviewed (i.e., if peer-reviewed code     -->
+<!-- fails a check, that check may be modified or disabled altogether)      -->
+
+<module name="Checker">
+    <module name="SuppressionFilter">
+        <property name="file" value="${checkstyle.suppressions.file}"/>
+    </module>
+
+    <!-- Disallow tabs (should be 4 spaces) -->
+    <module name="FileTabCharacter"/>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="(?:^\s*\n){2,}"/>
+        <property name="message" value="Multiple adjacent blank lines"/>
+    </module>
+
+    <!-- Allow trailing whitespace only in the following cases:
+          - line is of the form <WHITESPACE>
+          - line is of the form <WHITESPACE>*<WHITESPACE>
+          - line is of the form <WHITESPACE>//<WHITESPACE>
+    -->
+    <module name="RegexpSingleline">
+        <property name="format" value="^(?!\s*(?:\*\s*)?$)(?!\s*(?://\s*)?$)(.*?)\s+$"/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Non-empty line has trailing whitespace."/>
+    </module>
+
+    <!-- Lines should be indented by a multiple of 4 spaces, except for subsequent lines of a multi-line comment which should be indented by 4n + 1 -->
+    <module name="RegexpSingleline">
+        <property name="format" value="^(?=[ \t])(?!(?:[ ]{4})*(?:\S+|[ ]\*|$)).*$"/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Not correctly indented"/>
+    </module>
+
+    <!-- Code owned by team; version control tracks individual changes -->
+    <module name="RegexpSingleline">
+        <property name="format" value="@author"/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Javadoc includes @author tag."/>
+    </module>
+    <module name="RegexpSingleline">
+        <property name="format" value="^\s*(?:\*|//)\s*Created by \S+ on "/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Comment includes auto-generated authorship string"/>
+    </module>
+
+    <module name="RegexpSingleline">
+        <property name="format" value="^\s*else"/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="else on it's own line"/>
+    </module>
+
+    <module name="RegexpSingleline">
+        <property name="format" value="TestCase\.(?:assert|fail|format)"/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Using deprecated methods from junit.framework.TestCase - use versions from org.junit.Assert instead"/>
+    </module>
+
+    <module name="RegexpSingleline">
+        <property name="format" value='StringId.create\(&quot;&quot;\)'/>
+        <property name="minimum" value="0"/>
+        <property name="maximum" value="0"/>
+        <property name="message" value="Using StringId.create() with an empty String doesn't work"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="Optional\s*\.\s*ofNullable\s*\(\s*null\s*\)"/>
+        <property name="message" value="Use Optional.empty() instead of Optional.ofNullable(null)"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="MoreObjects\s*\.\s*toStringHelper\s*\(\s*(?:(?:\w*\.)?getClass())[^\)]*\s*\)"/>
+        <property name="message" value="Use MoreObjects.toStringHelper(Object self)"/>
+    </module>
+    <module name="RegexpMultiline">
+        <property name="format" value="MoreObjects\s*\.\s*toStringHelper\s*\(\s*(?:\w+\.class)[^\)]*\s*\)"/>
+        <property name="message" value="Use MoreObjects.toStringHelper(Object self)"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="@Subscribe(?:(?!public[\s\w]+void)[@\s\w])*\w\("/>
+        <property name="message" value="Methods annotated with @Subscribe must be public and have a void return type"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format"  value="\WPreconditions\.check\w+\([^&quot;)]*(?:\(.*\))*[^&quot;;]*(?:&quot;[^&quot;]*&quot;[^&quot;)]*)*&quot;[^&quot;]*\{\}"/>
+        <property name="message" value="Precondition check message string includes '{}' instead of '%s'"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format"  value="NewCavaPreconditions\.check\w+\([^&quot;)]*(?:\(.*\))*[^&quot;;]*(?:&quot;[^&quot;]*&quot;[^&quot;)]*)*&quot;[^&quot;]*%s"/>
+        <property name="message" value="Precondition check message string includes '%s' instead of '{}'"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="\slog(?:ger)?\s*\.\s*\w+\([^&quot;)]*(?:&quot;[^&quot;]*&quot;[^&quot;)]*)*&quot;[^&quot;]*%s"/>
+        <property name="message" value="Logger message string includes '%s' instead of '{}'"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="format" value="\sclass\sFailureListener\s(?:.*\n)*\s*failIfEnabled\s*\([^&quot;)]*(?:&quot;[^&quot;]*&quot;[^&quot;)]*)*&quot;[^&quot;]*\{\}"/>
+        <property name="message" value="Failer.fail message string includes '{}' instead of '%s'"/>
+    </module>
+
+    <!-- Detects logger.info(x.toString()) and logger.info("... {} ...", x.toString()) -->
+    <module name="RegexpMultiline">
+        <property name="format" value="\slog(?:ger)?\s*\.\s*\w+\(.*\.toString\(\)"/>
+        <property name="message" value="toString() called explicitly on logger message parameters"/>
+    </module>
+
+    <!-- Detects configs.stream().map(Object::toString).forEach(logger::info) -->
+    <module name="RegexpMultiline">
+        <property name="format" value="::\s*toString\s*\).*\(\s*log(?:ger)?\s*::"/>
+        <property name="message" value="toString() called explicitly on logger message parameters"/>
+    </module>
+
+    <!-- If defined and non-abstract, toString() result includes the simple class name when manually specified as a String literal -->
+    <module name="RegexpMultiline">
+        <property name="format" value="class\s+(\w+Notification)\s+(?:.*\n)*    public\s+String\s+toString\(\)(?:.*\n)*\s*return\s+&quot;(?!\1\W*&quot;)(?:.*\n)*?.*?(?:    }){1}?"/>
+        <property name="message" value="toString() result does not include simple class name. Consider using MoreObjects.toStringHelper(Object self) pattern, getClass().getSimpleName(), or ClassName.class"/>
+    </module>
+
+    <!-- TODO: Allow 'new Random(' in comments -->
+    <!-- Permit using Random only when it is created with a seed -->
+    <module name="RegexpMultiline">
+        <property name="id" value="RepeatableRandom"/>
+        <property name="format" value="\s+new\s+Random\s*\(\)"/>
+        <property name="message" value="RepeatableRandom should be used instead of Random"/>
+    </module>
+
+    <module name="RegexpMultiline">
+        <property name="id" value="StreamForEach"/>
+        <property name="format" value="\.\s*stream\s*\(\s*\)\s*\.\s*forEach\s*\("/>
+        <property name="message" value="Don't use Collection.stream().forEach(), use Collection.forEach()"/>
+    </module>
+
+    <module name="TreeWalker">
+        <module name="LineLength">
+            <property name="max" value="300"/>
+        </module>
+
+        <module name="WhitespaceAround">
+            <property name="ignoreEnhancedForColon" value="false"/>
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="tokens" value="ASSIGN,LITERAL_IF,EQUAL,LT,GT,LE,GE,LOR,LAND,LITERAL_TRY,LITERAL_WHILE,LITERAL_FOR,LITERAL_DO,LITERAL_SYNCHRONIZED,LITERAL_SWITCH,LITERAL_CATCH,LITERAL_ELSE,NOT_EQUAL"/>
+        </module>
+
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA"/>
+        </module>
+
+        <module name="OneTopLevelClass"/>
+
+        <module name="AvoidStarImport">
+            <property name="excludes" value="java.awt,java.swing"/>
+        </module>
+
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+        <module name="ImportOrder">
+            <property name="option" value="top"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+            <property name="groups" value="java,javax,org,/^(?!(?:javax?|org|com)\.)/,com"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+        </module>
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="com.beust.jcommander.internal, jersey.repackaged.com.google.common" />
+        </module>
+        <module name="IllegalImport">
+            <property name="illegalClasses" value="junit.framework.Assert"/>
+            <message key="import.illegal" value="''{0}'' is deprecated - use org.junit.Assert instead."/>
+        </module>
+
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier">
+            <property name="tokens" value="METHOD_DEF, VARIABLE_DEF, ANNOTATION_FIELD_DEF, INTERFACE_DEF, CLASS_DEF, ENUM_DEF"/>
+        </module>
+        <module name="UpperEll"/>
+    </module>
+</module>
