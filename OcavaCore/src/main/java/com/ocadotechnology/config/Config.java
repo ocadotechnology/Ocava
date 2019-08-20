@@ -418,11 +418,15 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     private static String[] parseParts(String value) {
-        if (value.contains(",")) {
-            return value.split(",");
-        } else {
-            return value.split(":");
+        String[] splitArray = value.contains(",")
+                ? value.split(",")
+                : value.split(":");
+
+        for (int i = 0; i < splitArray.length; i++) {
+            splitArray[i] = splitArray[i].trim();
         }
+
+        return splitArray;
     }
 
     public String getString(Enum<?> key) {

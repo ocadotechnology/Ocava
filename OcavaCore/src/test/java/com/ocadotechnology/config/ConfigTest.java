@@ -31,6 +31,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.Colours;
+import com.ocadotechnology.id.Id;
+import com.ocadotechnology.id.StringId;
 import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
@@ -745,8 +747,16 @@ class ConfigTest {
         }
 
         @Test
-        @DisplayName("Empty string case returns empty list")
+        @DisplayName("Single case returns singleton list")
         void test2() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED");
+            ImmutableList<String> listOfStrings = config.getListOfStrings(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of("RED"));
+        }
+
+        @Test
+        @DisplayName("Empty string case returns empty list")
+        void test3() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
             ImmutableList<String> listOfStrings = config.getListOfStrings(TestConfig.FOO);
             assertThat(listOfStrings).isEqualTo(ImmutableList.of());
@@ -754,10 +764,136 @@ class ConfigTest {
 
         @Test
         @DisplayName("Config doesn't exist case")
-        void test3() {
-            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED, CAR");
+        void test4() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED,CAR");
             assertThatThrownBy(() -> config.getListOfStrings(TestConfig.FOO))
                     .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("List of strings with space is trimmed")
+        void test5() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW, APPLE");
+            assertThat(config.getListOfStrings(TestConfig.FOO)).isEqualTo(ImmutableList.of("RED", "YELLOW", "APPLE"));
+        }
+
+        @Test
+        @DisplayName("Single string with space is trimmed")
+        void test6() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " RED ");
+            assertThat(config.getListOfStrings(TestConfig.FOO)).isEqualTo(ImmutableList.of("RED"));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("test get List Of StringIds")
+    class ListOfStringIdsTests {
+
+        @Test
+        @DisplayName("List of 3 strings case")
+        void test1() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW,APPLE");
+            ImmutableList<StringId<Object>> expected = ImmutableList.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE"));
+            assertThat(config.getListOfStringIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton list")
+        void test2() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED");
+            ImmutableList<StringId<Object>> listOfStrings = config.getListOfStringIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of(StringId.create("RED")));
+        }
+
+        @Test
+        @DisplayName("Empty string case returns empty list")
+        void test3() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            ImmutableList<StringId<Object>> listOfStrings = config.getListOfStringIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void test4() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED,CAR");
+            assertThatThrownBy(() -> config.getListOfStringIds(TestConfig.FOO))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("List of strings with space is trimmed")
+        void test5() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW, APPLE");
+            assertThat(config.getListOfStringIds(TestConfig.FOO)).isEqualTo(ImmutableList.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE")));
+        }
+
+        @Test
+        @DisplayName("Single string with space is trimmed")
+        void test6() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " RED ");
+            assertThat(config.getListOfStringIds(TestConfig.FOO)).isEqualTo(ImmutableList.of(StringId.create("RED")));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("test get List Of Ids")
+    class ListOfIdsTests {
+
+        @Test
+        @DisplayName("List of 3 ids case")
+        void test1() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2,3");
+            ImmutableList<Id<Object>> expected = ImmutableList.of(Id.create(1), Id.create(2), Id.create(3));
+            assertThat(config.getListOfIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton list")
+        void test2() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1");
+            ImmutableList<Id<Object>> listOfStrings = config.getListOfIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of(Id.create(1)));
+        }
+
+        @Test
+        @DisplayName("Empty string case returns empty list")
+        void test3() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            ImmutableList<Id<Object>> listOfStrings = config.getListOfIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void test4() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1,2");
+            assertThatThrownBy(() -> config.getListOfIds(TestConfig.FOO))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("List of ids with space is trimmed")
+        void test5() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2, 3");
+            assertThat(config.getListOfIds(TestConfig.FOO)).isEqualTo(ImmutableList.of(Id.create(1), Id.create(2), Id.create(3)));
+        }
+
+        @Test
+        @DisplayName("Single id with space is trimmed")
+        void test6() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " 1 ");
+            assertThat(config.getListOfIds(TestConfig.FOO)).isEqualTo(ImmutableList.of(Id.create(1)));
+        }
+
+        @Test
+        @DisplayName("List of strings throws exception")
+        void test8() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW");
+            assertThatThrownBy(() -> config.getListOfIds(TestConfig.FOO))
+                    .isInstanceOf(NumberFormatException.class);
         }
 
     }
