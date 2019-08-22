@@ -17,11 +17,21 @@ package com.google.common.eventbus;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
+/**
+ * A specialized form of EventBus which prevents the bus from swallowing exceptions and sets up the desired Executor and
+ * Dispatcher implementations.
+ *
+ * This implementation has to reside in the google package because it is accessing package-private methods and classes.
+ */
 public class BlockingEventBus extends EventBus {
     public BlockingEventBus() {
         super("default", MoreExecutors.directExecutor(), Dispatcher.immediate(), (exception, context) -> {});
     }
 
+    /**
+     * The standard implementation of EventBus does not permit propagating Exceptions thrown in Subscribers.  We find it
+     * far more useful to propagate these exceptions, allowing us to fail-fast on errors.
+     */
     @Override
     void handleSubscriberException(Throwable e, SubscriberExceptionContext context) {
         throw new IllegalStateException("Exception encountered in Subscriber", e);
