@@ -128,7 +128,8 @@ public class ConfigManager {
 
         /**
          * Loads config from an ordered list of local resource locations, falling back on attempting to load from a file
-         * if the resource doesn't exist.
+         * if the resource doesn't exist.  Locations defined later in the list will take precedence over locations
+         * earlier in the list.  Command line arguments still take precedence over all locations.
          *
          * @see Builder#loadConfig
          */
@@ -147,7 +148,8 @@ public class ConfigManager {
         }
 
         /**
-         * Loads config from an ordered list of files only.
+         * Loads config from an ordered list of files only.  Locations defined later in the list will take precedence
+         * over locations earlier in the list.  Command line arguments still take precedence over all locations.
          *
          * @see Builder#loadConfig
          */
@@ -156,7 +158,9 @@ public class ConfigManager {
         }
 
         /**
-         * Loads config from an ordered list of local resource locations only.
+         * Loads config from an ordered list of local resource locations only.  Locations defined later in the list will
+         * take precedence over locations earlier in the list.  Command line arguments still take precedence over all
+         * locations.
          *
          * @see Builder#loadConfig
          */
