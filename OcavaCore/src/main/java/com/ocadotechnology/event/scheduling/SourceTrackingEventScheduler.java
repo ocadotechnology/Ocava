@@ -33,7 +33,7 @@ import com.ocadotechnology.time.TimeProvider;
 public class SourceTrackingEventScheduler extends TypedEventScheduler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public final SimpleDiscreteEventScheduler backingScheduler;
+    private final SimpleDiscreteEventScheduler backingScheduler;
 
     private final SourceSchedulerTracker tracker;
 
@@ -47,6 +47,10 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
         super(type);
         this.backingScheduler = backingScheduler;
         this.tracker = tracker;
+    }
+
+    public SourceTrackingEventScheduler createSibling(EventSchedulerType type) {
+        return new SourceTrackingEventScheduler(tracker, type, backingScheduler);
     }
 
     /**
@@ -166,7 +170,7 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
         };
     }
 
-    private static final class MutableCancelableHolder implements Cancelable{
+    private static final class MutableCancelableHolder implements Cancelable {
         private final Runnable runnable;
         private final String description;
         private Cancelable cancelable;

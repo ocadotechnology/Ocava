@@ -1,0 +1,92 @@
+/*
+ * Copyright © 2017 Ocado (Ocava)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.ocadotechnology.scenario;
+
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableMap;
+import com.ocadotechnology.event.scheduling.EventExecutor;
+import com.ocadotechnology.event.scheduling.EventScheduler;
+import com.ocadotechnology.event.scheduling.EventSchedulerType;
+import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
+import com.ocadotechnology.notification.NotificationBus;
+import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.time.AdjustableTimeProvider;
+import com.ocadotechnology.time.TimeProvider;
+
+public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
+    private static final Logger logger = LoggerFactory.getLogger(FrameworkTestSimulationApi.class);
+
+    private SimpleDiscreteEventScheduler eventScheduler;
+
+    @Override
+    public void clean() {
+        createCleanScheduler();
+        super.clean();
+    }
+
+    public FrameworkTestSimulationApi() {
+        super();
+
+        createCleanScheduler();
+    }
+
+    private void createCleanScheduler() {
+        eventScheduler = new SimpleDiscreteEventScheduler(
+            new EventExecutor(),
+            () -> logger.info("Simulation Terminated"),
+            ScenarioTestSchedulerType.INSTANCE,
+            new AdjustableTimeProvider(0));
+        eventScheduler.pause();
+    }
+
+    public TimeProvider getTimeProvider() {
+        return eventScheduler.getTimeProvider();
+    }
+
+    public SimpleDiscreteEventScheduler getEventScheduler() {
+        return eventScheduler;
+    }
+
+    @Override
+    protected void startSimulation() {
+        eventScheduler.doNow(() -> NotificationRouter.get().broadcast(TestSimulationStarts.INSTANCE), "Startup complete event");
+        eventScheduler.unPause();
+    }
+
+    @Override
+    protected ImmutableMap<EventSchedulerType, EventScheduler> createSchedulers() {
+        return ImmutableMap.of(ScenarioTestSchedulerType.INSTANCE, eventScheduler);
+    }
+
+    @Override
+    protected NotificationBus createNotificationBus() {
+        return new ScenarioBus();
+    }
+
+    @Override
+    public double getSchedulerStartTime() {
+        return 0.0;
+    }
+
+    @Override
+    public TimeUnit getSchedulerTimeUnit() {
+        return TimeUnit.MILLISECONDS;
+    }
+}

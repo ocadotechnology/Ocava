@@ -34,8 +34,6 @@
         <jcommander.version>1.30</jcommander.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <googe-jsr.version>3.0.2</googe-jsr.version>
-        <junit-vintage.version>5.2.0</junit-vintage.version>
-        <junit-vintage-engine.version>5.2.0</junit-vintage-engine.version>
         <junit-jupiter.version>5.2.0</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <assertj.version>3.11.1</assertj.version>
@@ -134,6 +132,24 @@
                 <version>${license-maven-plugin.version}</version>
             </dependency>
 
+            <!--Required non-test scope for the ScenarioTest module-->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit-jupiter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-params</artifactId>
+                <version>${junit-jupiter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit-jupiter.version}</version>
+            </dependency>
+            <!--Required non-test scope for the ScenarioTest module-->
+
             <!-- this will need to be a non-test dependency in the scenario test module -->
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -146,36 +162,6 @@
                 <artifactId>jfreechart</artifactId>
                 <version>${jfreechart.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${junit-vintage.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <!-- Only required to run tests in an IDE that bundles an older version -->
-            <dependency>
-                <groupId>org.junit.vintage</groupId>
-                <artifactId>junit-vintage-engine</artifactId>
-                <version>${junit-vintage-engine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
