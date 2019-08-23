@@ -151,8 +151,6 @@ public class RepeatableRandomTest {
         RepeatableRandom.initialiseWithSeed(FIXED_SEED);
         ImmutableList<T> secondPass = IntStream.range(0, TEST_ITERATIONS).mapToObj(i -> itemSupplier.get()).collect(ImmutableList.toImmutableList());
 
-        for (int i = 0; i < TEST_ITERATIONS; ++i) {
-            Assertions.assertEquals(firstPass.get(i), secondPass.get(i), "Difference detected at iteration " + i + " of " + functionName);
-        }
+        Assertions.assertIterableEquals(firstPass, secondPass, "Mismatch in " + functionName);
     }
 }
