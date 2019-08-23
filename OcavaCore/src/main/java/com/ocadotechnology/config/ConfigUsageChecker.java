@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 class ConfigUsageChecker {
@@ -34,6 +35,41 @@ class ConfigUsageChecker {
     }
 
     Set<String> getUnrecognisedProperties() {
-        return Sets.difference(definedProperties, accessedProperties);
+        return Sets.union(getUnrecognisedNonPrefixedProperties(), getUnrecognisedPrefixedProperties());
+    }
+
+    private Set<String> getUnrecognisedNonPrefixedProperties() {
+        ImmutableSet<String> definedNonPrefixedProperties = definedProperties.stream()
+                .filter(p -> !p.contains("@"))
+                .collect(ImmutableSet.toImmutableSet());
+
+        ImmutableSet<String> accessedNonPrefixedProperties = accessedProperties.stream()
+                .filter(p -> !p.contains("@"))
+                .collect(ImmutableSet.toImmutableSet());
+
+        return Sets.difference(definedNonPrefixedProperties, accessedNonPrefixedProperties);
+    }
+
+    private Set<String> getUnrecognisedPrefixedProperties() {
+        ImmutableSet<String> definedNonPrefixedProperties = accessedProperties.stream()
+                .filter(p -> !p.contains("@"))
+                .collect(ImmutableSet.toImmutableSet());
+        return definedProperties.stream()
+                .filter(p -> unrecognisedPrefixedProperty(p, definedNonPrefixedProperties))
+                .collect(ImmutableSet.toImmutableSet());
+    }
+
+    private boolean unrecognisedPrefixedProperty(String property, Set<String> definedNonPrefixedProperties) {
+        if (!property.contains("@")) {
+            return false;
+        }
+        String propertyFromPrefixedProperty = extractPropertyFromPrefixedProperty(property);
+        return !definedNonPrefixedProperties.contains(propertyFromPrefixedProperty);
+    }
+
+    private String extractPropertyFromPrefixedProperty(String property) {
+        return property.contains("@") ?
+                property.substring(property.lastIndexOf("@") + 1) :
+                property;
     }
 }

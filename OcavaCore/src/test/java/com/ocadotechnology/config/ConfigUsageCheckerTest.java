@@ -32,7 +32,7 @@ class ConfigUsageCheckerTest implements InternalClassTest {
     }
 
     @Test
-    void whenExtraConfigIsPresent_thenCheckerReturnsUnrecognisedProperties() throws ConfigKeysNotRecognisedException {
+    void whenExtraConfigIsPresent_thenCheckerReturnsUnrecognisedProperties() {
         Properties props = fullySpecifiedProperties();
         props.setProperty("TestConfig.Unknown.BottomLevel.VAL_5", "7");
 
@@ -40,6 +40,19 @@ class ConfigUsageCheckerTest implements InternalClassTest {
         ConfigFactory.read(TestConfig.class, checker.checkAccessTo(props), ImmutableSet.of());
 
         assertThat(checker.getUnrecognisedProperties()).isNotEmpty();
+        assertThat(checker.getUnrecognisedProperties()).contains("TestConfig.Unknown.BottomLevel.VAL_5");
+    }
+
+    @Test
+    void whenExtraPrefixedConfigIsPresent_thenCehckerReturnsUnrecognisedProperties() {
+        Properties props = fullySpecifiedPropertiesWithPrefixedProperties();
+        props.setProperty("Prefix1@TestConfig.Unknown.ITEM", "2");
+
+        ConfigUsageChecker checker = new ConfigUsageChecker();
+        ConfigFactory.read(TestConfig.class, checker.checkAccessTo(props), ImmutableSet.of());
+
+        assertThat(checker.getUnrecognisedProperties()).isNotEmpty();
+        assertThat(checker.getUnrecognisedProperties()).contains("Prefix1@TestConfig.Unknown.ITEM");
     }
 
     private static Properties fullySpecifiedProperties() {
@@ -51,6 +64,13 @@ class ConfigUsageCheckerTest implements InternalClassTest {
         props.setProperty("TestConfig.SubConfig.HOO", "5");
         props.setProperty("TestConfig.SubConfig.SubSubConfig.X", "6");
         props.setProperty("TestConfig.SubConfig.SubSubConfig.Y", "7");
+        return props;
+    }
+
+    private static Properties fullySpecifiedPropertiesWithPrefixedProperties() {
+        Properties props = new Properties();
+        props.setProperty("TestConfig.FOO", "1");
+        props.setProperty("Prefix1@TestConfig.FOO", "2");
         return props;
     }
 

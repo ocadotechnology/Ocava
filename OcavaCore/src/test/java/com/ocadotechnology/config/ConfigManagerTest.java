@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.util.HashSet;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -258,6 +259,30 @@ class ConfigManagerTest {
         // Prefixed values
         assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(Colours.RED)).isEqualTo(8);
         assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(Colours.GREEN)).isEqualTo(9);
+    }
+
+    @Test
+    void loadPrefixedConfigItems_testCommandLineOverrides() throws IOException, ConfigKeysNotRecognisedException {
+        Builder builder = new Builder(new String[]{"-OPrefix1@TestConfig.FOO=100"});
+
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                .build();
+
+        Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(100);
+        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
+    }
+
+    @Test
+    void loadPrefixedConfigItems_whenCommandLineOverrideHasNonExistingPrefixedConfig_thenThrowException() {
+        Builder builder = new Builder(new String[]{ "-OPrefix1@TestConfig.NON_EXISTING_CONFIG=100" });
+
+        ConfigKeysNotRecognisedException configKeysNotRecognisedException = Assertions.assertThrows(ConfigKeysNotRecognisedException.class, () ->
+                builder
+                        .loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        .build());
+
+        assertThat(configKeysNotRecognisedException.getMessage()).isEqualTo("The following config keys were not recognised:[Prefix1@TestConfig.NON_EXISTING_CONFIG]");
     }
 
     @Test

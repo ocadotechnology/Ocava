@@ -228,13 +228,7 @@ public class ConfigManager {
             PropertiesAccessor propertiesAccessor = checker.checkAccessTo(properties);
 
             //Sacrificing some type safety in order to get past the inability to self-type an enum in a set.
-            configKeys.forEach(c -> {
-                try {
-                    config.merge(c, ConfigFactory.read((Class<? extends Enum>) c, propertiesAccessor, prefixedProperties), Config::merge);
-                } catch (ConfigKeysNotRecognisedException e) {
-                    e.printStackTrace();
-                }
-            });
+            configKeys.forEach(c -> config.merge(c, ConfigFactory.read((Class<? extends Enum>) c, propertiesAccessor, prefixedProperties), Config::merge));
             return this;
         }
 
@@ -310,13 +304,7 @@ public class ConfigManager {
             if (verifyAllPropertiesRecognised) {
                 Set<String> unrecognisedProperties = getUnrecognisedProperties();
                 if (!unrecognisedProperties.isEmpty()) {
-                    ImmutableSet<String> prefixedProperties = this.prefixedProperties.stream()
-                            .map(prefixedProperty -> prefixedProperty.prefixedConfigItem)
-                            .collect(ImmutableSet.toImmutableSet());
-                    SetView<String> nonValidProperties = Sets.symmetricDifference(unrecognisedProperties, prefixedProperties);
-                    if (!nonValidProperties.isEmpty()) {
-                        throw new ConfigKeysNotRecognisedException("The following config keys were not recognised:" + nonValidProperties);
-                    }
+                    throw new ConfigKeysNotRecognisedException("The following config keys were not recognised:" + unrecognisedProperties);
                 }
             }
             return new ConfigManager(

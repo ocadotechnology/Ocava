@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.config;
 
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,12 +31,12 @@ final class ConfigFactory {
         throw new UnsupportedOperationException("Static utility class that shouldn't be instantiated");
     }
 
-    static <E extends Enum<E>> Config<E> read(Class<E> e, PropertiesAccessor props, ImmutableSet<PrefixedProperty> prefixedProperties) throws ConfigKeysNotRecognisedException {
+    static <E extends Enum<E>> Config<E> read(Class<E> e, PropertiesAccessor props, ImmutableSet<PrefixedProperty> prefixedProperties) {
         return readInternal(e, props, e.getSimpleName(), prefixedProperties);
     }
 
     @SuppressWarnings("unchecked rawtypes") //It is actually checked (subEnum.isEnum()) and the types are only raw because Enum<E extends Enum<E>>
-    private static <E extends Enum<E>> Config<E> readInternal(Class<E> cls, PropertiesAccessor props, String qualifier, ImmutableSet<PrefixedProperty> prefixedProperties) throws ConfigKeysNotRecognisedException {
+    private static <E extends Enum<E>> Config<E> readInternal(Class<E> cls, PropertiesAccessor props, String qualifier, ImmutableSet<PrefixedProperty> prefixedProperties) {
         Builder<E> builder = new Builder<>(cls, qualifier);
         for (E constant : cls.getEnumConstants()) {
             String val = props.getProperty(qualifier + "." + constant.name());
@@ -82,38 +81,24 @@ final class ConfigFactory {
         private void managePrefixedProperties(
                 Class<E> cls,
                 String qualifier,
-                ImmutableSet<PrefixedProperty> prefixedProperties) throws ConfigKeysNotRecognisedException {
+                ImmutableSet<PrefixedProperty> prefixedProperties) {
 
             for (PrefixedProperty prefixedProperty : prefixedProperties) {
                 if (!qualifier.equals(prefixedProperty.qualifier)) {
                     continue;
                 }
-                checkForUnrecognisedConstants(cls, prefixedProperty);
                 updatePrefixes(cls, prefixedProperty);
             }
         }
 
-        private void updatePrefixes(Class<E> cls, PrefixedProperty prefixedProperty) throws ConfigKeysNotRecognisedException {
+        private void updatePrefixes(Class<E> cls, PrefixedProperty prefixedProperty) {
             for (E c : cls.getEnumConstants()) {
                 if ((c.name().equals(prefixedProperty.constant))) {
                     ImmutableMap.Builder<ImmutableSet<String>, String> prefixedValues = ImmutableMap.builder();
-                    if (configValues.get(c) == null) {
-                        throw new ConfigKeysNotRecognisedException("The following config key has no default value: " + c.name());
-                    }
                     prefixedValues.putAll(configValues.get(c).prefixedValues);
                     prefixedValues.put(prefixedProperty.prefixes, prefixedProperty.propertyValue);
-
                     configValues.put(c, new ConfigValue(configValues.get(c).currentValue, prefixedValues.build()));
                 }
-            }
-        }
-
-        private void checkForUnrecognisedConstants(Class<E> cls, PrefixedProperty prefixedProperties) throws ConfigKeysNotRecognisedException {
-            String classConstant = Arrays.stream(cls.getEnumConstants())
-                    .map(Enum::name).filter(c -> c.equals(prefixedProperties.constant)).findAny().orElse(null);
-
-            if (classConstant == null) {
-                throw new ConfigKeysNotRecognisedException("The following config key was not recognised: " + prefixedProperties.constant);
             }
         }
 
