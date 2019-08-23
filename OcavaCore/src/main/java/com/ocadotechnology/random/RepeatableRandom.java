@@ -22,8 +22,13 @@ import java.util.UUID;
 import com.ocadotechnology.validation.Failer;
 
 /**
- * A utility providing deterministic "randomness" (via either seeding or fixing the value).
- * Initialise at start of application before use via either `initialiseWithSeed` or `initialiseWithFixedValue`.
+ * A static utility providing deterministic "randomness" (via either seeding or fixing the value).  It should be
+ * initialised at start of application before use via either `initialiseWithSeed` or `initialiseWithFixedValue`.
+ *
+ * NOTE: this class does not provide any guarantees of determinism in a multi-threaded application.  It is possible for
+ * applications which use concepts such as Stream.parallelStream to retain deterministic behaviour, but each thread must
+ * be passed an independent random instance.  For these use cases, we provide {@link InstancedRepeatableRandom} which
+ * is the backing class for this static interface.
  */
 public class RepeatableRandom {
     public static final double MIN_FIXED_VALUE = 0.0;

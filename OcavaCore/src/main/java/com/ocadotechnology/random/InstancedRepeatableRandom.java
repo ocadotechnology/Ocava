@@ -29,6 +29,13 @@ import java.util.function.LongSupplier;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * A static utility providing deterministic "randomness" (via either seeding or fixing the value).
+ *
+ * NOTE: this class does not provide any guarantees of determinism in a multi-threaded application.  It is possible for
+ * applications which use concepts such as Stream.parallelStream to retain deterministic behaviour, but each thread must
+ * be passed an independent instance, created from a deterministic seed.
+ */
 public class InstancedRepeatableRandom {
     private final Random randomInstance;
 
