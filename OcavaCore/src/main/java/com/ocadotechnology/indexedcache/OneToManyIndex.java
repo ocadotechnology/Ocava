@@ -15,9 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -42,13 +40,6 @@ public final class OneToManyIndex<R, C extends Identified<?>> extends AbstractIn
 
     public ImmutableSet<C> getCopyAsSet(R r) {
         return optionalOneToManyIndex.getCopyAsSet(r);
-    }
-
-    /** Order is arbitrary (but deterministic). */
-    @Deprecated //FIXME: leaks pointer to list in map
-    public Stream<Map.Entry<R, Set<C>>> streamEntries() {
-        return optionalOneToManyIndex.streamEntries()
-                .filter(e -> !e.getValue().isEmpty());
     }
 
     public boolean isEmpty(R r) {
