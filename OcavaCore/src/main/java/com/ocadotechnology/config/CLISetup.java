@@ -37,13 +37,13 @@ public class CLISetup {
     @DynamicParameter(
             names = "-O",
             description = "Optional config file overrides")
-    private final Map<String, String> overrides;
+    private Map<String, String> overrides;
 
     @Parameter(
             names = "-a",
             splitter = StringListSplitter.class,
             description = "Optional command-line overrides via properties file(s).  Semicolon separated.")
-    private final List<String> commandLineOverrides = new ArrayList<>();
+    private List<String> commandLineOverrides = new ArrayList<>();
 
     private final String commandLine;
 
