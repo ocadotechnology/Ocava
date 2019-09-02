@@ -27,17 +27,17 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-public class ParameterizedScenarioExampleTest extends AbstractFrameworkTestStory {
+class ParameterizedScenarioExampleTest extends AbstractFrameworkTestStory {
 
     @ParameterizedTest
     @MethodSource("getParameters")
-    public void scenario(int i) {
-        when.testEvent().scheduled(2, "first");
-        when.testEvent().scheduled(2 + i, "second");
+    void scenario(int i) {
         when.simStarts();
+        when.testEvent.scheduled(2, "first");
+        when.testEvent.scheduled(2 + i, "second");
 
-        then.testEvent().occurs("first");
-        then.testEvent().within(i, TimeUnit.MILLISECONDS).occurs("second");
+        then.testEvent.occurs("first");
+        then.testEvent.within(i, TimeUnit.MILLISECONDS).occurs("second");
     }
 
     static Stream<Arguments> getParameters() {

@@ -20,14 +20,16 @@ import java.util.concurrent.TimeUnit;
 @StoryContent
 public abstract class AbstractFrameworkTestStory extends AbstractStory {
 
-    public TestWhen when;
-    public TestThen then;
+    public final TestWhen when;
+    public final TestThen then;
+    public final TestGiven given;
 
     private AbstractFrameworkTestStory(FrameworkTestSimulationApi simulationApi) {
         super(simulationApi);
 
         when = new TestWhen(stepManager, simulationApi, listener, notificationCache);
         then = new TestThen(stepManager, notificationCache, simulationApi, listener);
+        given = new TestGiven(stepsRunner, simulationApi);
         stepsRunner.setPostStepsRunTime(10, TimeUnit.MILLISECONDS);
     }
 

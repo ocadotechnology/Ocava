@@ -15,26 +15,35 @@
  */
 package com.ocadotechnology.scenario.scenarios;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
-import com.ocadotechnology.scenario.FixRequired;
 import com.ocadotechnology.scenario.Story;
 
-/**
- *  If the assertion failure is ignored, the test will pass which should then fail the FixRequired annotation
- */
 @Story
-@FixRequired("Test")
-class StopAfterAssertionFailureTest extends AbstractFrameworkTestStory {
+class WallClockTimeoutFailureTest extends AbstractFrameworkTestStory {
+
+    private static final int SECOND_LIMIT = 1;
+
+    @Override
+    public void executeTestSteps() {
+        AssertionError e = Assertions.assertThrows(
+                AssertionError.class,
+                super::executeTestSteps,
+                "No error thrown");
+        Assertions.assertEquals("Wall clock timeout exceeded ==> expected: <false> but was: <true>", e.getMessage());
+    }
 
     @Test
     void scenario() {
+        given.timeout.addWallClockTimeout(SECOND_LIMIT, TimeUnit.SECONDS);
         when.simStarts();
-        when.testEvent.scheduled(1, "first");
+
+        when.testEvent.scheduled(2, "first");
+        when.testThread.pauseThreadExecution(SECOND_LIMIT * 2, TimeUnit.SECONDS);
         then.testEvent.occurs("first");
-        //Test should not be executed
-        Assertions.fail();
     }
 }

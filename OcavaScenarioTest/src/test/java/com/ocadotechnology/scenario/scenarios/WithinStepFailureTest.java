@@ -25,25 +25,26 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-public class WithinStepFailureTest extends AbstractFrameworkTestStory {
+class WithinStepFailureTest extends AbstractFrameworkTestStory {
 
-    public static final int MILLISECOND_LIMIT = 2;
+    private static final int MILLISECOND_LIMIT = 2;
 
     @Override
     public void executeTestSteps() {
-        Assertions.assertThrows(
+        AssertionError e = Assertions.assertThrows(
                 AssertionError.class,
                 super::executeTestSteps,
-                "Within step failed - didn't finish within " + EventUtil.durationToString(MILLISECOND_LIMIT) + " ==> expected: <true> but was: <false>");
+                "No error thrown");
+        Assertions.assertEquals("Within step failed - didn't finish within " + EventUtil.durationToString(MILLISECOND_LIMIT) + " ==> expected: <true> but was: <false>", e.getMessage());
     }
 
     @Test
-    public void scenario() {
-        when.testEvent().scheduled(2, "first");
-        when.testEvent().scheduled(5, "second");
+    void scenario() {
         when.simStarts();
+        when.testEvent.scheduled(2, "first");
+        when.testEvent.scheduled(5, "second");
 
-        then.testEvent().occurs("first");
-        then.testEvent().within(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("second");
+        then.testEvent.occurs("first");
+        then.testEvent.within(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("second");
     }
 }

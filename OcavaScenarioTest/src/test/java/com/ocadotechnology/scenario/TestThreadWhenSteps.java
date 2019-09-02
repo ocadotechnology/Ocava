@@ -17,17 +17,25 @@ package com.ocadotechnology.scenario;
 
 import java.util.concurrent.TimeUnit;
 
-import com.ocadotechnology.event.scheduling.EventScheduler;
+import org.junit.jupiter.api.Assertions;
 
-/**
- * Used to interface the scenario testing framework with your simulation.
- * The AbstractScenarioSimulationAPI implementation is provided for convenience, but may not always suit.
- */
-public interface ScenarioSimulationApi {
-    boolean isStarted();
-    EventScheduler getEventScheduler();
-    void setDiscreteEventTimeout(long duration, TimeUnit unit);
-    void start(ScenarioNotificationListener listener);
-    double getSchedulerStartTime();
-    TimeUnit getSchedulerTimeUnit();
+public class TestThreadWhenSteps {
+    private final StepManager stepManager;
+
+    public TestThreadWhenSteps(StepManager stepManager) {
+        this.stepManager = stepManager;
+    }
+
+    /**
+     * Simulating a complex calculation in the code
+     */
+    public void pauseThreadExecution(int duration, TimeUnit unit) {
+        stepManager.addExecuteStep(() -> {
+            try {
+                unit.sleep(duration);
+            } catch (InterruptedException e) {
+                Assertions.fail("Sleep interrupted", e);
+            }
+        });
+    }
 }

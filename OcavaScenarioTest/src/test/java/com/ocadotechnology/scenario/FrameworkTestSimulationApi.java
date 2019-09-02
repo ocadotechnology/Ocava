@@ -25,10 +25,10 @@ import com.ocadotechnology.event.scheduling.EventExecutor;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
+import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.time.AdjustableTimeProvider;
-import com.ocadotechnology.time.TimeProvider;
 
 public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
     private static final Logger logger = LoggerFactory.getLogger(FrameworkTestSimulationApi.class);
@@ -37,14 +37,8 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
 
     @Override
     public void clean() {
-        createCleanScheduler();
+        eventScheduler = null;
         super.clean();
-    }
-
-    public FrameworkTestSimulationApi() {
-        super();
-
-        createCleanScheduler();
     }
 
     private void createCleanScheduler() {
@@ -53,11 +47,6 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
             () -> logger.info("Simulation Terminated"),
             ScenarioTestSchedulerType.INSTANCE,
             new AdjustableTimeProvider(0));
-        eventScheduler.pause();
-    }
-
-    public TimeProvider getTimeProvider() {
-        return eventScheduler.getTimeProvider();
     }
 
     public SimpleDiscreteEventScheduler getEventScheduler() {
@@ -72,11 +61,12 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
 
     @Override
     protected ImmutableMap<EventSchedulerType, EventScheduler> createSchedulers() {
+        createCleanScheduler();
         return ImmutableMap.of(ScenarioTestSchedulerType.INSTANCE, eventScheduler);
     }
 
     @Override
-    protected NotificationBus createNotificationBus() {
+    protected NotificationBus<Notification> createNotificationBus() {
         return new ScenarioBus();
     }
 

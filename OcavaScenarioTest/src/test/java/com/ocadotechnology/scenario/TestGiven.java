@@ -15,16 +15,10 @@
  */
 package com.ocadotechnology.scenario;
 
-import java.util.function.Predicate;
+public class TestGiven {
+    public final TimeoutGivenSteps timeout;
 
-public class SingleCheckStep<T> extends CheckStep<T> {
-    public SingleCheckStep(Class<T> type, NotificationCache notificationCache, Predicate<T> predicate) {
-        super(type, notificationCache, true, predicate);
-    }
-
-    @Override
-    public void execute() {
-        super.execute();
-        finished.set(true);
+    TestGiven(StepsRunner runner, ScenarioSimulationApi simulation) {
+        this.timeout = new TimeoutGivenSteps(runner, simulation);
     }
 }

@@ -15,55 +15,22 @@
  */
 package com.ocadotechnology.scenario;
 
-import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.scenario.StepManager.ExecuteStepExecutionType;
 
 public class TestWhen {
 
-    private final StepManager stepManager;
-    private final FrameworkTestSimulationApi simulationApi;
     private final CoreSimulationWhenSteps simulationWhenSteps;
+    public final TestEventWhenSteps testEvent;
+    public final TestThreadWhenSteps testThread;
 
     public TestWhen(StepManager stepManager, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
-        this.stepManager = stepManager;
-        this.simulationApi = simulationApi;
         this.simulationWhenSteps = new CoreSimulationWhenSteps(stepManager, simulationApi, listener, notificationCache);
-    }
-
-    public TestEventWhenSteps testEvent() {
-        return new TestEventWhenSteps(stepManager, ExecuteStepExecutionType.ordered(), simulationApi);
+        this.testEvent = new TestEventWhenSteps(stepManager, ExecuteStepExecutionType.ordered(), simulationApi);
+        this.testThread = new TestThreadWhenSteps(stepManager);
     }
 
     public void simStarts() {
         simulationWhenSteps.starts(TestSimulationStarts.class);
     }
 
-    public static class TestEventWhenSteps {
-
-        private final StepManager stepManager;
-        private final ExecuteStepExecutionType executeStepExecutionType;
-        private ScenarioSimulationApi simulationHolder;
-
-        public TestEventWhenSteps(StepManager stepManager, ExecuteStepExecutionType executionType, ScenarioSimulationApi simulationHolder) {
-            this.stepManager = stepManager;
-            this.executeStepExecutionType = executionType;
-            this.simulationHolder = simulationHolder;
-        }
-
-        protected TestEventWhenSteps withExecutionType(ExecuteStepExecutionType executionType) {
-            return new TestEventWhenSteps(stepManager, executionType, simulationHolder);
-        }
-
-        public void scheduled(int time, String name) {
-            stepManager.add(new ExecuteStep() {
-                @Override
-                protected void executeStep() {
-                    simulationHolder.getEventScheduler().doAt(time,
-                        () -> {
-                            NotificationRouter.get().broadcast(new TestEventNotification(name));
-                        }, "scheduled(" + time + ", \"" + name + "\")");
-                }
-            }, executeStepExecutionType);
-        }
-    }
 }

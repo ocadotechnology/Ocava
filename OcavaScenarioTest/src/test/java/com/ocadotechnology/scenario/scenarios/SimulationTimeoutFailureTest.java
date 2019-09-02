@@ -15,26 +15,32 @@
  */
 package com.ocadotechnology.scenario.scenarios;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
-import com.ocadotechnology.scenario.FixRequired;
 import com.ocadotechnology.scenario.Story;
 
-/**
- *  If the assertion failure is ignored, the test will pass which should then fail the FixRequired annotation
- */
 @Story
-@FixRequired("Test")
-class StopAfterAssertionFailureTest extends AbstractFrameworkTestStory {
+class SimulationTimeoutFailureTest extends AbstractFrameworkTestStory {
+
+    private static final int MILLISECOND_LIMIT = 100;
+
+    @Override
+    public void executeTestSteps() {
+        AssertionError e = Assertions.assertThrows(
+                AssertionError.class,
+                super::executeTestSteps,
+                "No error thrown");
+        Assertions.assertEquals("Discrete event timeout reached", e.getMessage());
+    }
 
     @Test
     void scenario() {
+        given.timeout.addSimulationTimeout(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS);
         when.simStarts();
-        when.testEvent.scheduled(1, "first");
-        then.testEvent.occurs("first");
-        //Test should not be executed
-        Assertions.fail();
+        then.time.waitForDuration(MILLISECOND_LIMIT * 2, TimeUnit.MILLISECONDS);
     }
 }

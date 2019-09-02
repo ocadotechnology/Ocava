@@ -18,6 +18,7 @@ package com.ocadotechnology.scenario;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,12 @@ public class StepsRunner extends Cleanable {
 
     private Executable currentStep;
     private Executable currentUnorderedStep;
-    private double postStepsRunTime = 5000;
+
+    private double postStepsRunTime = 100;
+
+    private boolean hasWallClockTimeout;
+    private long trackedWallClockStartTime;
+    private long wallClockTimeoutMillis;
 
     public StepsRunner(StepCache stepsCache, ScenarioSimulationApi simulation) {
         this.stepsCache = stepsCache;
@@ -42,7 +48,13 @@ public class StepsRunner extends Cleanable {
     }
 
     public void setPostStepsRunTime(long duration, TimeUnit timeUnit) {
-        this.postStepsRunTime = timeUnit.toMillis(duration);
+        this.postStepsRunTime = simulation.getSchedulerTimeUnit().convert(duration, timeUnit);
+    }
+
+    public void setWallClockTimeout(long duration, TimeUnit unit) {
+        hasWallClockTimeout = true;
+        trackedWallClockStartTime = System.currentTimeMillis();
+        wallClockTimeoutMillis = unit.toMillis(duration);
     }
 
     public boolean isFinished() {
@@ -64,6 +76,7 @@ public class StepsRunner extends Cleanable {
     }
 
     public void tryToExecuteNextStep(boolean onlyUnordered) {
+        checkForTimeout();
         if (simulation.isStarted()) {
             executeUnorderedSteps();
         }
@@ -97,7 +110,7 @@ public class StepsRunner extends Cleanable {
             // The test has finished - stop the simulation, but give it 5s to catch any failures immediately following the test
             stopped = true;
 
-            logger.info("Last Step finished. Continuing simulation for {}ms to check that we aren't about to fail", postStepsRunTime);
+            logger.info("Last Step finished. Continuing simulation for {} {} to check that we aren't about to fail", postStepsRunTime, simulation.getSchedulerTimeUnit());
 
             simulation.getEventScheduler().doIn(
                     postStepsRunTime,
@@ -106,6 +119,12 @@ public class StepsRunner extends Cleanable {
                         simulation.getEventScheduler().stop();
                     },
                     "Scenario test stop event");
+        }
+    }
+
+    private void checkForTimeout() {
+        if (hasWallClockTimeout) {
+            Assertions.assertFalse(System.currentTimeMillis() - trackedWallClockStartTime > wallClockTimeoutMillis, "Wall clock timeout exceeded");
         }
     }
 

@@ -21,23 +21,23 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-public class CleanCacheAfterSuccessfulUnorderedStepTest extends AbstractFrameworkTestStory {
+class CleanCacheAfterSuccessfulUnorderedStepTest extends AbstractFrameworkTestStory {
 
     @Test
-    public void scenario() {
-        when.testEvent().scheduled(1, "first");
-        when.testEvent().scheduled(2, "second");
+    void scenario() {
         when.simStarts();
-        then.testEvent().occurs("first");
+        when.testEvent.scheduled(1, "first");
+        when.testEvent.scheduled(2, "second");
+        then.testEvent.occurs("first");
 
         //not successful test should not affect caches
-        then.testEvent().unordered("Unsuccessful").occurs("missing");
+        then.testEvent.unordered("Unsuccessful").occurs("missing");
 
         //first successful unordered step should clean up caches
-        then.testEvent().unordered("SUCCESSFUL").occurs("second");
+        then.testEvent.unordered("SUCCESSFUL").occurs("second");
 
         //we should not be able to process the same notification multiple times
-        then.testEvent().unordered("Unsuccessful").doesNotOccurInCaches("second");
+        then.testEvent.unordered("Unsuccessful").doesNotOccurInCaches("second");
 
         then.unordered.waitForSteps("SUCCESSFUL");
         then.unordered.removesUnorderedSteps("Unsuccessful");

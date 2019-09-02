@@ -15,6 +15,10 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Assertions;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.event.scheduling.EventScheduler;
@@ -28,6 +32,7 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
     private boolean started = false;
 
     protected ImmutableMap<EventSchedulerType, EventScheduler> schedulers;
+    private long timeout = -1;
 
     @Override
     public boolean isStarted() {
@@ -37,6 +42,12 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
     @Override
     public EventScheduler getEventScheduler() {
         return schedulers.get(ScenarioTestSchedulerType.INSTANCE);
+    }
+
+    @Override
+    public void setDiscreteEventTimeout(long duration, TimeUnit unit) {
+        Preconditions.checkState(!started, "Attempted to set timeout after startup");
+        timeout = getSchedulerTimeUnit().convert(duration, unit);
     }
 
     @Override
@@ -52,9 +63,17 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
                 schedulers.get(ScenarioTestSchedulerType.INSTANCE).getType());
 
         NotificationRouter.get().registerExecutionLayer(schedulers.get(ScenarioTestSchedulerType.INSTANCE), createNotificationBus());
-        startListener(listener);
 
-        startSimulation();
+        //This call should actually start the scheduler and is not expected to return as startSimulation should trigger the then step which continues the process.
+        //See com.ocadotechnology.scenario.CoreSimulationWhenSteps.starts
+        getEventScheduler().doNow(() -> {
+            startListener(listener);
+            if (timeout > 0) {
+                getEventScheduler().doAt(getSchedulerStartTime() + timeout, () -> Assertions.fail("Discrete event timeout reached"));
+            }
+
+            startSimulation();
+        });
     }
 
     protected void startListener(ScenarioNotificationListener listener) {

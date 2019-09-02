@@ -23,15 +23,15 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-public class WithinStepSuccessTest extends AbstractFrameworkTestStory {
+class WithinStepSuccessTest extends AbstractFrameworkTestStory {
 
     @Test
-    public void scenario() {
-        when.testEvent().scheduled(2, "first");
-        when.testEvent().scheduled(5, "second");
+    void scenario() {
         when.simStarts();
+        when.testEvent.scheduled(2, "first");
+        when.testEvent.scheduled(5, "second");
 
-        then.testEvent().occurs("first");
-        then.testEvent().within(3, TimeUnit.MILLISECONDS).occurs("second");
+        then.testEvent.occurs("first");
+        then.testEvent.within(3, TimeUnit.MILLISECONDS).occurs("second");
     }
 }

@@ -18,57 +18,16 @@ package com.ocadotechnology.scenario;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 
 public class TestThen {
-
-    private StepManager stepManager;
-    private NotificationCache notificationCache;
-    private TimeThenSteps timeThenSteps;
-
+    public final TimeThenSteps time;
     public final UnorderedSteps unordered;
+    public final ExceptionThenSteps exception;
+
+    public final TestEventThenSteps testEvent;
 
     public TestThen(StepManager stepManager, NotificationCache notificationCache, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener) {
-        this.stepManager = stepManager;
-        this.notificationCache = notificationCache;
-        this.timeThenSteps = new TimeThenSteps(simulationApi, stepManager, listener);
+        this.time = new TimeThenSteps(simulationApi, stepManager, listener);
         this.unordered = new UnorderedSteps(stepManager.getStepsCache(), stepManager);
-    }
-
-    public TestEventThenSteps testEvent() {
-        return new TestEventThenSteps(stepManager, notificationCache,
-                CheckStepExecutionType.ordered());
-    }
-
-    public TimeThenSteps timeSteps() {
-        return timeThenSteps;
-    }
-
-    public static class TestEventThenSteps extends AbstractThenSteps<TestEventThenSteps> {
-
-        private TestEventThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
-            super(stepManager, notificationCache, checkStepExecutionType);
-        }
-
-        @Override
-        protected TestEventThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
-            return new TestEventThenSteps(stepManager, notificationCache, executionType);
-        }
-
-        public void occurs(String name) {
-            addCheckStep(TestEventNotification.class, n -> n.name.equals(name));
-        }
-
-        public void doesNotOccurInCaches(String name) {
-            addCheckStep(new SingleCheckStep<>(
-                    TestEventNotification.class,
-                    stepManager.notificationCache, n -> {
-                        if (n.name.equals(name)) {
-                            throw new RuntimeException("We should not receive TestEventNotification with message: " + name);
-                        }
-                        return true;
-                    }));
-        }
-    }
-
-    public ExceptionThenSteps exception() {
-        return new ExceptionThenSteps(stepManager);
+        this.exception = new ExceptionThenSteps(stepManager);
+        this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered());
     }
 }

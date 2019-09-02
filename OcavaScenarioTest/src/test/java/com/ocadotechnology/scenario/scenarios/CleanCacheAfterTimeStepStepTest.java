@@ -23,16 +23,16 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-public class CleanCacheAfterTimeStepStepTest extends AbstractFrameworkTestStory {
+class CleanCacheAfterTimeStepStepTest extends AbstractFrameworkTestStory {
 
     @Test
-    public void scenario() {
-        when.testEvent().scheduled(1, "first");
+    void scenario() {
         when.simStarts();
+        when.testEvent.scheduled(1, "first");
 
         //time steps will trigger next steps. It should also reset notification caches. We should not be able to process 'first'
-        then.timeSteps().waitForDuration(5, TimeUnit.MILLISECONDS);
+        then.time.waitForDuration(5, TimeUnit.MILLISECONDS);
 
-        then.testEvent().doesNotOccurInCaches("first");
+        then.testEvent.doesNotOccurInCaches("first");
     }
 }
