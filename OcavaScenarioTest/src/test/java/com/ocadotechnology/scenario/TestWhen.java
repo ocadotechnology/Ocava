@@ -15,8 +15,6 @@
  */
 package com.ocadotechnology.scenario;
 
-import com.ocadotechnology.scenario.StepManager.ExecuteStepExecutionType;
-
 public class TestWhen {
 
     private final CoreSimulationWhenSteps simulationWhenSteps;
@@ -25,12 +23,11 @@ public class TestWhen {
 
     public TestWhen(StepManager stepManager, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
         this.simulationWhenSteps = new CoreSimulationWhenSteps(stepManager, simulationApi, listener, notificationCache);
-        this.testEvent = new TestEventWhenSteps(stepManager, ExecuteStepExecutionType.ordered(), simulationApi);
+        this.testEvent = new TestEventWhenSteps(stepManager, simulationApi);
         this.testThread = new TestThreadWhenSteps(stepManager);
     }
 
     public void simStarts() {
         simulationWhenSteps.starts(TestSimulationStarts.class);
     }
-
 }

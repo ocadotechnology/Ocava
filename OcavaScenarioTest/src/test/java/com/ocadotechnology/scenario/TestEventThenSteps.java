@@ -34,12 +34,10 @@ public class TestEventThenSteps extends AbstractThenSteps<TestEventThenSteps> {
         addCheckStep(TestEventNotification.class, n -> n.name.equals(name));
     }
 
-    public void doesNotOccurInCaches(String name) {
-        addCheckStep(
-                TestEventNotification.class,
-                n -> {
-                    Assertions.assertNotEquals(name, n.name, "We should not receive TestEventNotification with message: " + name);
-                    return true;
-                });
+    public void occursStrictlyNext(String name) {
+        addCheckStep(TestEventNotification.class, n -> {
+            Assertions.assertEquals(name, n.name, "Incorrect event triggered next.");
+            return true;
+        });
     }
 }

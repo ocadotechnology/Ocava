@@ -29,10 +29,12 @@ class CleanCacheAfterTimeStepStepTest extends AbstractFrameworkTestStory {
     void scenario() {
         when.simStarts();
         when.testEvent.scheduled(1, "first");
+        when.testEvent.scheduled(10, "second");
 
         //time steps will trigger next steps. It should also reset notification caches. We should not be able to process 'first'
         then.time.waitForDuration(5, TimeUnit.MILLISECONDS);
 
-        then.testEvent.doesNotOccurInCaches("first");
+        //Waits for 'second'.  If 'first' is still in the cache, it will be passed into this step and fail the test.
+        then.testEvent.occursStrictlyNext("second");
     }
 }

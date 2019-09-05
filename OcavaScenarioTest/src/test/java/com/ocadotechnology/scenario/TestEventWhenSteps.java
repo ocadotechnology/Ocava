@@ -16,33 +16,23 @@
 package com.ocadotechnology.scenario;
 
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.scenario.StepManager.ExecuteStepExecutionType;
 
 public class TestEventWhenSteps {
 
     private final StepManager stepManager;
-    private final ExecuteStepExecutionType executeStepExecutionType;
     private final ScenarioSimulationApi simulationHolder;
 
-    public TestEventWhenSteps(StepManager stepManager, ExecuteStepExecutionType executionType, ScenarioSimulationApi simulationHolder) {
+    public TestEventWhenSteps(StepManager stepManager, ScenarioSimulationApi simulationHolder) {
         this.stepManager = stepManager;
-        this.executeStepExecutionType = executionType;
         this.simulationHolder = simulationHolder;
     }
 
-    protected TestEventWhenSteps withExecutionType(ExecuteStepExecutionType executionType) {
-        return new TestEventWhenSteps(stepManager, executionType, simulationHolder);
-    }
-
     public void scheduled(int time, String name) {
-        stepManager.add(new ExecuteStep() {
-            @Override
-            protected void executeStep() {
+        stepManager.addExecuteStep(() -> {
                 simulationHolder.getEventScheduler().doAt(
                         time,
                         () -> NotificationRouter.get().broadcast(new TestEventNotification(name)),
                         "scheduled(" + time + ", \"" + name + "\")");
-            }
-        }, executeStepExecutionType);
+            });
     }
 }
