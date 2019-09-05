@@ -17,6 +17,8 @@ package com.ocadotechnology.scenario;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Assertions;
+
 public class TimeThenSteps {
     private final ScenarioSimulationApi scenarioSimulationApi;
     private final StepManager stepManager;
@@ -52,6 +54,19 @@ public class TimeThenSteps {
             protected double time() {
                 return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + stepManager.getTimeUnit().convert(duration, unit);
             }
+        });
+    }
+
+    /**
+     * Asserts that the specified duration has not yet passed at the time this step executes.
+     * The provided time is compared with the elapsed time since the simulation started. (see
+     * {@link ScenarioSimulationApi#getSchedulerStartTime()})
+     */
+    public void timeIsLessThan(long time, TimeUnit unit) {
+        stepManager.addExecuteStep(() -> {
+            double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + stepManager.getTimeUnit().convert(time, unit);
+            double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
+            Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
         });
     }
 }
