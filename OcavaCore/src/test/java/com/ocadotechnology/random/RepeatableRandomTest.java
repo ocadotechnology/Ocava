@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableList;
 public class RepeatableRandomTest {
     private static final long FIXED_SEED = 12345;
     private static final int TEST_ITERATIONS = 50;
-    private static final int TEST_ITERATIONS_FOR_UNIQUENESS_CHECK = 10_000_000;
+    private static final int TEST_ITERATIONS_FOR_UNIQUENESS_CHECK = 1_000_000;
 
     @Test
     public void seededRandom_canReturnExpectedBoolean() {
