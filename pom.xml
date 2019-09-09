@@ -34,7 +34,7 @@
         <jcommander.version>1.78</jcommander.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <googe-jsr.version>3.0.2</googe-jsr.version>
-        <junit-jupiter.version>5.2.0</junit-jupiter.version>
+        <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <assertj.version>3.11.1</assertj.version>
         <jfreechart.version>1.5.0</jfreechart.version>
