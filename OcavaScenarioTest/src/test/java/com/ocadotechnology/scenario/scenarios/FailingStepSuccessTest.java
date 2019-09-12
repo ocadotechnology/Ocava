@@ -15,26 +15,20 @@
  */
 package com.ocadotechnology.scenario.scenarios;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.FixRequired;
 import com.ocadotechnology.scenario.Story;
 
-/**
- *  If the assertion failure is ignored, the test will pass which should then fail the FixRequired annotation
- */
+@FixRequired("failing step with fix required will pass")
 @Story
-@FixRequired("Test")
-class StopAfterAssertionFailureTest extends AbstractFrameworkTestStory {
+class FailingStepSuccessTest extends AbstractFrameworkTestStory {
 
     @Test
     void scenario() {
         when.simStarts();
         when.testEvent.scheduled(1, "first");
-        then.testEvent.occurs("first");
-        //Test should not be executed
-        Assertions.fail();
+        then.testEvent.failingStep().occurs("not-first");
     }
 }

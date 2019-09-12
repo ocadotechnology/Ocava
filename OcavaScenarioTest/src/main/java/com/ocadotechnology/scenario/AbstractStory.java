@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.random.RepeatableRandom;
+import com.ocadotechnology.scenario.FailingStep.FailingStepException;
 import com.ocadotechnology.validation.Failer;
 
 @ExtendWith(ScenarioTestWrapper.class)
@@ -103,18 +104,55 @@ public abstract class AbstractStory {
 
             assertFinished();
         } catch (Throwable error) {
-            //pass test if Fix Required is present
             logStepFailure(error);
-            if (isFixRequired()) {
+
+            FailingStepException failingStep = getFailingStepIfCause(error);
+            if (failingStep != null) {
+                // Pass the test if the failing step failed, and the test is annotated with FixRequired
+                handleFailingStep(failingStep);
                 return;
+            } else {
+                // Pass test if fix required is present, and the expected exception is correct
+                if (isFixRequired()) {
+                    checkAgainstExpectedException(error);
+                    return;
+                }
+                throw error;
             }
-            throw error;
         }
         Assertions.assertFalse(isFixRequired(), "Test is successful but it is annotated with FixRequired: " + getFixRequiredText());
     }
 
+    private FailingStepException getFailingStepIfCause(Throwable error) {
+        if (error instanceof FailingStepException) {
+            return (FailingStepException) error;
+        } else {
+            if (error.getCause() != null) {
+                return getFailingStepIfCause(error.getCause());
+            }
+        }
+        return null;
+    }
+
+    private void handleFailingStep(FailingStepException exception) {
+        Assertions.assertTrue(
+                exception.failed,
+                String.format("Failed step passed. Step: (%s %s) Notification: %s", exception.namedStep, exception.checkStep.info(), exception.lastSeen));
+        Assertions.assertTrue(isFixRequired(), "Failing step defined but test does not have @FixRequired");
+    }
+
     boolean isFixRequired() {
         return this.getClass().isAnnotationPresent(FixRequired.class);
+    }
+
+    public void checkAgainstExpectedException(Throwable throwable) {
+        if (isFixRequired()) {
+            FixRequired annotation = this.getClass().getAnnotationsByType(FixRequired.class)[0];
+            if (!annotation.expectedException().isAssignableFrom(throwable.getClass())) {
+                logger.error("Caught exception [{}] is not sub-class of [{}]", throwable.getClass(), annotation.expectedException());
+                throw new AssertionError("Caught exception is not the same as expected", throwable);
+            }
+        }
     }
 
     public void logStepFailure(Throwable error) {

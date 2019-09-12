@@ -156,6 +156,8 @@ public class StepManager {
                 return new NeverStep<>(testStep);
             case WITHIN:
                 return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDurationInMillis());
+            case FAILING_STEP:
+                return new FailingStep<>(testStep);
             default:
                 throw Failer.fail("Unhandled Check step type %s", checkStepExecutionType.type);
         }
@@ -217,7 +219,7 @@ public class StepManager {
     }
 
     public static class CheckStepExecutionType {
-        enum Type {ORDERED, UNORDERED, NEVER, WITHIN}
+        enum Type {ORDERED, UNORDERED, NEVER, WITHIN, FAILING_STEP}
 
         private final String name;
         private final Type type;
@@ -269,6 +271,10 @@ public class StepManager {
 
         public static CheckStepExecutionType never() {
             return never(nextId());
+        }
+
+        public static CheckStepExecutionType failingStep() {
+            return new CheckStepExecutionType(nextId(), Type.FAILING_STEP);
         }
 
         public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, long duration) {

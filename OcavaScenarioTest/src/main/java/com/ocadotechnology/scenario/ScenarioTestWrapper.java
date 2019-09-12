@@ -30,7 +30,7 @@ import com.ocadotechnology.utils.Types;
 /**
  * Class which sets up scenario test logging and functions as a decorator around @Test methods, calling the
  * {@code configure} and {@code run} methods before and after the @Test method sets up the scenario steps.
- *
+ * <p>
  * Note that only one instance of this class is created for all tests being run.  The API of junit 5 guarantees that
  * postProcessTestInstance is called before afterTestExecution, which should mean that {@code story} is the current test
  * instance when afterTestExecution is called.
@@ -72,7 +72,9 @@ public class ScenarioTestWrapper implements BeforeAllCallback, TestInstancePostP
     public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
         exceptionHasOccurred = true;
         story.logStepFailure(throwable);
-        if (!story.isFixRequired()) {
+        if (story.isFixRequired()) {
+            story.checkAgainstExpectedException(throwable);
+        } else {
             throw throwable;
         }
     }

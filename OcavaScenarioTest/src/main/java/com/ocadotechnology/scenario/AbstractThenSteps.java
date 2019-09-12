@@ -66,6 +66,14 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
     }
 
     /**
+     * @return an instance of hte concrete sub-class of AbstractThenSteps where the step it creates is expected to fail.
+     * If the step is completed the test will fail
+     */
+    public T failingStep() {
+        return create(stepManager, notificationCache, CheckStepExecutionType.failingStep());
+    }
+
+    /**
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must never occur.
      * They will not block execution of other steps.  The steps are associated with the given name, which may be used to
      * remove them if the test requires that they only hold for a portion of the scenario.  See {@link UnorderedSteps}
