@@ -62,12 +62,16 @@ public class CoreSimulationWhenSteps extends AbstractWhenSteps {
             super(stepManager, notificationCache, executionType);
         }
 
+        private SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType, boolean failingStep) {
+            super(stepManager, notificationCache, executionType, failingStep);
+        }
+
         public SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache) {
             this(stepManager, notificationCache, CheckStepExecutionType.ordered());
         }
 
         @Override
-        protected AbstractThenSteps<?> create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        protected AbstractThenSteps<?> create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean failingStep) {
             return new SimulationThenSteps(stepManager, notificationCache, checkStepExecutionType);
         }
     }

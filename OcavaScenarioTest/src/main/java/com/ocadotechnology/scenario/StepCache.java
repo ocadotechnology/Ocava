@@ -39,6 +39,7 @@ public class StepCache extends Cleanable {
     private int stepCounter = 0;
     private List<Executable> finalSteps = new ArrayList<>();
     private Predicate<Throwable> exceptionChecker = EXCEPTION_CHECKER_DEFAULT;
+    private List<Executable> failingSteps = new ArrayList<>();
 
     public synchronized int getNextStepCounter() {
         return stepCounter++;
@@ -186,5 +187,21 @@ public class StepCache extends Cleanable {
 
     public boolean hasSteps() {
         return !orderedSteps.isEmpty() || !unorderedSteps.isEmpty() || !finalSteps.isEmpty();
+    }
+
+    public List<Executable> getFailingSteps() {
+        return failingSteps;
+    }
+
+    public void addFailingStep(Executable failingStep) {
+        this.failingSteps.add(failingStep);
+    }
+
+    /**
+     * Unordered steps create new CheckSteps when the scenario is running, the original check steps are removed using
+     * this method to avoid incorrectly reporting which steps are marked as failingSteps. see: StepManager.addUnorderedStepOnExecutionOfStep
+     */
+    void removeFailingStep(Executable step) {
+        this.failingSteps.remove(step);
     }
 }

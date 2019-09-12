@@ -25,9 +25,13 @@ public class TestEventThenSteps extends AbstractThenSteps<TestEventThenSteps> {
         super(stepManager, notificationCache, checkStepExecutionType);
     }
 
+    private TestEventThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean failingStep) {
+        super(stepManager, notificationCache, checkStepExecutionType, failingStep);
+    }
+
     @Override
-    protected TestEventThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
-        return new TestEventThenSteps(stepManager, notificationCache, executionType);
+    protected TestEventThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType, boolean failingStep) {
+        return new TestEventThenSteps(stepManager, notificationCache, executionType, failingStep);
     }
 
     public void occurs(String name) {

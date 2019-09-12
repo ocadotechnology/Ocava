@@ -24,5 +24,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FixRequired {
     String value();
-    Class<? extends Throwable> expectedException() default Throwable.class;
 }

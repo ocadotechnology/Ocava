@@ -139,11 +139,19 @@ public class StepManager {
 
     private void addUnorderedStepOnExecutionOfStep(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
         notificationCache.addKnownNotification(testStep.getType());
+
         add(new ExecuteStep() {
             @Override
             protected void executeStep() {
+                CheckStep<?> step = createStepToAddLater(checkStepExecutionType, testStep);
+                if (checkStepExecutionType.isFailingStep) {
+                    // Remove the original step added and replace with the new wrapped step
+                    stepsCache.removeFailingStep(testStep);
+                    stepsCache.addFailingStep(step);
+                }
+
                 notificationCache.resetUnorderedNotification();
-                addUnordered(checkStepExecutionType.name, createStepToAddLater(checkStepExecutionType, testStep), getStepName(), getStepOrder());
+                addUnordered(checkStepExecutionType.name, step, getStepName(), getStepOrder());
             }
         });
     }
@@ -156,8 +164,6 @@ public class StepManager {
                 return new NeverStep<>(testStep);
             case WITHIN:
                 return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDurationInMillis());
-            case FAILING_STEP:
-                return new FailingStep<>(testStep);
             default:
                 throw Failer.fail("Unhandled Check step type %s", checkStepExecutionType.type);
         }
@@ -198,7 +204,7 @@ public class StepManager {
         }
 
         public double getPeriod() {
-            return period.orElseThrow(() -> Failer.fail("Period not proivided"));
+            return period.orElseThrow(() -> Failer.fail("Period not provided"));
         }
 
         public static ExecuteStepExecutionType ordered() {
@@ -219,12 +225,15 @@ public class StepManager {
     }
 
     public static class CheckStepExecutionType {
-        enum Type {ORDERED, UNORDERED, NEVER, WITHIN, FAILING_STEP}
+        enum Type {ORDERED, UNORDERED, NEVER, WITHIN}
 
         private final String name;
         private final Type type;
         private final Supplier<EventScheduler> schedulerSupplier;
         private final Long duration;
+
+        /** Used to mark this check step as expecting to fail */
+        private boolean isFailingStep;
 
         /**
          * Default constructor creates an ORDERED CheckStepExecutionType with the next id.
@@ -238,11 +247,24 @@ public class StepManager {
             this(name, type, null, null);
         }
 
+        /**
+         * The main constructor for creating a CheckStepExecutionType
+         */
         public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Long duration) {
+            this(name, type, schedulerSupplier, duration, false);
+        }
+
+        /**
+         * Construct a CheckStepExecutionType, the failingStep argument is used to allow marking a step as expected failure,
+         * this is normally only used by {@link #markFailingStep()}, other cases for constructing
+         * this class should make use of {@link #CheckStepExecutionType(String, Type, Supplier, Long)}
+         */
+        private CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Long duration, boolean failingStep) {
             this.name = name;
             this.type = type;
             this.schedulerSupplier = schedulerSupplier;
             this.duration = duration;
+            this.isFailingStep = failingStep;
         }
 
         public EventScheduler getScheduler() {
@@ -251,6 +273,10 @@ public class StepManager {
 
         public long getDurationInMillis() {
             return Preconditions.checkNotNull(duration, "Duration not provided");
+        }
+
+        public Type getType(){
+            return type;
         }
 
         public static CheckStepExecutionType ordered() {
@@ -273,12 +299,15 @@ public class StepManager {
             return never(nextId());
         }
 
-        public static CheckStepExecutionType failingStep() {
-            return new CheckStepExecutionType(nextId(), Type.FAILING_STEP);
-        }
-
         public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, long duration) {
             return new CheckStepExecutionType(nextId(), Type.WITHIN, schedulerSupplier, duration);
+        }
+
+        /**
+         * Mark this check step as expected to fail, this part of the FixStep & FixRequired functionality
+         */
+        public CheckStepExecutionType markFailingStep() {
+            return new CheckStepExecutionType(name, type, schedulerSupplier, duration, true);
         }
 
         private static String nextId() {

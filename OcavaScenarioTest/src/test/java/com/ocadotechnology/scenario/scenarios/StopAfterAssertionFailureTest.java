@@ -26,14 +26,8 @@ import com.ocadotechnology.scenario.Story;
  * If the assertion failure is ignored, the test will pass which should then fail the FixRequired annotation
  */
 @Story
-@FixRequired(value = "Test", expectedException = IllegalAccessError.class)
-class StopAfterAssertionFailureFailureTest extends AbstractFrameworkTestStory {
-
-    @Override
-    public void checkAgainstExpectedException(Throwable throwable) {
-        FixRequired annotation = this.getClass().getAnnotationsByType(FixRequired.class)[0];
-        Assertions.assertFalse(annotation.expectedException().isAssignableFrom(throwable.getClass()));
-    }
+@FixRequired("Test")
+class StopAfterAssertionFailureTest extends AbstractFrameworkTestStory {
 
     @Test
     void scenario() {
