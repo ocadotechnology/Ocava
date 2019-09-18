@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -132,10 +133,10 @@ public class RepeatableRandomTest {
         System.out.println("Seed: " + seed);
         RepeatableRandom.initialiseWithSeed(seed);
 
-        HashSet<String> set = new HashSet<>();
+        HashSet<UUID> set = new HashSet<>();
         int i = 0;
         while (i < TEST_ITERATIONS_FOR_UNIQUENESS_CHECK) {
-            String current = RepeatableRandom.nextUUID().toString();
+            UUID current = RepeatableRandom.nextUUID();
             if (set.contains(current)) {
                 return false;
             }
