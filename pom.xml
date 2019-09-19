@@ -32,7 +32,7 @@
         <guava.version>27.0.1-jre</guava.version>
         <apache-commons.version>2.2</apache-commons.version>
         <jcommander.version>1.78</jcommander.version>
-        <slf4j-api.version>1.7.25</slf4j-api.version>
+        <slf4j-api.version>1.7.28</slf4j-api.version>
         <googe-jsr.version>3.0.2</googe-jsr.version>
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
