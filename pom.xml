@@ -41,7 +41,7 @@
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.11.490</aws-java-sdk-s3.version>
         <disruptor.version>3.3.4</disruptor.version>
-        <logback-classic.version>1.1.2</logback-classic.version>
+        <logback-classic.version>1.2.3</logback-classic.version>
         <!-- EE dependency required for s3 to work -->
         <jaxb.version>2.3.1</jaxb.version>
         <!-- Static Analysis Plugin Versions -->
