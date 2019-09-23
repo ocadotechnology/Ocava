@@ -18,6 +18,7 @@ package com.ocadotechnology.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -37,6 +38,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
 @DisplayName("A Config object")
+@SuppressWarnings("InnerClassMayBeStatic") // @Nested classes cannot be static
 class ConfigTest {
 
     @Nested
@@ -397,10 +399,17 @@ class ConfigTest {
         }
 
         @Test
-        @DisplayName("returns an Optional containing the value")
+        @DisplayName("returns an Optional containing the integer value")
         void returnsOptionalWithIntegerValue() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, SECONDS", TimeUnit.SECONDS);
             assertThat(config.getTimeIfPresent(TestConfig.FOO)).hasValue(2L);
+        }
+
+        @Test
+        @DisplayName("returns an Optional containing the fractional value")
+        void returnsOptionalWithFractionalValue() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2.3, SECONDS", TimeUnit.SECONDS);
+            assertThat(config.getFractionalTimeIfPresent(TestConfig.FOO)).hasValue(2.3);
         }
 
         @Test
@@ -429,6 +438,102 @@ class ConfigTest {
         void throwsExceptionWhenUnitNotSet() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, SECONDS");
             assertThatThrownBy(() -> config.getTime(TestConfig.FOO)).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Duration values")
+    class DurationConfigTests {
+
+        @Test
+        @DisplayName("returns a Duration for an integer value")
+        void returnDurationForInt() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, MILLISECONDS");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofMillis(2));
+        }
+
+        @Test
+        @DisplayName("returns a Duration for a fractional value")
+        void returnDurationForFraction() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2.3, MILLISECONDS");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofNanos(2_300_000));
+        }
+
+        @Test
+        @DisplayName("returns a Duration when the parts have multiple spaces")
+        void returnDurationWithSpaces() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "     2.3     ,     MILLISECONDS     ");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofNanos(2_300_000));
+        }
+
+        @Test
+        @DisplayName("returns a Duration with units of seconds when units are not specified")
+        void returnDurationInSecondsWhenNoSpecifiedUnits() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2.3");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofMillis(2_300));
+        }
+
+        @Test
+        @DisplayName("handles a 0 value")
+        void zeroValue() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "0");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofSeconds(0));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - below")
+        void roundToNanoBelow() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "0.1,NANOSECONDS");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofNanos(0));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - above")
+        void roundToNanoAbove() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "0.6,NANOSECONDS");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofNanos(1));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "-2, SECONDS");
+            assertThat(config.getDuration(TestConfig.FOO)).isEqualTo(Duration.ofSeconds(-2));
+        }
+
+        @Test
+        @DisplayName("returns an Optional containing the value")
+        void returnsOptionalWithDuration() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, SECONDS");
+            assertThat(config.getDurationIfPresent(TestConfig.FOO)).hasValue(Duration.ofSeconds(2));
+        }
+
+        @Test
+        @DisplayName("returns an empty Optional when not present")
+        void returnsEmptyOptionalWhenNotPresent() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, SECONDS");
+            assertThat(config.getDurationIfPresent(TestConfig.BAR)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "FAIL, SECONDS");
+            assertThatThrownBy(() -> config.getDuration(TestConfig.FOO)).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, SECONDS, SECONDS");
+            assertThatThrownBy(() -> config.getDuration(TestConfig.FOO)).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "2, ORANGES");
+            assertThatThrownBy(() -> config.getDuration(TestConfig.FOO)).isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -782,6 +887,62 @@ class ConfigTest {
         void test6() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " RED ");
             assertThat(config.getListOfStrings(TestConfig.FOO)).isEqualTo(ImmutableList.of("RED"));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("test get List Of Integers")
+    class ListOfIntegersTests {
+
+        @Test
+        @DisplayName("List of 3 integers case")
+        void testThreeInts() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234,321,266");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(1234, 321, 266));
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton list")
+        void testSingleNumber() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(1234));
+        }
+
+        @Test
+        @DisplayName("Empty case returns empty list")
+        void testEmptyList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("Partly empty list returns non empty values")
+        void testPartlyEmptyList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "123,,456,");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(123, 456));
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void testUnknownConfig() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1234,321");
+            assertThatThrownBy(() -> config.getListOfIntegers(TestConfig.FOO))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("List of ints with space is trimmed")
+        void testTrimSpacesInList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234,321, 266");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(1234, 321, 266));
+        }
+
+        @Test
+        @DisplayName("Single int with space is trimmed")
+        void testTrimSpaces() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " 1234 ");
+            assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(1234));
         }
 
     }

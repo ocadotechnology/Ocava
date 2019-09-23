@@ -16,6 +16,7 @@
 package com.ocadotechnology.config;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -247,7 +248,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return the result of getFractionalTime if the config key has a defined value, else {@link Optional#EMPTY}
+     * @return the result of {@link Config#getFractionalTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalDouble as OptionalDouble is missing some features.
      */
     public Optional<Double> getFractionalTimeIfPresent(Enum<?> key) {
@@ -275,7 +276,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return the result of getTime if the config key has a defined value, else {@link Optional#EMPTY}
+     * @return the result of {@link Config#getTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalLong as OptionalLong is missing some features.
      */
     public Optional<Long> getTimeIfPresent(Enum<?> key) {
@@ -283,6 +284,36 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
             return Optional.empty();
         }
         return Optional.of(getTime(key));
+    }
+
+    /**
+     * Interprets a config value as a {@link Duration} rounded to the nearest nanosecond
+     *
+     * Duration config values can be given either:
+     * - As a double on its own, in which case it will be assumed that the value is being specified in seconds
+     * - In the form {@code <value>,<time unit>} or {@code <value>:<time unit>}
+     *
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @throws IllegalStateException if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException if the time unit in the config value does not match an enum value
+     * @throws NumberFormatException if the value given cannot be parsed as a double
+     */
+    public Duration getDuration(Enum<?> key) {
+        String[] parts = getParts(key);
+        Preconditions.checkState(parts.length > 0 && parts.length <= 2, "Duration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<time unit>' or '<value>:<time unit>'", Arrays.toString(parts));
+        TimeUnit unit = parts.length == 1 ? TimeUnit.SECONDS : TimeUnit.valueOf(parts[1].trim());
+        double nanoTime = Double.parseDouble(parts[0].trim()) * unit.toNanos(1);
+        return Duration.ofNanos(Math.round(nanoTime));
+    }
+
+    /**
+     * @return the result of {@link Config#getDuration} if the config key has a defined value, else {@link Optional#empty()}
+     */
+    public Optional<Duration> getDurationIfPresent(Enum<?> key) {
+        if (!containsKey(key)) {
+            return Optional.empty();
+        }
+        return Optional.of(getDuration(key));
     }
 
     /**
@@ -353,7 +384,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         String[] parts = getParts(key);
         ImmutableList.Builder<Integer> builder = ImmutableList.builder();
         for (String part : parts) {
-            builder.add(Integer.parseInt(part));
+            if (!part.isEmpty()) {
+                builder.add(Integer.parseInt(part));
+            }
         }
         return builder.build();
     }

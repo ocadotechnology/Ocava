@@ -304,7 +304,7 @@ public class StepManager {
         }
 
         /**
-         * Mark this check step as expected to fail, this part of the FixStep & FixRequired functionality
+         * Mark this check step as expected to fail, this part of the FixStep and FixRequired functionality
          */
         public CheckStepExecutionType markFailingStep() {
             return new CheckStepExecutionType(name, type, schedulerSupplier, duration, true);
