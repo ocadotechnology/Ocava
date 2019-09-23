@@ -25,7 +25,7 @@
 
         <!-- Maven Plugin versions -->
         <maven-compiler-plugin.version>3.6.2</maven-compiler-plugin.version>
-        <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
+        <maven-jar-plugin.version>3.1.2</maven-jar-plugin.version>
         <deploy.plugin.version>2.8.2</deploy.plugin.version>
 
         <!-- Dependency versions -->
@@ -39,8 +39,8 @@
         <assertj.version>3.13.2</assertj.version>
         <jfreechart.version>1.5.0</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
-        <aws-java-sdk-s3.version>1.11.490</aws-java-sdk-s3.version>
-        <disruptor.version>3.3.4</disruptor.version>
+        <aws-java-sdk-s3.version>1.11.635</aws-java-sdk-s3.version>
+        <disruptor.version>3.4.2</disruptor.version>
         <logback-classic.version>1.2.3</logback-classic.version>
         <!-- EE dependency required for s3 to work -->
         <jaxb.version>2.3.1</jaxb.version>
@@ -50,13 +50,13 @@
         <maven-checkstyle-plugin.version>3.1.0</maven-checkstyle-plugin.version>
         <license-maven-plugin.version>2.0.0</license-maven-plugin.version>
         <mycila-license-maven-plugin.version>3.0</mycila-license-maven-plugin.version>
-        <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
+        <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
 
         <!-- JavaDoc Plugin Version -->
-        <maven-javadoc-plugin.version>3.0.1</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.1.1</maven-javadoc-plugin.version>
         <reports-plugin.version>3.0.0</reports-plugin.version>
-        <maven-site-plugin.version>3.7.1</maven-site-plugin.version>
-        <wagon-webdav-jackrabbit.version>3.1.0</wagon-webdav-jackrabbit.version>
+        <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
+        <wagon-webdav-jackrabbit.version>3.3.3</wagon-webdav-jackrabbit.version>
 
         <inceptionYear>2017</inceptionYear>
         <organizationName>Ocado</organizationName>
