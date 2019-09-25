@@ -1,7 +1,7 @@
 # Ocava
 
 This project contains the Ocado Technology simulation team Discrete Event Simulation (DES) framework and tools, plus a number of additional tools and utilites we found useful and generic enough to share.
-This project allows for more than 'just' an isolated, deterministic DES application, however.  By switching which EventScheduler implementation is used, it is possible to run the exact same code in a relatime production environment or a DES testing environment with a fairly small set of changes.
+This project allows for more than 'just' an isolated, deterministic DES application, however.  By switching which EventScheduler implementation is used, it is possible to run the exact same code in a realtime production environment or a DES testing environment with a fairly small set of changes.
 
 Still to come: OcavaScenarioTest will contain our Notification-based full-simulation testing framework.  ExampleApp will be added as a demonstration of how the components can be used to control a simple conveyor system.
 
