@@ -41,11 +41,11 @@ public class StepCache extends Cleanable {
     private Predicate<Throwable> exceptionChecker = EXCEPTION_CHECKER_DEFAULT;
     private List<Executable> failingSteps = new ArrayList<>();
 
-    public synchronized int getNextStepCounter() {
+    public int getNextStepCounter() {
         return stepCounter++;
     }
 
-    public synchronized void addCheckStep(ExceptionCheckStep testStep) {
+    public void addCheckStep(ExceptionCheckStep testStep) {
         addOrdered(testStep);
         exceptionChecker = testStep::checkThrowable;
     }
@@ -54,7 +54,7 @@ public class StepCache extends Cleanable {
         return exceptionChecker;
     }
 
-    public synchronized void addOrdered(Executable testStep) {
+    public void addOrdered(Executable testStep) {
         validateExceptionAsLastStep(testStep);
         if (isMergeable(testStep)) {
             lastStep.merge(testStep);
@@ -64,7 +64,7 @@ public class StepCache extends Cleanable {
         lastStep = testStep;
     }
 
-    public synchronized void addOrdered(int idx, Executable testStep) {
+    public void addOrdered(int idx, Executable testStep) {
         validateExceptionAsLastStep(testStep);
         if (idx == orderedSteps.size()) {
             addOrdered(testStep);
@@ -77,21 +77,21 @@ public class StepCache extends Cleanable {
         Preconditions.checkState(exceptionChecker == EXCEPTION_CHECKER_DEFAULT, "You can not add another steps after Exception step. Invalid step [%s] ", testStep);
     }
 
-    public synchronized void clearOrderedSteps() {
+    public void clearOrderedSteps() {
         orderedSteps.clear();
         lastStep = null;
     }
 
-    public synchronized void clearUnorderedSteps() {
+    public void clearUnorderedSteps() {
         unorderedSteps.clear();
         allUnorderedStepNames.clear();
     }
 
-    public synchronized ImmutableList<Executable> getOrderedStepsView() {
+    public ImmutableList<Executable> getOrderedStepsView() {
         return ImmutableList.copyOf(orderedSteps);
     }
 
-    public synchronized void addFinalStep(Executable testStep) {
+    public void addFinalStep(Executable testStep) {
         finalSteps.add(testStep);
     }
 
@@ -99,22 +99,22 @@ public class StepCache extends Cleanable {
         return finalSteps;
     }
 
-    public synchronized Executable removeLastStep() {
+    public Executable removeLastStep() {
         LinkedList<Executable> list = orderedSteps;
         Executable removedSteps = list.removeLast();
         lastStep = list.getLast();
         return removedSteps;
     }
 
-    private synchronized boolean isMergeable(Executable testStep) {
+    private boolean isMergeable(Executable testStep) {
         return testStep.isMergeable() && lastStep != null && lastStep.isMergeable();
     }
 
-    public synchronized boolean isUnorderedStepFinished(String name) {
+    public boolean isUnorderedStepFinished(String name) {
         return !unorderedSteps.containsKey(name);
     }
 
-    public synchronized String getRandomUnorderedStepName() {
+    public String getRandomUnorderedStepName() {
         String name = String.valueOf(System.nanoTime());
         while (unorderedSteps.containsKey(name)) {
             name = String.valueOf(System.nanoTime());
@@ -122,7 +122,7 @@ public class StepCache extends Cleanable {
         return name;
     }
 
-    public synchronized void addUnordered(String name, Executable testStep) {
+    public void addUnordered(String name, Executable testStep) {
         allUnorderedStepNames.add(name);
         unorderedSteps.put(name, testStep);
     }
@@ -135,21 +135,21 @@ public class StepCache extends Cleanable {
         return allUnorderedStepNames.contains(name);
     }
 
-    public synchronized void removeAndCancel(String name) {
+    public void removeAndCancel(String name) {
         Preconditions.checkState(unorderedSteps.containsKey(name),
                 "Tried to remove unordered steps with name '%s', but didn't find one. unorderedSteps: %s", name, unorderedSteps);
         removeAndCancelIfPresent(name);
     }
 
-    public synchronized void removeAndCancelIfPresent(String name) {
+    public void removeAndCancelIfPresent(String name) {
         unorderedSteps.removeAll(name).stream().filter(step -> step instanceof Cancelable).forEach(step -> ((Cancelable) step).cancel());
     }
 
-    public synchronized Collection<Executable> getUnorderedSteps() {
+    public Collection<Executable> getUnorderedSteps() {
         return unorderedSteps.values();
     }
 
-    public synchronized boolean isFinished() {
+    public boolean isFinished() {
         for (Executable unorderedStep : unorderedSteps.values()) {
             if (unorderedStep.isRequired() && !unorderedStep.isFinished()) {
                 return false;
@@ -158,7 +158,7 @@ public class StepCache extends Cleanable {
         return orderedSteps.isEmpty();
     }
 
-    public synchronized Executable getUnfinishedUnorderedStep() {
+    public Executable getUnfinishedUnorderedStep() {
         for (Executable unorderedStep : unorderedSteps.values()) {
             if (unorderedStep.isRequired() && !unorderedStep.isFinished()) {
                 return unorderedStep;
@@ -168,7 +168,7 @@ public class StepCache extends Cleanable {
     }
 
     @Override
-    public synchronized void clean() {
+    public void clean() {
         orderedSteps = new LinkedList<>();
         unorderedSteps = LinkedHashMultimap.create();
         allUnorderedStepNames.clear();
@@ -177,11 +177,11 @@ public class StepCache extends Cleanable {
         exceptionChecker = EXCEPTION_CHECKER_DEFAULT;
     }
 
-    public synchronized Executable getNextStep() {
+    public Executable getNextStep() {
         return orderedSteps.poll();
     }
 
-    public synchronized Executable peekNextStep() {
+    public Executable peekNextStep() {
         return orderedSteps.peek();
     }
 
