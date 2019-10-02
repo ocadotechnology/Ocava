@@ -57,6 +57,15 @@ public class TimeThenSteps {
         });
     }
 
+    public void waitForDuration(StepFuture<Double> duration) {
+        stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
+            @Override
+            protected double time() {
+                return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + duration.get();
+            }
+        });
+    }
+
     /**
      * Asserts that the specified duration has not yet passed at the time this step executes.
      * The provided time is compared with the elapsed time since the simulation started. (see

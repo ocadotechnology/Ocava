@@ -41,6 +41,15 @@ class FixRequiredWithFailingStepWithExpectedFailure extends AbstractFrameworkTes
     }
 
     /**
+     * Check when an execute step would fail
+     */
+    @Test
+    void failingExecuteStep() {
+        when.simStarts();
+        then.testEvent.failingStep().executeStep(true);
+    }
+
+    /**
      * Validate that having multiple failingSteps works
      */
     @Test

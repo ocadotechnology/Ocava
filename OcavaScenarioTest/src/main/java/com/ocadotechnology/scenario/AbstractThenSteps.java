@@ -19,9 +19,11 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
+import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType.Type;
 
 /**
  * An abstract class which should be extended by each distinct set of then conditions that need to be implemented as
@@ -29,7 +31,7 @@ import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
  * the {@link AbstractThenSteps#unordered}, {@link AbstractThenSteps#never} and {@link AbstractThenSteps#within} methods
  */
 public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
-    protected final StepManager stepManager;
+    private final StepManager stepManager;
     private final CheckStepExecutionType checkStepExecutionType;
     private final NotificationCache notificationCache;
     /** Boolean flag for if this Then step is expected to fail */
@@ -119,6 +121,16 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
         } else {
             stepManager.add(checkStep, checkStepExecutionType);
         }
+    }
+
+    protected void addExecuteStep(Runnable runnable) {
+        Preconditions.checkState(checkStepExecutionType.getType() == Type.ORDERED, "Execute steps must be ORDERED.  Remove any within, unordered or never modification method calls from this line.");
+
+        ExecuteStep step = new SimpleExecuteStep(runnable);
+        if (isFailingStep) {
+            stepManager.stepsCache.addFailingStep(step);
+        }
+        stepManager.add(step);
     }
 
     public void notificationsReceived(ImmutableSet<Class<? extends Notification>> notifications) {

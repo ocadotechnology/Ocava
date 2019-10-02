@@ -15,15 +15,15 @@
  */
 package com.ocadotechnology.scenario;
 
-public abstract class AbstractWhenSteps {
+public class SimpleExecuteStep extends ExecuteStep {
+    private final Runnable runnable;
 
-    private StepManager stepManager;
-
-    public AbstractWhenSteps(StepManager stepManager) {
-        this.stepManager = stepManager;
+    public SimpleExecuteStep(Runnable runnable) {
+        this.runnable = runnable;
     }
 
-    protected void addExecuteStep(Runnable r) {
-        stepManager.addExecuteStep(r);
+    @Override
+    protected void executeStep() {
+        runnable.run();
     }
 }

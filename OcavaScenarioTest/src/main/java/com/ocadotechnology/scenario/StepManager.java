@@ -88,12 +88,7 @@ public class StepManager {
     }
 
     public void addExecuteStep(Runnable r) {
-        add(new ExecuteStep() {
-            @Override
-            protected void executeStep() {
-                r.run();
-            }
-        });
+        add(new SimpleExecuteStep(r));
     }
 
     public void add(PeriodicExecuteStep periodicExecuteStep) {

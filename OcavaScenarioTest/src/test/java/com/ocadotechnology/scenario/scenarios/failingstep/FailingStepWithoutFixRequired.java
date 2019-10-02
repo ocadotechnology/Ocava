@@ -67,4 +67,22 @@ class FailingStepWithoutFixRequired extends AbstractFrameworkTestStory {
         then.testEvent.failingStep().occurs("first");
         then.testEvent.occurs("second");
     }
+
+    /**
+     * Check when an execute step would fail
+     */
+    @Test
+    void executeStepWouldFailFailingTest() {
+        when.simStarts();
+        then.testEvent.failingStep().executeStep(true);
+    }
+
+    /**
+     * Check when a marked execute step would pass
+     */
+    @Test
+    void executeStepWouldPassFailingTest() {
+        when.simStarts();
+        then.testEvent.failingStep().executeStep(false);
+    }
 }

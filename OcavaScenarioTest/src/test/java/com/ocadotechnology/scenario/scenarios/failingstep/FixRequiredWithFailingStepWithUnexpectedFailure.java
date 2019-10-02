@@ -32,14 +32,15 @@ import com.ocadotechnology.scenario.Story;
 @FixRequired("failing step with fix required will pass")
 @Story
 public class FixRequiredWithFailingStepWithUnexpectedFailure extends AbstractFrameworkTestStory {
+    private String failurePrefix = "Missing step: ";
 
     @Override
     public void executeTestSteps() {
-        IllegalStateException e = Assertions.assertThrows(
-                IllegalStateException.class,
+        Throwable e = Assertions.assertThrows(
+                Throwable.class,
                 super::executeTestSteps,
                 "No error thrown");
-        Assertions.assertTrue(e.getMessage().contains("Missing step: "));
+        Assertions.assertTrue(e.getMessage().startsWith(failurePrefix));
     }
 
     /**
@@ -51,6 +52,17 @@ public class FixRequiredWithFailingStepWithUnexpectedFailure extends AbstractFra
         when.testEvent.scheduled(1, "first");
         then.testEvent.failingStep().occurs("first");
         then.testEvent.occurs("second");
+    }
+
+    /**
+     * Check when an execute step would fail
+     */
+    @Test
+    void passingExecuteStep() {
+        failurePrefix = "Test setup requires a failure";
+        when.simStarts();
+        then.testEvent.failingStep().executeStep(false);
+        then.testEvent.executeStep(true);
     }
 
     /**

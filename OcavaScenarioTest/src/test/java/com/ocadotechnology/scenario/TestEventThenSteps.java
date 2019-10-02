@@ -44,4 +44,8 @@ public class TestEventThenSteps extends AbstractThenSteps<TestEventThenSteps> {
             return true;
         });
     }
+
+    public void executeStep(boolean shouldFail) {
+        addExecuteStep(() -> Assertions.assertFalse(shouldFail, "Test setup requires a failure"));
+    }
 }

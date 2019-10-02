@@ -52,6 +52,15 @@ public class FixRequiredWithFailingStepWithNoFailure extends AbstractFrameworkTe
     }
 
     /**
+     * Check when an execute step would fail
+     */
+    @Test
+    void executeStepPasses() {
+        when.simStarts();
+        then.testEvent.failingStep().executeStep(false);
+    }
+
+    /**
      * Validate that failing step works with never, when the never violated
      */
 
