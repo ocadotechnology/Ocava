@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
@@ -26,6 +27,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +42,7 @@ import com.ocadotechnology.validation.Failer;
 public class ExecutorEventScheduler extends TypedEventScheduler {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorEventScheduler.class);
 
-    private static final DummyScheduledFuture DUMMY_FUTURE = new DummyScheduledFuture();
+    private static final PlaceholderScheduledFuture PLACEHOLDER_FUTURE = new PlaceholderScheduledFuture();
 
     private final TimeProvider timeProvider;
 
@@ -107,12 +110,12 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
     private Cancelable doAt(double eventTime, double now, Runnable r, String description, boolean isDaemon) {
         Event event = new Event(eventTime, description, r, this, isDaemon);
         try {
-            // NOTE - The scheduled event can complete before we've put a Future in eventsMap, so we first put a dummy future then replace it (if present, atomic operation)
-            eventsMap.put(event, DUMMY_FUTURE);
+            // NOTE - The scheduled event can complete before we've put a Future in eventsMap, so we first put a placeholder future then replace it (if present, atomic operation)
+            eventsMap.put(event, PLACEHOLDER_FUTURE);
             ScheduledFuture<?> future = executor.schedule(() -> executeEvent(event), (long) (event.time - now), TimeUnit.MILLISECONDS);
-            eventsMap.replace(event, DUMMY_FUTURE, future);
+            eventsMap.replace(event, PLACEHOLDER_FUTURE, future);
         } catch (RejectedExecutionException e) {
-            eventsMap.remove(event, DUMMY_FUTURE);
+            eventsMap.remove(event, PLACEHOLDER_FUTURE);
             if (!executor.isShutdown() && failed.compareAndSet(false, true)) {
                 logger.error("Failed to schedule event [{}]", event, e);
             }
@@ -203,4 +206,47 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
     public void registerOnShutDown(Runnable onShutDown) {
         onShutDowns.add(onShutDown);
     }
+
+    @ParametersAreNonnullByDefault
+    private static class PlaceholderScheduledFuture implements ScheduledFuture<Void> {
+
+        @Override
+        public long getDelay(TimeUnit unit) {
+            return 0;
+        }
+
+        /**
+         * This object is only ever placed into a ConcurrentHashMap as a value and so compareTo is never called
+         */
+        @Override
+        public int compareTo(Delayed o) {
+            throw new UnsupportedOperationException("compareTo should never be called for this placeholder class");
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public Void get() {
+            return null;
+        }
+
+        @Override
+        public Void get(long timeout, TimeUnit unit) {
+            return null;
+        }
+    }
 }
+
