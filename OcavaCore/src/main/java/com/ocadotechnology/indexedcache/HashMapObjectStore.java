@@ -47,7 +47,6 @@ public class HashMapObjectStore<C extends Identified<? extends I>, I> implements
 
     @Override
     public void addAll(ImmutableCollection<C> newObjects) throws CacheUpdateException {
-        snapshot = null;
         ImmutableList<CacheMismatch<C>> clashingObjects = newObjects.stream()
                 .map(o -> applyChange(null, o))
                 .filter(Objects::nonNull)
@@ -55,13 +54,15 @@ public class HashMapObjectStore<C extends Identified<? extends I>, I> implements
         if (!clashingObjects.isEmpty()) {
             newObjects.forEach(o -> rollback(null, o)); //rollback successful changes
             clashingObjects.forEach(m -> rollback(m.presentObject, m.expectedObject)); //rollback clashes
-            throw new CacheUpdateException("The following objects with clashing ids were already found in the map: " + clashingObjects.stream().map(c -> c.presentObject).collect(Collectors.toList()));
+            throw new CacheUpdateException("The following objects with clashing IDs were already found in the map: " + clashingObjects.stream().map(c -> c.presentObject).collect(Collectors.toList()));
+        }
+        if (!newObjects.isEmpty()) {
+            snapshot = null;
         }
     }
 
     @Override
     public void updateAll(ImmutableCollection<Change<C>> changes) throws CacheUpdateException {
-        snapshot = null;
         ImmutableList<CacheMismatch<C>> clashingObjects = changes.stream()
                 .map(c -> applyChange(c.originalObject, c.newObject))
                 .filter(Objects::nonNull)
@@ -71,26 +72,29 @@ public class HashMapObjectStore<C extends Identified<? extends I>, I> implements
             clashingObjects.forEach(m -> rollback(m.presentObject, m.expectedObject)); //rollback clashes
             throw new CacheUpdateException("The following objects in the cache did not match the expectation given in the updates: " + clashingObjects);
         }
+        if (!changes.isEmpty()) {
+            snapshot = null;
+        }
     }
 
     @Override
     public void update(@Nullable C expectedObject, @Nullable C newObject) throws CacheUpdateException {
-        snapshot = null;
         CacheMismatch<C> mismatch = applyChange(expectedObject, newObject);
         if (mismatch != null) {
             rollback(mismatch.presentObject, mismatch.expectedObject);
             throw new CacheUpdateException("expectedObject was " + mismatch.expectedObject + ", but found different object in cache: " + mismatch.presentObject);
         }
+        snapshot = null;
     }
 
     @Override
     public void add(C newObject) throws CacheUpdateException {
-        snapshot = null;
         CacheMismatch<C> mismatch = applyChange(null, newObject);
         if (mismatch != null) {
             rollback(mismatch.presentObject, mismatch.expectedObject);
-            throw new CacheUpdateException("Object " + mismatch.presentObject + " with clashing Id was already found in the map.");
+            throw new CacheUpdateException("Object " + mismatch.presentObject + " with clashing ID was already found in the map.");
         }
+        snapshot = null;
     }
 
     private @CheckForNull CacheMismatch<C> applyChange(C expectedObject, @Nullable C newObject) {
@@ -119,24 +123,26 @@ public class HashMapObjectStore<C extends Identified<? extends I>, I> implements
 
     @Override
     public ImmutableCollection<C> deleteAll(ImmutableCollection<Identity<? extends I>> ids) throws CacheUpdateException {
-        snapshot = null;
         ImmutableMap<Identity<? extends I>, C> oldObjects = ids.stream().map(objects::remove)
                 .filter(Objects::nonNull)
                 .collect(ImmutableMap.toImmutableMap(Identified::getId, o -> o));
         if (!oldObjects.keySet().containsAll(ids)) {
             oldObjects.forEach(objects::put); //rollback
-            throw new CacheUpdateException("No object(s) in cache with Id(s) " + ids.stream().filter(id -> !oldObjects.containsKey(id)).collect(Collectors.toList()));
+            throw new CacheUpdateException("No object(s) in cache with ID(s) " + ids.stream().filter(id -> !oldObjects.containsKey(id)).collect(Collectors.toList()));
+        }
+        if (!ids.isEmpty()) {
+            snapshot = null;
         }
         return oldObjects.values();
     }
 
     @Override
     public C delete(Identity<? extends I> id) throws CacheUpdateException {
-        snapshot = null;
         C oldObject = objects.remove(id);
         if (oldObject == null) {
-            throw new CacheUpdateException("No object in cache with Id " + id);
+            throw new CacheUpdateException("No object in cache with ID " + id);
         }
+        snapshot = null;
         return oldObject;
     }
 

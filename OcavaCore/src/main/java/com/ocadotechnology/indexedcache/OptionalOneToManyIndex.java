@@ -82,19 +82,21 @@ public final class OptionalOneToManyIndex<R, C extends Identified<?>> extends Ab
 
     @Override
     protected void remove(C object) {
-        snapshot = null;
         function.apply(object).ifPresent(r -> {
             Set<C> rs = indexValues.get(r);
             Preconditions.checkState(rs.remove(object));
             if (rs.isEmpty()) {
                 indexValues.remove(r);
             }
+            snapshot = null;
         });
     }
 
     protected void add(C object) {
-        snapshot = null;
-        function.apply(object).ifPresent(r -> indexValues.computeIfAbsent(r, list -> new LinkedHashSet<>()).add(object));
+        function.apply(object).ifPresent(r -> {
+            indexValues.computeIfAbsent(r, list -> new LinkedHashSet<>()).add(object);
+            snapshot = null;
+        });
     }
 
     public ImmutableList<C> getCopy(R r) {

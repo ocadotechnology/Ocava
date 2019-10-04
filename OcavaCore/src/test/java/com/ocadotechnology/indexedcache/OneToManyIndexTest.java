@@ -67,108 +67,154 @@ class OneToManyIndexTest {
             index = addIndexToCache(cache);
         }
 
-        @Test
-        void putOrUpdate_whenFunctionReturnsNull_thenThrowException() {
-            assertThatThrownBy(() -> cache.add(new TestState(Id.create(1), null)))
-                    .isInstanceOf(NullPointerException.class);
+        /**
+         * Black-box tests which verify the behaviour of a OneToManyIndex as defined by the public API.
+         */
+        @Nested
+        class BehaviourTests {
+            @Test
+            void add_whenFunctionReturnsNull_thenThrowException() {
+                assertThatThrownBy(() -> cache.add(new TestState(Id.create(1), null)))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
+            void add_whenMultipleStatesHaveSameLocation_thenAllStatesReturnedInStreamOfIndexForLocation() {
+                ImmutableSet<TestState> states = ImmutableSet.of(
+                        new TestState(Id.create(1), Coordinate.ORIGIN),
+                        new TestState(Id.create(2), Coordinate.ORIGIN),
+                        new TestState(Id.create(3), Coordinate.ORIGIN));
+
+                cache.addAll(states);
+                assertThat(index.stream(Coordinate.ORIGIN))
+                        .containsExactlyElementsOf(states);
+            }
+
+            @Test
+            void delete_whenStateIsRemoved_thenItIsRemovedFromIndex() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+                assertThat(index.stream(Coordinate.ORIGIN)).first().isEqualTo(testState);
+
+                cache.delete(testState.getId());
+                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+            }
+
+            @Test
+            void deleteAll_whenMultipleStatesAreRemoved_thenTheyAreAllRemovedFromIndex() {
+                ImmutableSet<TestState> testStates = ImmutableSet.of(
+                        new TestState(Id.create(1), Coordinate.ORIGIN),
+                        new TestState(Id.create(2), Coordinate.ORIGIN),
+                        new TestState(Id.create(3), Coordinate.ORIGIN));
+                cache.addAll(testStates);
+                assertThat(index.stream(Coordinate.ORIGIN))
+                        .containsExactlyElementsOf(testStates);
+
+                cache.deleteAll(testStates.stream().map(TestState::getId).collect(ImmutableSet.toImmutableSet()));
+                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+            }
+
+            @Test
+            void clear_whenStatesAreCleared_thenTheyAreClearedFromIndex() {
+                ImmutableSet<TestState> testStates = ImmutableSet.of(
+                        new TestState(Id.create(1), Coordinate.ORIGIN),
+                        new TestState(Id.create(2), Coordinate.ORIGIN),
+                        new TestState(Id.create(3), Coordinate.ORIGIN));
+                cache.addAll(testStates);
+                assertThat(index.stream(Coordinate.ORIGIN))
+                        .containsExactlyElementsOf(testStates);
+
+                cache.clear();
+                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+            }
+
+            @Test
+            void snapshot_whenIndexIsEmpty_returnsEmptySnapshot() {
+                assertThat(index.snapshot()).isEqualTo(ImmutableMultimap.of());
+            }
+
+            @Test
+            void snapshot_whenNoChangesToCache_returnsSnapshotWithSameContent() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
+
+                assertThat(firstSnapshot).isEqualTo(secondSnapshot);
+            }
+
+            @Test
+            void snapshot_whenIndexAddedTo_returnsSnapshotWithThatElement() {
+                index.snapshot();  // So call below is not first call
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+
+                assertThat(index.snapshot()).isEqualTo(ImmutableMultimap.of(testState.getLocation(), testState));
+            }
+
+            @Test
+            void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+                index.snapshot();  // So call below is not first call
+
+                cache.delete(stateOne.getId());
+
+                assertThat(index.snapshot()).isEqualTo(ImmutableMultimap.of(stateTwo.getLocation(), stateTwo));
+            }
         }
 
-        @Test
-        void putOrUpdate_whenMultipleStatesHaveSameLocation_thenAllStatesReturnedInStreamOfIndexForLocation() {
-            ImmutableSet<TestState> states = ImmutableSet.of(
-                    new TestState(Id.create(1), Coordinate.ORIGIN),
-                    new TestState(Id.create(2), Coordinate.ORIGIN),
-                    new TestState(Id.create(3), Coordinate.ORIGIN));
+        /**
+         * White-box tests which verify implementation details of OneToManyIndex that do not form part of the public API.
+         * The behaviours verified by these tests are subject to change and should not be relied upon by users of the
+         * OneToManyIndex class.
+         */
+        @Nested
+        class ImplementationTests {
+            @Test
+            void snapshot_whenNoChangesToEmptyCache_thenSameObjectReturned() {
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
 
-            cache.addAll(states);
-            assertThat(index.stream(Coordinate.ORIGIN))
-                    .containsExactlyElementsOf(states);
-        }
+                assertThat(firstSnapshot).isSameAs(secondSnapshot);
+            }
 
-        @Test
-        void remove_whenStateIsRemoved_thenItIsRemovedFromIndex() {
-            TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
-            cache.add(testState);
-            assertThat(index.stream(Coordinate.ORIGIN)).first().isEqualTo(testState);
+            @Test
+            void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
 
-            cache.delete(testState.getId());
-            assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
-        }
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
 
-        @Test
-        void remove_whenMultipleStatesAreRemoved_thenTheyAreAllRemovedFromIndex() {
-            ImmutableSet<TestState> testStates = ImmutableSet.of(
-                    new TestState(Id.create(1), Coordinate.ORIGIN),
-                    new TestState(Id.create(2), Coordinate.ORIGIN),
-                    new TestState(Id.create(3), Coordinate.ORIGIN));
-            cache.addAll(testStates);
-            assertThat(index.stream(Coordinate.ORIGIN))
-                    .containsExactlyElementsOf(testStates);
+                assertThat(firstSnapshot).isSameAs(secondSnapshot);
+            }
 
-            cache.deleteAll(testStates.stream().map(TestState::getId).collect(ImmutableSet.toImmutableSet()));
-            assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
-        }
+            @Test
+            void snapshot_whenIndexAddedTo_newObjectReturned() {
+                ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
 
-        @Test
-        void clear_whenStatesAreCleared_thenTheyAreClearedFromIndex() {
-            ImmutableSet<TestState> testStates = ImmutableSet.of(
-                    new TestState(Id.create(1), Coordinate.ORIGIN),
-                    new TestState(Id.create(2), Coordinate.ORIGIN),
-                    new TestState(Id.create(3), Coordinate.ORIGIN));
-            cache.addAll(testStates);
-            assertThat(index.stream(Coordinate.ORIGIN))
-                    .containsExactlyElementsOf(testStates);
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+                Object secondSnapshot = index.snapshot();
 
-            cache.clear();
-            assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
-        }
+                assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+            }
 
-        @Test
-        void snapshot_whenEmpty_returnsEmptySnapshot() {
-            ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
+            @Test
+            void snapshot_whenIndexRemovedFrom_newObjectReturned() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
 
-            assertThat(firstSnapshot.keySet()).isEmpty();
-        }
+                Object firstSnapshot = index.snapshot();
 
-        @Test
-        void snapshot_whenValuePresent_returnsSnapshotWithSingleElement() {
-            TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
-            cache.add(testState);
-            ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
+                cache.delete(testState.getId());
 
-            assertThat(firstSnapshot.values()).containsOnly(testState);
-        }
-
-        @Test
-        void snapshot_whenNoChangesToCache_thenSameObjectReturned() {
-            ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
-            ImmutableMultimap<Coordinate, TestState> secondSnapshot = index.snapshot();
-
-            assertThat(firstSnapshot).isSameAs(secondSnapshot);
-        }
-
-        @Test
-        void snapshot_whenIndexAddedTo_newObjectReturned() {
-            ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
-
-            TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
-            cache.add(testState);
-            ImmutableMultimap<Coordinate, TestState> secondSnapshot = index.snapshot();
-
-            assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
-        }
-
-        @Test
-        void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-            TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
-            cache.add(testState);
-
-            ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
-
-            cache.delete(testState.getId());
-
-            ImmutableMultimap<Coordinate, TestState> secondSnapshot = index.snapshot();
-            assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+                Object secondSnapshot = index.snapshot();
+                assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+            }
         }
     }
 

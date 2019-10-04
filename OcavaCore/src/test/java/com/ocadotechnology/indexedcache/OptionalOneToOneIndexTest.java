@@ -25,41 +25,41 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
-@DisplayName("An OptionalOneToManyIndex")
-class OptionalOneToManyIndexTest {
+@DisplayName("An OptionalOneToOneIndex")
+class OptionalOneToOneIndexTest {
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOptionalOneToManyIndex(TestState::getLocation);
+        OptionalOneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+            return cache.addOptionalOneToOneIndex(TestState::getLocation);
         }
     }
 
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OptionalOneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
-            // DO NOT inline indexFunction, as that will not fail to compile should addOptionalOneToManyIndex() require a type
+            // DO NOT inline indexFunction, as that will not fail to compile should addOptionalOneToOneIndex() require a type
             // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
             // to automatic type coercion of the lambda.
             Function<LocationState, Optional<Coordinate>> indexFunction = LocationState::getLocation;
-            return cache.addOptionalOneToManyIndex(indexFunction);
+            return cache.addOptionalOneToOneIndex(indexFunction);
         }
     }
 
     private abstract static class IndexTests {
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OptionalOneToManyIndex<Coordinate, TestState> index;
+        private OptionalOneToOneIndex<Coordinate, TestState> index;
 
-        abstract OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+        abstract OptionalOneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
 
         @BeforeEach
         void init() {
@@ -68,14 +68,14 @@ class OptionalOneToManyIndexTest {
         }
 
         /**
-         * Black-box tests which verify the behaviour of an OptionalOneToManyIndex as defined by the public API.
+         * Black-box tests which verify the behaviour of an OptionalOneToOneIndex as defined by the public API.
          */
         @Nested
         class BehaviourTests {
             @Test
             void add_whenOptionalIsEmpty_thenStateNotIndexed() {
                 cache.add(new TestState(Id.create(1), Optional.empty()));
-                assertThat(index.streamKeys().mapToInt(index::count).sum()).isEqualTo(0);
+                assertThat(index.streamKeys().count()).isEqualTo(0);
             }
 
             @Test
@@ -83,12 +83,12 @@ class OptionalOneToManyIndexTest {
                 TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
                 cache.add(testState);
 
-                assertThat(index.stream(Coordinate.ORIGIN)).first().isEqualTo(testState);
+                assertThat(index.getOrNull(Coordinate.ORIGIN)).isEqualTo(testState);
             }
 
             @Test
             void snapshot_whenIndexIsEmpty_returnsEmptySnapshot() {
-                assertThat(index.snapshot()).isEqualTo(ImmutableMultimap.of());
+                assertThat(index.snapshot()).isEmpty();
             }
 
             @Test
@@ -96,7 +96,7 @@ class OptionalOneToManyIndexTest {
                 TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
                 cache.add(testState);
 
-                assertThat(index.snapshot().values()).containsOnly(testState);
+                assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(Coordinate.ORIGIN, testState));
             }
 
             @Test
@@ -105,7 +105,7 @@ class OptionalOneToManyIndexTest {
                 TestState stateTwo = new TestState(Id.create(2), Optional.of(Coordinate.ORIGIN));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-                assertThat(index.snapshot().values()).containsOnly(stateTwo);
+                assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(Coordinate.ORIGIN, stateTwo));
             }
 
             @Test
@@ -117,14 +117,14 @@ class OptionalOneToManyIndexTest {
 
                 cache.delete(stateOne.getId());
 
-                assertThat(index.snapshot().values()).containsOnly(stateTwo);
+                assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(stateTwo.getLocation().get(), stateTwo));
             }
         }
 
         /**
-         * White-box tests which verify implementation details of OptionalOneToManyIndex that do not form part of the
+         * White-box tests which verify implementation details of OptionalOneToOneIndex that do not form part of the
          * public API. The behaviours verified by these tests are subject to change and should not be relied upon by
-         * users of the OptionalOneToManyIndex class.
+         * users of the OptionalOneToOneIndex class.
          */
         @Nested
         class ImplementationTests {
@@ -173,7 +173,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
-                // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
+                // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMap.of()
                 TestState testState1 = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
                 TestState testState2 = new TestState(Id.create(2), Optional.empty());
                 cache.add(testState1);
@@ -188,7 +188,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
-                // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
+                // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMap.of()
                 TestState testState1 = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
                 TestState testState2 = new TestState(Id.create(2), Optional.empty());
                 cache.add(testState1);

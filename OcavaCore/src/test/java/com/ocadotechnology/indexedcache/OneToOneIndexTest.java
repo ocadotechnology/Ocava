@@ -26,6 +26,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
@@ -67,57 +68,151 @@ class OneToOneIndexTest {
             index = addIndexToCache(cache);
         }
 
-        @Test
-        void putOrUpdate_whenFunctionReturnsNull_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), null);
+        /**
+         * Black-box tests which verify the behaviour of a OneToOneIndex as defined by the public API.
+         */
+        @Nested
+        class BehaviourTests {
+            @Test
+            void add_whenFunctionReturnsNull_thenExceptionThrownOnAdd() {
+                TestState stateOne = new TestState(Id.create(1), null);
 
-            assertThatThrownBy(() -> cache.add(stateOne))
-                    .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> cache.add(stateOne))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
+            void add_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+
+                assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
+                assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
+            }
+
+            @Test
+            void addAll_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+
+                assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
+                        .isInstanceOf(IllegalStateException.class);
+            }
+
+            @Test
+            void addAll_whenTestStateMapsToCoordinateMappedToBySomeThingElse_thenExceptionThrownOnAdd() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 1));
+                TestState stateThree = new TestState(Id.create(3), Coordinate.create(0, 0));
+
+                assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
+                assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
+                        .isInstanceOf(IllegalStateException.class);
+            }
+
+            @Test
+            void addAll_whenLocationsAreSwappedTheyAreSwappedInIndex() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+
+                cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+
+                Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), Coordinate.create(1, 0)));
+                Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), Coordinate.create(0, 1)));
+
+                cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
+
+                assertThat(index.get(Coordinate.create(1, 0))).isEqualTo(stateOne);
+                assertThat(index.get(Coordinate.create(0, 1))).isEqualTo(stateTwo);
+            }
+
+            @Test
+            void snapshot_whenIndexIsEmpty_returnsEmptySnapshot() {
+                assertThat(index.snapshot()).isEmpty();
+            }
+
+            @Test
+            void snapshot_whenNoChangesToCache_returnsSnapshotWithSameContent() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
+
+                assertThat(firstSnapshot).isEqualTo(secondSnapshot);
+            }
+
+            @Test
+            void snapshot_whenIndexAddedTo_returnsSnapshotWithThatElement() {
+                index.snapshot();  // So call below is not first call
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+
+                assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(testState.getLocation(), testState));
+            }
+
+            @Test
+            void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
+                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+                index.snapshot();  // So call below is not first call
+
+                cache.delete(stateOne.getId());
+
+                assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(stateTwo.getLocation(), stateTwo));
+            }
         }
 
-        @Test
-        void putOrUpdate_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+        /**
+         * White-box tests which verify implementation details of OneToOneIndex that do not form part of the public API.
+         * The behaviours verified by these tests are subject to change and should not be relied upon by users of the
+         * OneToOneIndex class.
+         */
+        @Nested
+        class ImplementationTests {
+            @Test
+            void snapshot_whenNoChangesToEmptyCache_thenSameObjectReturned() {
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
 
-            assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
-            assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
-        }
+                assertThat(firstSnapshot).isSameAs(secondSnapshot);
+            }
 
-        @Test
-        void putOrUpdateAll_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+            @Test
+            void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
 
-            assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                    .isInstanceOf(IllegalStateException.class);
-        }
+                Object firstSnapshot = index.snapshot();
+                Object secondSnapshot = index.snapshot();
 
-        @Test
-        void putOrUpdateAll_whenTestStateMapsToCoordinateMappedToBySomeThingElse_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 1));
-            TestState stateThree = new TestState(Id.create(3), Coordinate.create(0, 0));
+                assertThat(firstSnapshot).isSameAs(secondSnapshot);
+            }
 
-            assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
-            assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
-                    .isInstanceOf(IllegalStateException.class);
-        }
+            @Test
+            void snapshot_whenIndexAddedTo_newObjectReturned() {
+                Object firstSnapshot = index.snapshot();
 
-        @Test
-        void putOrUpdateAll_whenLocationsAreSwappedTheyAreSwappedInIndex() {
-            TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
-            TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
+                Object secondSnapshot = index.snapshot();
 
-            cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+                assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+            }
 
-            Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), Coordinate.create(1, 0)));
-            Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), Coordinate.create(0, 1)));
+            @Test
+            void snapshot_whenIndexRemovedFrom_newObjectReturned() {
+                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                cache.add(testState);
 
-            cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
+                Object firstSnapshot = index.snapshot();
 
-            assertThat(index.get(Coordinate.create(1, 0))).isEqualTo(stateOne);
-            assertThat(index.get(Coordinate.create(0, 1))).isEqualTo(stateTwo);
+                cache.delete(testState.getId());
+
+                Object secondSnapshot = index.snapshot();
+                assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+            }
         }
     }
 

@@ -58,7 +58,6 @@ public final class OptionalOneToOneIndex<R, C extends Identified<?>> extends Abs
 
     @Override
     protected void remove(C object) {
-        snapshot = null;
         indexingFunction.apply(object).ifPresent(val -> {
             indexValues.remove(val);
             snapshot = null;
@@ -67,7 +66,6 @@ public final class OptionalOneToOneIndex<R, C extends Identified<?>> extends Abs
 
     @Override
     protected void add(C object) {
-        snapshot = null;
         Optional<R> optionalR = indexingFunction.apply(object);
         optionalR.ifPresent(r -> {
             C oldValue = indexValues.put(r, object);

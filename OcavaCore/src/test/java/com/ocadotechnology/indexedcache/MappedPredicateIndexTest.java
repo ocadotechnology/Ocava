@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 
 class MappedPredicateIndexTest {
@@ -63,56 +64,173 @@ class MappedPredicateIndexTest {
             mappedPredicateIndex = addIndexToCache(cache);
         }
 
-        @Test
-        void testAdd() {
-            cache.add(new TestState(Id.create(1), true, 1));
-            assertThat(mappedPredicateIndex.contains(1L)).isTrue();
+        /**
+         * Black-box tests which verify the behaviour of an MappedPredicateIndex as defined by the public API.
+         */
+        @Nested
+        class BehaviourTests {
+            @Test
+            void testAdd() {
+                cache.add(new TestState(Id.create(1), true, 1));
+                assertThat(mappedPredicateIndex.contains(1L)).isTrue();
+            }
+
+            @Test
+            void testUpdate() {
+                TestState firstState = new TestState(Id.create(1), true, 1);
+                TestState secondState = new TestState(Id.create(1), false, 1);
+                cache.add(firstState);
+                cache.update(firstState, secondState);
+                assertThat(mappedPredicateIndex.contains(1L)).isFalse();
+            }
+
+            @Test
+            void testStreamDistinctWhere() {
+                cache.add(new TestState(Id.create(1), true, 1));
+                cache.add(new TestState(Id.create(2), true, 2));
+                cache.add(new TestState(Id.create(3), false, 3));
+
+                Set<Long> where = mappedPredicateIndex.streamDistinctWhere().collect(Collectors.toSet());
+
+                assertThat(where).hasSize(2);
+                assertThat(where).containsOnly(1L, 2L);
+            }
+
+            @Test
+            void testStreamDistinctWhereNot() {
+                cache.add(new TestState(Id.create(1), true, 1));
+                cache.add(new TestState(Id.create(2), false, 2));
+                cache.add(new TestState(Id.create(3), false, 3));
+
+                Set<Long> whereNot = mappedPredicateIndex.streamDistinctWhereNot().collect(Collectors.toSet());
+
+                assertThat(whereNot).hasSize(2);
+                assertThat(whereNot).containsOnly(2L, 3L);
+            }
+
+            @Test
+            void testMultipleStatesMapToSameObject() {
+                TestState firstState = new TestState(Id.create(1), true, 1);
+                cache.add(firstState);
+                cache.add(new TestState(Id.create(2), true, 1));
+                assertThat(mappedPredicateIndex.streamNonDistinctWhere()).hasSize(2);
+                assertThat(mappedPredicateIndex.streamDistinctWhere()).hasSize(1);
+
+                cache.update(firstState, new TestState(Id.create(1), false, 1));
+
+                assertThat(mappedPredicateIndex.contains(1L)).isTrue();
+            }
+
+            @Test
+            void testSnapshotsWhenIndexIsEmpty() {
+                assertThat(mappedPredicateIndex.getDistinctWhere()).isEmpty();
+                assertThat(mappedPredicateIndex.getDistinctWhereNot()).isEmpty();
+            }
+
+            @Test
+            void testSnapshotsWhenIndexIsNonEmpty() {
+                TestState testState1 = new TestState(Id.create(1), true, 1);
+                TestState testState2 = new TestState(Id.create(2), false, 2);
+                cache.addAll(ImmutableSet.of(testState1, testState2));
+
+                assertThat(mappedPredicateIndex.getDistinctWhere()).containsOnly(1L);
+                assertThat(mappedPredicateIndex.getDistinctWhereNot()).containsOnly(2L);
+            }
+
+            @Test
+            void testSnapshotsWhenIndexRemovedFrom() {
+                TestState testState1 = new TestState(Id.create(1), true, 1);
+                TestState testState2 = new TestState(Id.create(2), true, 2);
+                TestState testState3 = new TestState(Id.create(3), false, 3);
+                TestState testState4 = new TestState(Id.create(4), false, 4);
+                cache.addAll(ImmutableSet.of(testState1, testState2, testState3, testState4));
+
+                // So calls below are not first calls
+                mappedPredicateIndex.getDistinctWhere();
+                mappedPredicateIndex.getDistinctWhereNot();
+
+                cache.delete(testState1.getId());
+                cache.delete(testState3.getId());
+
+                assertThat(mappedPredicateIndex.getDistinctWhere()).containsOnly(testState2.longProperty);
+                assertThat(mappedPredicateIndex.getDistinctWhereNot()).containsOnly(testState4.longProperty);
+            }
         }
+        
+        /**
+         * White-box tests which verify implementation details of MappedPredicateIndex that do not form part of the
+         * public API. The behaviours verified by these tests are subject to change and should not be relied upon by
+         * users of the MappedPredicateIndex class.
+         */
+        @Nested
+        class ImplementationTests {
+            private TestState testState1 = new TestState(Id.create(1), true, 1);
+            private TestState testState2 = new TestState(Id.create(2), false, 2);
 
-        @Test
-        void testUpdate() {
-            TestState firstState = new TestState(Id.create(1), true, 1);
-            TestState secondState = new TestState(Id.create(1), false, 1);
-            cache.add(firstState);
-            cache.update(firstState, secondState);
-            assertThat(mappedPredicateIndex.contains(1L)).isFalse();
-        }
+            Set<Long> firstWhereSnapshot = null;
+            Set<Long> firstWhereNotSnapshot = null;
 
-        @Test
-        void testStreamDistinctWhere() {
-            cache.add(new TestState(Id.create(1), true, 1));
-            cache.add(new TestState(Id.create(2), true, 2));
-            cache.add(new TestState(Id.create(3), false, 3));
+            @BeforeEach
+            void initialiseCache() {
+                // Ensure neither index is empty at start, to guarantee that tests will fail if one being tested is
+                // regenerated: ImmutableSet.empty() is a singleton, so regenerated instances will be the same object
+                TestState testState1 = new TestState(Id.create(1), true, 1);
+                TestState testState2 = new TestState(Id.create(2), false, 2);
+                cache.add(testState1);
+                cache.add(testState2);
 
-            Set<Long> where = mappedPredicateIndex.streamDistinctWhere().collect(Collectors.toSet());
+                firstWhereSnapshot = mappedPredicateIndex.getDistinctWhere();
+                firstWhereNotSnapshot = mappedPredicateIndex.getDistinctWhereNot();
 
-            assertThat(where).hasSize(2);
-            assertThat(where).containsOnly(1L, 2L);
-        }
+                assertThat(firstWhereSnapshot).containsOnly(1L);
+                assertThat(firstWhereNotSnapshot).containsOnly(2L);
+            }
 
-        @Test
-        void testStreamDistinctWhereNot() {
-            cache.add(new TestState(Id.create(1), true, 1));
-            cache.add(new TestState(Id.create(2), false, 2));
-            cache.add(new TestState(Id.create(3), false, 3));
+            @Test
+            void testSnapshotsWhenPredicateHoldsForAddedObject() {
+                TestState testState3 = new TestState(Id.create(3), true, 3);
+                cache.add(testState3);
 
-            Set<Long> whereNot = mappedPredicateIndex.streamDistinctWhereNot().collect(Collectors.toSet());
+                Set<Long> secondWhereSnapshot = mappedPredicateIndex.getDistinctWhere();
+                Set<Long> secondWhereNotSnapshot = mappedPredicateIndex.getDistinctWhereNot();
 
-            assertThat(whereNot).hasSize(2);
-            assertThat(whereNot).containsOnly(2L, 3L);
-        }
+                assertThat(firstWhereSnapshot).isNotSameAs(secondWhereSnapshot);
+                assertThat(firstWhereNotSnapshot).isSameAs(secondWhereNotSnapshot);
+            }
 
-        @Test
-        void testMultipleStatesMapToSameObject() {
-            TestState firstState = new TestState(Id.create(1), true, 1);
-            cache.add(firstState);
-            cache.add(new TestState(Id.create(2), true, 1));
-            assertThat(mappedPredicateIndex.streamNonDistinctWhere()).hasSize(2);
-            assertThat(mappedPredicateIndex.streamDistinctWhere()).hasSize(1);
+            @Test
+            void testSnapshotsWhenPredicateDoesNotHoldForAddedObject() {
+                TestState testState3 = new TestState(Id.create(3), false, 3);
+                cache.add(testState3);
 
-            cache.update(firstState, new TestState(Id.create(1), false, 1));
+                Set<Long> secondWhereSnapshot = mappedPredicateIndex.getDistinctWhere();
+                Set<Long> secondWhereNotSnapshot = mappedPredicateIndex.getDistinctWhereNot();
 
-            assertThat(mappedPredicateIndex.contains(1L)).isTrue();
+                assertThat(firstWhereSnapshot).isSameAs(secondWhereSnapshot);
+                assertThat(firstWhereNotSnapshot).isNotSameAs(secondWhereNotSnapshot);
+            }
+
+            @Test
+            void testSnapshotsWhenPredicateHoldsForRemovedObject() {
+                cache.delete(testState1.getId());
+
+                Set<Long> secondWhereSnapshot = mappedPredicateIndex.getDistinctWhere();
+                Set<Long> secondWhereNotSnapshot = mappedPredicateIndex.getDistinctWhereNot();
+
+                assertThat(firstWhereSnapshot).isNotSameAs(secondWhereSnapshot);
+                assertThat(firstWhereNotSnapshot).isSameAs(secondWhereNotSnapshot);
+            }
+
+            @Test
+            void testSnapshotsWhenPredicateDoesNotHoldForRemovedObject() {
+                cache.delete(testState2.getId());
+
+                Set<Long> secondWhereSnapshot = mappedPredicateIndex.getDistinctWhere();
+                Set<Long> secondWhereNotSnapshot = mappedPredicateIndex.getDistinctWhereNot();
+
+                assertThat(firstWhereSnapshot).isSameAs(secondWhereSnapshot);
+                assertThat(firstWhereNotSnapshot).isNotSameAs(secondWhereNotSnapshot);
+            }
         }
     }
 }

@@ -43,24 +43,22 @@ public class MappedPredicateIndex<C extends Identified<?>, R> extends AbstractIn
 
     @Override
     protected void remove(C object) {
-        distinctWhereSnapshot = null;
-        distinctWhereNotSnapshot = null;
-
         if (predicate.test(object)) {
+            distinctWhereSnapshot = null;
             where.remove(mappingFunction.apply(object));
         } else {
+            distinctWhereNotSnapshot = null;
             whereNot.remove(mappingFunction.apply(object));
         }
     }
 
     @Override
     protected void add(C object) {
-        distinctWhereSnapshot = null;
-        distinctWhereNotSnapshot = null;
-
         if (predicate.test(object)) {
+            distinctWhereSnapshot = null;
             where.add(mappingFunction.apply(object));
         } else {
+            distinctWhereNotSnapshot = null;
             whereNot.add(mappingFunction.apply(object));
         }
     }
