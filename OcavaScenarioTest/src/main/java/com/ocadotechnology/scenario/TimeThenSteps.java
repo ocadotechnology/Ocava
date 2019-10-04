@@ -30,11 +30,11 @@ public class TimeThenSteps {
         this.scenarioNotificationListener = scenarioNotificationListener;
     }
 
-    public void waitUntil(long time, TimeUnit unit) {
+    public void waitUntil(double time, TimeUnit unit) {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
             protected double time() {
-                return scenarioSimulationApi.getSchedulerStartTime() + stepManager.getTimeUnit().convert(time, unit);
+                return scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
             }
         });
     }
@@ -48,11 +48,11 @@ public class TimeThenSteps {
         });
     }
 
-    public void waitForDuration(long duration, TimeUnit unit) {
+    public void waitForDuration(double duration, TimeUnit unit) {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
             protected double time() {
-                return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + stepManager.getTimeUnit().convert(duration, unit);
+                return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + convertToUnit(duration, unit, stepManager.getTimeUnit());
             }
         });
     }
@@ -71,11 +71,15 @@ public class TimeThenSteps {
      * The provided time is compared with the elapsed time since the simulation started. (see
      * {@link ScenarioSimulationApi#getSchedulerStartTime()})
      */
-    public void timeIsLessThan(long time, TimeUnit unit) {
+    public void timeIsLessThan(double time, TimeUnit unit) {
         stepManager.addExecuteStep(() -> {
-            double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + stepManager.getTimeUnit().convert(time, unit);
+            double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
             Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
         });
+    }
+
+    public static double convertToUnit(double magnitude, TimeUnit sourceUnit, TimeUnit targetUnit) {
+        return sourceUnit.toNanos(1) * magnitude / targetUnit.toNanos(1);
     }
 }

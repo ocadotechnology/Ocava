@@ -88,15 +88,16 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
      * within the specified duration from the time this step is executed.
      */
     public T within(Duration duration) {
-        return within(duration.toMillis(), TimeUnit.MILLISECONDS);
+        return within(duration.toNanos(), TimeUnit.NANOSECONDS);
     }
 
     /**
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
      * within the specified duration from the time this step is executed.
      */
-    public T within(long magnitude, TimeUnit timeUnit) {
-        return create(stepManager, notificationCache, CheckStepExecutionType.within(() -> stepManager.simulation.getEventScheduler(), stepManager.getTimeUnit().convert(magnitude, timeUnit)), isFailingStep);
+    public T within(double magnitude, TimeUnit timeUnit) {
+        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return create(stepManager, notificationCache, CheckStepExecutionType.within(() -> stepManager.simulation.getEventScheduler(), timeLimit), isFailingStep);
     }
 
     /**

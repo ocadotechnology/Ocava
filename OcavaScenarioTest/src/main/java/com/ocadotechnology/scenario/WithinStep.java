@@ -21,7 +21,7 @@ import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 
 class WithinStep<T> extends UnorderedCheckStep<T> {
-    WithinStep(CheckStep<T> checkStep, EventScheduler eventScheduler, long duration) {
+    WithinStep(CheckStep<T> checkStep, EventScheduler eventScheduler, double duration) {
         super(checkStep, true);
         eventScheduler.doIn(
                 duration,

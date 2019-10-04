@@ -47,8 +47,8 @@ public class StepsRunner extends Cleanable {
         this.simulation = simulation;
     }
 
-    public void setPostStepsRunTime(long duration, TimeUnit timeUnit) {
-        this.postStepsRunTime = simulation.getSchedulerTimeUnit().convert(duration, timeUnit);
+    public void setPostStepsRunTime(double duration, TimeUnit timeUnit) {
+        this.postStepsRunTime = TimeThenSteps.convertToUnit(duration, timeUnit, simulation.getSchedulerTimeUnit());
     }
 
     public void setWallClockTimeout(long duration, TimeUnit unit) {

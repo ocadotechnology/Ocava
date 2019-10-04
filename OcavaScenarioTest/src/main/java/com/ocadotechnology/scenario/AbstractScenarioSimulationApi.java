@@ -32,7 +32,7 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
     private boolean started = false;
 
     protected ImmutableMap<EventSchedulerType, EventScheduler> schedulers;
-    private long timeout = -1;
+    private double timeout = -1;
 
     @Override
     public boolean isStarted() {
@@ -45,9 +45,9 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
     }
 
     @Override
-    public void setDiscreteEventTimeout(long duration, TimeUnit unit) {
+    public void setDiscreteEventTimeout(double duration, TimeUnit unit) {
         Preconditions.checkState(!started, "Attempted to set timeout after startup");
-        timeout = getSchedulerTimeUnit().convert(duration, unit);
+        timeout = TimeThenSteps.convertToUnit(duration, unit, getSchedulerTimeUnit());
     }
 
     @Override

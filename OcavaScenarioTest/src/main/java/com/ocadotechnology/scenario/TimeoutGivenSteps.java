@@ -33,7 +33,7 @@ public class TimeoutGivenSteps {
      * Adds a time limit to the test which is checked against the scheduler time of the system.  By default this will be
      * implemented as a scheduled event on the scenario scheduler.
      */
-    public void addSimulationTimeout(long duration, TimeUnit unit) {
+    public void addSimulationTimeout(double duration, TimeUnit unit) {
         simulation.setDiscreteEventTimeout(duration, unit);
     }
 

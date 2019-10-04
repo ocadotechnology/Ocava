@@ -26,7 +26,7 @@ import com.ocadotechnology.event.scheduling.EventScheduler;
 public interface ScenarioSimulationApi {
     boolean isStarted();
     EventScheduler getEventScheduler();
-    void setDiscreteEventTimeout(long duration, TimeUnit unit);
+    void setDiscreteEventTimeout(double duration, TimeUnit unit);
     void start(ScenarioNotificationListener listener);
     double getSchedulerStartTime();
     TimeUnit getSchedulerTimeUnit();

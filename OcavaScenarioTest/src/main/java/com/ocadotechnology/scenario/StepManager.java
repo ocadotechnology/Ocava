@@ -158,7 +158,7 @@ public class StepManager {
             case NEVER:
                 return new NeverStep<>(testStep);
             case WITHIN:
-                return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDurationInMillis());
+                return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
             default:
                 throw Failer.fail("Unhandled Check step type %s", checkStepExecutionType.type);
         }
@@ -225,7 +225,7 @@ public class StepManager {
         private final String name;
         private final Type type;
         private final Supplier<EventScheduler> schedulerSupplier;
-        private final Long duration;
+        private final Double duration;
 
         /** Used to mark this check step as expecting to fail */
         private boolean isFailingStep;
@@ -245,16 +245,16 @@ public class StepManager {
         /**
          * The main constructor for creating a CheckStepExecutionType
          */
-        public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Long duration) {
+        public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Double duration) {
             this(name, type, schedulerSupplier, duration, false);
         }
 
         /**
          * Construct a CheckStepExecutionType, the failingStep argument is used to allow marking a step as expected failure,
          * this is normally only used by {@link #markFailingStep()}, other cases for constructing
-         * this class should make use of {@link #CheckStepExecutionType(String, Type, Supplier, Long)}
+         * this class should make use of {@link #CheckStepExecutionType(String, Type, Supplier, Double)}
          */
-        private CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Long duration, boolean failingStep) {
+        private CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Double duration, boolean failingStep) {
             this.name = name;
             this.type = type;
             this.schedulerSupplier = schedulerSupplier;
@@ -266,7 +266,7 @@ public class StepManager {
             return Preconditions.checkNotNull(schedulerSupplier, "SchedulerSupplier not provided.").get();
         }
 
-        public long getDurationInMillis() {
+        public double getDuration() {
             return Preconditions.checkNotNull(duration, "Duration not provided");
         }
 
@@ -294,7 +294,7 @@ public class StepManager {
             return never(nextId());
         }
 
-        public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, long duration) {
+        public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, double duration) {
             return new CheckStepExecutionType(nextId(), Type.WITHIN, schedulerSupplier, duration);
         }
 
