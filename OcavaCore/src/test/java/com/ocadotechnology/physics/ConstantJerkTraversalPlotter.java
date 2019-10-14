@@ -22,8 +22,6 @@ import com.ocadotechnology.validation.Failer;
 
 public class ConstantJerkTraversalPlotter {
     public static void main(String[] args) {
-        ConstantJerkSectionsFactory constantJerkSectionsFactory = new ConstantJerkSectionsFactory();
-
         double acceleration = 2.5E-6;
         double deceleration = -2E-6;
         double maxSpeed = 8E-3;
@@ -44,7 +42,7 @@ public class ConstantJerkTraversalPlotter {
                 jerkDecelerationUp,
                 jerkDecelerationDown);
 
-        Optional<ImmutableList<TraversalSection>> constantJerkSections = constantJerkSectionsFactory.maxAccelerationDecelerationAndSpeedReached(100d, vehicleMotionProperties);
+        Optional<ImmutableList<TraversalSection>> constantJerkSections = ConstantJerkSectionsFactory.maxAccelerationDecelerationAndSpeedReached(100d, vehicleMotionProperties);
         Traversal traversal = new Traversal(constantJerkSections.orElseThrow(Failer::valueExpected));
 
         System.out.println(traversal);

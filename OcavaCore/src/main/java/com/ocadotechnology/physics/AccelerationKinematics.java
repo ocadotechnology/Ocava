@@ -15,19 +15,22 @@
  */
 package com.ocadotechnology.physics;
 
-import java.io.Serializable;
+public class AccelerationKinematics {
 
-public class AccelerationKinematics implements Serializable {
-    private static final long serialVersionUID = 1L;
+    /**
+     * Don't instantiate this static utility class
+     */
+    private AccelerationKinematics() {
+    }
 
-    public double getTime(double u, double v, double a) {
+    public static double getTime(double u, double v, double a) {
         // v = u + a*t
         // v - u = a*t
         // (v - u)/a = t
         return (v - u) / a;
     }
 
-    public double getDistance(double u, double v, double t) {
+    public static double getDistance(double u, double v, double t) {
         return ((u + v) / 2) * t;
     }
 }

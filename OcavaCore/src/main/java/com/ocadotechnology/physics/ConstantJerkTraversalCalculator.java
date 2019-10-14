@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.physics;
 
-import java.io.Serializable;
 import java.util.Optional;
 import java.util.function.DoubleFunction;
 import java.util.function.ToDoubleFunction;
@@ -23,13 +22,12 @@ import java.util.function.ToDoubleFunction;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.physics.utils.BinarySearch;
 
-public class ConstantJerkTraversalCalculator implements TraversalCalculator, Serializable {
+public class ConstantJerkTraversalCalculator implements TraversalCalculator {
     private static final double ERROR_MARGIN = 0.000000001;
 
-    private final ConstantJerkSectionsFactory sectionsFactory;
+    public static final ConstantJerkTraversalCalculator INSTANCE = new ConstantJerkTraversalCalculator();
 
-    public ConstantJerkTraversalCalculator() {
-        sectionsFactory = new ConstantJerkSectionsFactory();
+    private ConstantJerkTraversalCalculator() {
     }
 
     public Traversal create(double distance, VehicleMotionProperties vehicleProperties) {
@@ -37,22 +35,22 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
             return Traversal.EMPTY_TRAVERSAL;
         }
 
-        Optional<ImmutableList<TraversalSection>> sections = sectionsFactory.neitherMaxAccelerationNorMaxDecelerationReached(distance, vehicleProperties);
+        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationReached(distance, vehicleProperties);
         if (sections.isPresent()) {
             return new Traversal(sections.get());
         }
 
-        sections = sectionsFactory.maxAccelerationDecelerationAndSpeedReached(distance, vehicleProperties);
+        sections = ConstantJerkSectionsFactory.maxAccelerationDecelerationAndSpeedReached(distance, vehicleProperties);
         if (sections.isPresent()) {
             return new Traversal(sections.get());
         }
 
-        sections = sectionsFactory.maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed(distance, vehicleProperties);
+        sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed(distance, vehicleProperties);
         if (sections.isPresent()) {
             return new Traversal(sections.get());
         }
 
-        return new Traversal(sectionsFactory.oneMaxAccelReachedButNotOther(distance, vehicleProperties));
+        return new Traversal(ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOther(distance, vehicleProperties));
     }
 
     /**
@@ -87,7 +85,7 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
         }
 
         if (initialAcceleration < vehicleProperties.acceleration) {
-            ImmutableList<TraversalSection> sections = sectionsFactory.jerkUpToAmaxConstrainedByVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
+            ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.jerkUpToAmaxConstrainedByVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
             Traversal traversal = new Traversal(sections);
             if (traversal.getTotalDistance() > distance) {
                 return BinarySearch.find(
@@ -98,7 +96,7 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
             }
         }
 
-        ImmutableList<TraversalSection> sections = sectionsFactory.getToVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
+        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
         Traversal traversal = new Traversal(sections);
         if (traversal.getTotalDistance() > distance) {
             if (sections.stream().anyMatch(s -> s.getAccelerationAtTime(0) >= vehicleProperties.acceleration)) {
@@ -116,7 +114,7 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
                     getConstantAccelerationTime(sections));
         }
 
-        return new Traversal(sectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(distance, initialSpeed, initialAcceleration, vehicleProperties));
+        return new Traversal(ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(distance, initialSpeed, initialAcceleration, vehicleProperties));
     }
 
     private double getConstantAccelerationTime(ImmutableList<TraversalSection> sections) {
@@ -129,7 +127,7 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
 
     @Override
     public Traversal getBrakingTraversal(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
-        return new Traversal(sectionsFactory.findBrakingTraversal(initialSpeed, initialAcceleration, vehicleProperties));
+        return new Traversal(ConstantJerkSectionsFactory.findBrakingTraversal(initialSpeed, initialAcceleration, vehicleProperties));
     }
 
     private ToDoubleFunction<Traversal> getDistanceComp(double distance) {
@@ -144,14 +142,14 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator, Ser
     }
 
     private DoubleFunction<Traversal> calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(sectionsFactory.calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(t, u, a, vehicleProperties));
+        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(t, u, a, vehicleProperties));
     }
 
     private DoubleFunction<Traversal> getTraversalForAmaxT(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(sectionsFactory.calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
+        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
     }
 
     private DoubleFunction<Traversal> getTraversalForInitialAT(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(sectionsFactory.calculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
+        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
     }
 }

@@ -21,9 +21,10 @@ import static org.assertj.core.api.Assertions.within;
 import org.junit.jupiter.api.Test;
 
 class BaseConstantJerkTraversalFactoryTest {
+    private static final ConstantJerkTraversalCalculator factory = ConstantJerkTraversalCalculator.INSTANCE;
+
     private static final double EPSILON = Math.pow(10, -9);
 
-    private static final ConstantJerkTraversalCalculator factory = new ConstantJerkTraversalCalculator();
     private static final double acceleration = 2.5d;
     private static final double deceleration = -2d;
     private static final double maxSpeed = 8d;

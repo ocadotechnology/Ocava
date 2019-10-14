@@ -20,9 +20,15 @@ import java.util.Optional;
 class ConstantJerkSectionFactory {
 
     /**
+     * Don't instantiate this static utility class
+     */
+    private ConstantJerkSectionFactory() {
+    }
+
+    /**
      * @throws TraversalCalculationException
      */
-    ConstantSpeedTraversalSection constantSpeed(double s, double v) {
+    static ConstantSpeedTraversalSection constantSpeed(double s, double v) {
         double t = s / v;
 
         return new ConstantSpeedTraversalSection(s, v, t);
@@ -31,7 +37,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantAccelerationTraversalSection constantAcceleration(double u, double v, double a) {
+    static ConstantAccelerationTraversalSection constantAcceleration(double u, double v, double a) {
         // v = u + at
         // v - u = at
         // (v - u)/a = t
@@ -45,7 +51,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationUp(double finalAcceleration, double j) {
+    static ConstantJerkTraversalSection jerkAccelerationUp(double finalAcceleration, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -62,7 +68,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationUp(double u, double initialAcceleration, double finalAcceleration, double j) {
+    static ConstantJerkTraversalSection jerkAccelerationUp(double u, double initialAcceleration, double finalAcceleration, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -78,7 +84,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationUpFrom(double initialAcceleration, double u, double j, double timeToJerkFor) {
+    static ConstantJerkTraversalSection jerkAccelerationUpFrom(double initialAcceleration, double u, double j, double timeToJerkFor) {
         double s = JerkKinematics.getDisplacement(u, initialAcceleration, j, timeToJerkFor);
         double v = u + initialAcceleration * timeToJerkFor + (1 / 2d) * j * Math.pow(timeToJerkFor, 2);
         double a = initialAcceleration + j * timeToJerkFor;
@@ -89,7 +95,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationUpFromTo(double initialAcceleration, double u, double j, double finalAcceleration) {
+    static ConstantJerkTraversalSection jerkAccelerationUpFromTo(double initialAcceleration, double u, double j, double finalAcceleration) {
         double t = (finalAcceleration - initialAcceleration) / j;
         double s = JerkKinematics.getDisplacement(u, initialAcceleration, j, t);
         double v = u + initialAcceleration * t + (1 / 2d) * j * Math.pow(t, 2);
@@ -99,7 +105,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationDown(double initialAcceleration, double u, double j) {
+    static ConstantJerkTraversalSection jerkAccelerationDown(double initialAcceleration, double u, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -116,7 +122,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkAccelerationDownToV(double initialAcceleration, double v, double j) {
+    static ConstantJerkTraversalSection jerkAccelerationDownToV(double initialAcceleration, double v, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -133,7 +139,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    public ConstantJerkTraversalSection jerkAccelerationFromUToV(double initialAcceleration, double u, double v, double j) {
+    public static ConstantJerkTraversalSection jerkAccelerationFromUToV(double initialAcceleration, double u, double v, double j) {
         double t = JerkKinematics.getTimeToReachVelocity(u, v, initialAcceleration, j);
 
         // a = a. + jt
@@ -147,7 +153,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    Optional<ConstantJerkTraversalSection> jerkDecelerationUp(double initialAcceleration, double u, double finalAcceleration, double j) {
+    static Optional<ConstantJerkTraversalSection> jerkDecelerationUp(double initialAcceleration, double u, double finalAcceleration, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -167,7 +173,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    Optional<ConstantJerkTraversalSection> jerkDecelerationUpToV(double initialAcceleration, double v, double finalAcceleration, double j) {
+    static Optional<ConstantJerkTraversalSection> jerkDecelerationUpToV(double initialAcceleration, double v, double finalAcceleration, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -187,7 +193,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkDecelerationDown(double initialAcceleration, double j) {
+    static ConstantJerkTraversalSection jerkDecelerationDown(double initialAcceleration, double j) {
         // a = a. + jt
         // a - a. = jt
         // (a - a.)/j = t
@@ -207,7 +213,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    ConstantJerkTraversalSection jerkDecelerationDownToZeroV(double u, double initialAcceleration, double j) {
+    static ConstantJerkTraversalSection jerkDecelerationDownToZeroV(double u, double initialAcceleration, double j) {
         double t = JerkKinematics.getTimeToReachVelocity(u, 0, initialAcceleration, j);
 
         // a = a. + jt
@@ -221,7 +227,7 @@ class ConstantJerkSectionFactory {
     /**
      * @throws TraversalCalculationException
      */
-    public Optional<ConstantJerkTraversalSection> jerkAccelerationDownToAcceleration(double initialAcceleration, double finalAcceleration, double u, double j) {
+    public static Optional<ConstantJerkTraversalSection> jerkAccelerationDownToAcceleration(double initialAcceleration, double finalAcceleration, double u, double j) {
         double t = (finalAcceleration - initialAcceleration) / j;
         double v = JerkKinematics.getFinalVelocity(u, initialAcceleration, j, t);
         if (v < 0) {

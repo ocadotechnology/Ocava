@@ -15,13 +15,14 @@
  */
 package com.ocadotechnology.physics;
 
-import java.io.Serializable;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.DoubleMath;
 
-public class ConstantAccelerationTraversalCalculator implements TraversalCalculator, Serializable {
-    private final AccelerationKinematics kinematics = new AccelerationKinematics();
+public class ConstantAccelerationTraversalCalculator implements TraversalCalculator {
+    public static final ConstantAccelerationTraversalCalculator INSTANCE = new ConstantAccelerationTraversalCalculator();
+
+    private ConstantAccelerationTraversalCalculator() {
+    }
 
     @Override
     public Traversal create(double length, double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
@@ -39,8 +40,8 @@ public class ConstantAccelerationTraversalCalculator implements TraversalCalcula
             return Traversal.EMPTY_TRAVERSAL;
         }
 
-        double time = kinematics.getTime(initialSpeed, 0, vehicleProperties.deceleration);
-        double distance = kinematics.getDistance(initialSpeed, 0, time);
+        double time = AccelerationKinematics.getTime(initialSpeed, 0, vehicleProperties.deceleration);
+        double distance = AccelerationKinematics.getDistance(initialSpeed, 0, time);
 
         return new Traversal(ImmutableList.of(new ConstantAccelerationTraversalSection(distance, vehicleProperties.deceleration, initialSpeed, 0, time)));
     }
