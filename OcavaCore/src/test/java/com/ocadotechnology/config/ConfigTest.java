@@ -998,6 +998,112 @@ class ConfigTest {
             assertThat(config.getListOfStringIds(TestConfig.FOO)).isEqualTo(ImmutableList.of(StringId.create("RED")));
         }
 
+        @Test
+        @DisplayName("Empty separators returns empty list")
+        void test7() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, ",,,,");
+            ImmutableList<StringId<Object>> listOfStrings = config.getListOfStringIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns empty list if not present")
+        void test8() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED,YELLOW,APPLE");
+            assertThat(config.getListOfStringIdsIfPresent(TestConfig.FOO)).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns list of ids if present")
+        void test9() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW,APPLE");
+            ImmutableList<StringId<Object>> expected = ImmutableList.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE"));
+            assertThat(config.getListOfStringIdsIfPresent(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+    }
+    
+    @Nested
+    @DisplayName("test get Set Of StringIds")
+    class SetOfStringIdsTests {
+
+        @Test
+        @DisplayName("Set of 3 of the same string case")
+        void test0() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,RED,RED");
+            ImmutableSet<StringId<Object>> expected = ImmutableSet.of(StringId.create("RED"));
+            assertThat(config.getSetOfStringIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Set of 3 strings case")
+        void test1() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW,APPLE");
+            ImmutableSet<StringId<Object>> expected = ImmutableSet.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE"));
+            assertThat(config.getSetOfStringIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton set")
+        void test2() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED");
+            ImmutableSet<StringId<Object>> setOfStrings = config.getSetOfStringIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of(StringId.create("RED")));
+        }
+
+        @Test
+        @DisplayName("Empty string case returns empty set")
+        void test3() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            ImmutableSet<StringId<Object>> setOfStrings = config.getSetOfStringIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void test4() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED,CAR");
+            assertThatThrownBy(() -> config.getSetOfStringIds(TestConfig.FOO))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Set of strings with space is trimmed")
+        void test5() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW, APPLE");
+            assertThat(config.getSetOfStringIds(TestConfig.FOO)).isEqualTo(ImmutableSet.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE")));
+        }
+
+        @Test
+        @DisplayName("Single string with space is trimmed")
+        void test6() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " RED ");
+            assertThat(config.getSetOfStringIds(TestConfig.FOO)).isEqualTo(ImmutableSet.of(StringId.create("RED")));
+        }
+
+        @Test
+        @DisplayName("Empty separators returns empty set")
+        void test7() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, ",,,,");
+            ImmutableSet<StringId<Object>> setOfStrings = config.getSetOfStringIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns empty set if not present")
+        void test8() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "RED,YELLOW,APPLE");
+            assertThat(config.getSetOfStringIdsIfPresent(TestConfig.FOO)).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns set of ids if present")
+        void test9() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW,APPLE");
+            ImmutableSet<StringId<Object>> expected = ImmutableSet.of(StringId.create("RED"), StringId.create("YELLOW"), StringId.create("APPLE"));
+            assertThat(config.getSetOfStringIdsIfPresent(TestConfig.FOO)).isEqualTo(expected);
+        }
+
     }
 
     @Nested
@@ -1051,11 +1157,125 @@ class ConfigTest {
         }
 
         @Test
+        @DisplayName("Empty separators returns empty list")
+        void test7() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, ",,,,");
+            ImmutableList<Id<Object>> listOfStrings = config.getListOfIds(TestConfig.FOO);
+            assertThat(listOfStrings).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
         @DisplayName("List of strings throws exception")
         void test8() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW");
             assertThatThrownBy(() -> config.getListOfIds(TestConfig.FOO))
                     .isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns empty list if not present")
+        void test9() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1,2,3");
+            assertThat(config.getListOfIdsIfPresent(TestConfig.FOO)).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns list of ids if present")
+        void test10() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2,3");
+            ImmutableList<Id<Object>> expected = ImmutableList.of(Id.create(1), Id.create(2), Id.create(3));
+            assertThat(config.getListOfIdsIfPresent(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+    }
+
+    @Nested
+    @DisplayName("test get Set Of Ids")
+    class SetOfIdsTests {
+
+        @Test
+        @DisplayName("Set of 3 of the same id case")
+        void test0() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,1,1");
+            ImmutableSet<Id<Object>> expected = ImmutableSet.of(Id.create(1));
+            assertThat(config.getSetOfIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Set of 3 ids case")
+        void test1() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2,3");
+            ImmutableSet<Id<Object>> expected = ImmutableSet.of(Id.create(1), Id.create(2), Id.create(3));
+            assertThat(config.getSetOfIds(TestConfig.FOO)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton set")
+        void test2() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1");
+            ImmutableSet<Id<Object>> setOfStrings = config.getSetOfIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of(Id.create(1)));
+        }
+
+        @Test
+        @DisplayName("Empty string case returns empty set")
+        void test3() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            ImmutableSet<Id<Object>> setOfStrings = config.getSetOfIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void test4() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1,2");
+            assertThatThrownBy(() -> config.getSetOfIds(TestConfig.FOO))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Set of ids with space is trimmed")
+        void test5() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2, 3");
+            assertThat(config.getSetOfIds(TestConfig.FOO)).isEqualTo(ImmutableSet.of(Id.create(1), Id.create(2), Id.create(3)));
+        }
+
+        @Test
+        @DisplayName("Single id with space is trimmed")
+        void test6() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " 1 ");
+            assertThat(config.getSetOfIds(TestConfig.FOO)).isEqualTo(ImmutableSet.of(Id.create(1)));
+        }
+
+        @Test
+        @DisplayName("Empty separators returns empty set")
+        void test7() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, ",,,,");
+            ImmutableSet<Id<Object>> setOfStrings = config.getSetOfIds(TestConfig.FOO);
+            assertThat(setOfStrings).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("Set of strings throws exception")
+        void test8() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED,YELLOW");
+            assertThatThrownBy(() -> config.getSetOfIds(TestConfig.FOO))
+                    .isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns empty set if not present")
+        void test9() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1,2,3");
+            assertThat(config.getSetOfIdsIfPresent(TestConfig.FOO)).isEqualTo(ImmutableSet.of());
+        }
+
+        @Test
+        @DisplayName("IfPresent method returns set of ids if present")
+        void test10() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1,2,3");
+            ImmutableSet<Id<Object>> expected = ImmutableSet.of(Id.create(1), Id.create(2), Id.create(3));
+            assertThat(config.getSetOfIdsIfPresent(TestConfig.FOO)).isEqualTo(expected);
         }
 
     }

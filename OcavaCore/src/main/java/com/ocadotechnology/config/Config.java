@@ -402,10 +402,30 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return builder.build();
     }
 
+    /**
+     * @return The same as {@link #getListOfIds} or an empty list if the config key isn't found
+     * @throws NumberFormatException if the values given cannot be parsed as longs
+     */
+    public <T> ImmutableList<Id<T>> getListOfIdsIfPresent(Enum<?> key) {
+        if (!containsKey(key)) {
+            return ImmutableList.of();
+        }
+        return getListOfIds(key);
+    }
+
+    /**
+     * @return The same as {@link #parseListOfIds} with the value linked to the given config key
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @throws NumberFormatException if the values given cannot be parsed as longs
+     */
     public <T> ImmutableList<Id<T>> getListOfIds(Enum<?> key) {
         return parseListOfIds(getString(key));
     }
 
+    /**
+     * Converts a string of ',' or ':' separated values to an {@link ImmutableList} of {@link Id}s
+     * @throws NumberFormatException if the values given cannot be parsed as longs
+     */
     public static <T> ImmutableList<Id<T>> parseListOfIds(String configValue) {
         if (configValue.length() == 0) {
             return ImmutableList.of();
@@ -413,9 +433,31 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         String[] parts = parseParts(configValue);
         ImmutableList.Builder<Id<T>> builder = ImmutableList.builder();
         for (String part : parts) {
-            builder.add(Id.create(Long.parseLong(part)));
+            if (!part.isEmpty()) {
+                builder.add(Id.create(Long.parseLong(part)));
+            }
         }
         return builder.build();
+    }
+
+    /**
+     * @return The same as {@link #getSetOfIds} or an empty set if the config key isn't found
+     * @throws NumberFormatException if the values given cannot be parsed as longs
+     */
+    public <T> ImmutableSet<Id<T>> getSetOfIdsIfPresent(Enum<?> key) {
+        if (!containsKey(key)) {
+            return ImmutableSet.of();
+        }
+        return getSetOfIds(key);
+    }
+
+    /**
+     * @return The set of ids in the list returned by {@link #parseListOfIds} for the given config key
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @throws NumberFormatException if the values given cannot be parsed as longs
+     */
+    public <T> ImmutableSet<Id<T>> getSetOfIds(Enum<?> key) {
+        return ImmutableSet.copyOf(parseListOfIds(getString(key)));
     }
 
     public <T extends Enum<T>> ImmutableSet<T> getSetOfEnums(Enum<?> key, Class<T> enumClass) {
@@ -441,10 +483,27 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
                 .collect(ImmutableList.toImmutableList());
     }
 
+    /**
+     * @return The same as {@link #getListOfStringIds} or an empty list if the config key isn't found
+     */
+    public <T> ImmutableList<StringId<T>> getListOfStringIdsIfPresent(Enum<?> key) {
+        if (!containsKey(key)) {
+            return ImmutableList.of();
+        }
+        return getListOfStringIds(key);
+    }
+
+    /**
+     * @return The same as {@link #parseListOfStringIds} with the value linked to the given config key
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     */
     public <T> ImmutableList<StringId<T>> getListOfStringIds(Enum<?> key) {
         return parseListOfStringIds(getString(key));
     }
 
+    /**
+     * Converts a string of ',' or ':' separated values to an {@link ImmutableList} of {@link StringId}s
+     */
     public static <T> ImmutableList<StringId<T>> parseListOfStringIds(String configValue) {
         if (configValue.length() == 0) {
             return ImmutableList.of();
@@ -452,9 +511,29 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         String[] parts = parseParts(configValue);
         ImmutableList.Builder<StringId<T>> builder = ImmutableList.builder();
         for (String part : parts) {
-            builder.add(StringId.create(part));
+            if (!part.isEmpty()) {
+                builder.add(StringId.create(part));
+            }
         }
         return builder.build();
+    }
+    
+    /**
+     * @return The same as {@link #getSetOfStringIds} or an empty set if the config key isn't found
+     */
+    public <T> ImmutableSet<StringId<T>> getSetOfStringIdsIfPresent(Enum<?> key) {
+        if (!containsKey(key)) {
+            return ImmutableSet.of();
+        }
+        return getSetOfStringIds(key);
+    }
+
+    /**
+     * @return The set of ids in the list returned by {@link #parseListOfStringIds} for the given config key
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     */
+    public <T> ImmutableSet<StringId<T>> getSetOfStringIds(Enum<?> key) {
+        return ImmutableSet.copyOf(parseListOfStringIds(getString(key)));
     }
 
     private String[] getParts(Enum<?> key) {
