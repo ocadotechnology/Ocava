@@ -245,7 +245,7 @@ public class ConfigManager {
 
         ImmutableSet<String> getPrefixedPropertiesAsStrings(Set<String> configItems) {
             return configItems.stream()
-                    .filter(configItem -> configItem.contains("@"))
+                    .filter(configItem -> configItem.contains(ConfigValue.PREFIX_SEPARATOR))
                     .collect(ImmutableSet.toImmutableSet());
         }
 
@@ -399,7 +399,7 @@ public class ConfigManager {
         final ImmutableSet<String> prefixes;
 
         PrefixedProperty(String prefixedConfigItem, String propertyValue) {
-            String[] splitPrefixes = prefixedConfigItem.split("@");
+            String[] splitPrefixes = prefixedConfigItem.split(ConfigValue.PREFIX_SEPARATOR);
             String[] splitProperties = splitPrefixes[splitPrefixes.length - 1].split("\\.");
             this.prefixedConfigItem = prefixedConfigItem;
             this.propertyValue = propertyValue;

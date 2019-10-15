@@ -15,9 +15,11 @@
  */
 package com.ocadotechnology.config;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -73,9 +75,8 @@ final class ConfigFactory {
             return this;
         }
 
-        private Builder<E> addSubConfig(Config<?> config) {
+        private void addSubConfig(Config<?> config) {
             subConfig.put(config.cls, config);
-            return this;
         }
 
         private void managePrefixedProperties(
@@ -87,19 +88,30 @@ final class ConfigFactory {
                 if (!qualifier.equals(prefixedProperty.qualifier)) {
                     continue;
                 }
-                updatePrefixes(cls, prefixedProperty);
+
+                Optional<E> enumConfigItem = Arrays.stream(cls.getEnumConstants())
+                        .filter(configItem -> configItem.name().equals(prefixedProperty.constant))
+                        .findFirst();
+
+                enumConfigItem.ifPresent(e -> updatePrefixes(prefixedProperty, e));
             }
         }
 
-        private void updatePrefixes(Class<E> cls, PrefixedProperty prefixedProperty) {
-            for (E c : cls.getEnumConstants()) {
-                if ((c.name().equals(prefixedProperty.constant))) {
-                    ImmutableMap.Builder<ImmutableSet<String>, String> prefixedValues = ImmutableMap.builder();
-                    prefixedValues.putAll(configValues.get(c).prefixedValues);
-                    prefixedValues.put(prefixedProperty.prefixes, prefixedProperty.propertyValue);
-                    configValues.put(c, new ConfigValue(configValues.get(c).currentValue, prefixedValues.build()));
-                }
+        private void updatePrefixes(PrefixedProperty prefixedProperty, E enumConfigItem) {
+            ImmutableMap.Builder<ImmutableSet<String>, String> prefixedValues = ImmutableMap.builder();
+
+            ConfigValue configValue = configValues.get(enumConfigItem);
+
+            prefixedValues.put(prefixedProperty.prefixes, prefixedProperty.propertyValue);
+
+            String currentDefaultValue = null;
+
+            if (configValue != null) {
+                prefixedValues.putAll(configValue.prefixedValues);
+                currentDefaultValue = configValue.currentValue;
             }
+
+            configValues.put(enumConfigItem, new ConfigValue(currentDefaultValue, prefixedValues.build()));
         }
 
         private Config<E> build() {

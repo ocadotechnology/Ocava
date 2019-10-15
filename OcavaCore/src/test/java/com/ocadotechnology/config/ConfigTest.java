@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.Colours;
+import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 import com.ocadotechnology.physics.units.LengthUnit;
@@ -54,13 +55,13 @@ class ConfigTest {
             assertThat(config.containsKey(TestConfig.FOO)).isFalse();
             assertThat(config.containsKey(TestConfig.FOO)).isFalse();
             assertThat(config.containsKey(TestConfig.FOO)).isFalse();
-            assertThat(config.containsKey(TestConfig.SubConfig.WOO)).isFalse();
+            assertThat(config.containsKey(FirstSubConfig.WOO)).isFalse();
         }
 
         @Test
         @DisplayName("does not have any sub-config")
         void doesNotHaveSubConfig() {
-            assertThat(config.getSubConfig(TestConfig.SubConfig.class)).isNull();
+            assertThat(config.getSubConfig(FirstSubConfig.class)).isNull();
         }
 
         @Test
@@ -1224,8 +1225,8 @@ class ConfigTest {
         @Test
         @DisplayName("provides the full key name of nested enums")
         void nestedEnums() {
-            Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class).put("TestConfig.SubConfig.SubSubConfig.X", "x").buildWrapped();
-            assertThat(config.toString()).contains("TestConfig.SubConfig.SubSubConfig.X=x");
+            Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class).put("TestConfig.FirstSubConfig.SubSubConfig.X", "x").buildWrapped();
+            assertThat(config.toString()).contains("TestConfig.FirstSubConfig.SubSubConfig.X=x");
         }
 
         @Test
@@ -1247,12 +1248,12 @@ class ConfigTest {
         void secretConfig() {
             Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
                     .put("TestConfig.SECRET_1", "secret1")
-                    .put("TestConfig.SubConfig.SECRET_2", "s2")
+                    .put("TestConfig.FirstSubConfig.SECRET_2", "s2")
                     .buildWrapped();
 
             assertThat(config.toString())
                     .doesNotContain("TestConfig.SECRET_1")
-                    .doesNotContain("TestConfig.SubConfig.SECRET_2");
+                    .doesNotContain("TestConfig.FirstSubConfig.SECRET_2");
         }
 
         @Test

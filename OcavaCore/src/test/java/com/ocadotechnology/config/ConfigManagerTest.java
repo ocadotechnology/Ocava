@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
-import java.util.HashSet;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -30,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.ConfigManager.Builder;
 import com.ocadotechnology.config.ConfigManager.PrefixedProperty;
 import com.ocadotechnology.config.TestConfig.Colours;
+import com.ocadotechnology.config.TestConfig.FirstSubConfig;
+import com.ocadotechnology.config.TestConfig.SecondSubConfig;
 import com.ocadotechnology.id.Id;
 
 class ConfigManagerTest {
@@ -52,7 +53,7 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(TestConfig.SubConfig.WOO);
+        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(FirstSubConfig.WOO);
 
         assertThat(listOfIds.get(0)).isEqualTo(Id.create(1));
         assertThat(listOfIds.get(1)).isEqualTo(Id.create(2));
@@ -68,7 +69,7 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(TestConfig.SubConfig.HOO);
+        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(FirstSubConfig.HOO);
 
         assertThat(listOfIds).isEmpty();
     }
@@ -98,10 +99,33 @@ class ConfigManagerTest {
     }
 
     @Test
+    void getPrefixes() throws IOException, ConfigKeysNotRecognisedException {
+        Builder builder = new Builder(new String[]{});
+
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                .build();
+
+        ImmutableSet<String> actual = configManager.getConfig(TestConfig.class).getPrefixes();
+
+        ImmutableSet<String> expected = ImmutableSet.of(
+                "Prefix1",
+                "Prefix2",
+                "Prefix3",
+                "Prefix5",
+                "Prefix6");
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
     void loadPrefixedConfigItems_singlePrefix() throws IOException, ConfigKeysNotRecognisedException {
         Builder builder = new Builder(new String[]{});
 
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -110,22 +134,59 @@ class ConfigManagerTest {
         assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
         assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
 
-        // Enum keys for prefixed config items.
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getValues().keySet()).isEqualTo(new HashSet<TestConfig>(){{
-            add(TestConfig.FOO);
-            add(TestConfig.BAR);
-        }});
+        Config<TestConfig> prefixedConfig = testConfig.getPrefixedConfigItems("Prefix1");
+
+        // Enum keys for prefixed config items. Note that keys with a different Prefix (e.g. BAZ) will still appear in getValues.
+        assertThat(prefixedConfig.getValues().keySet()).isEqualTo(ImmutableSet.of(
+                TestConfig.FOO,
+                TestConfig.BAR,
+                TestConfig.BAZ));
 
         // Get values for prefixed config files.
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(3);
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.BAR)).isEqualTo(4);
+        assertThat(prefixedConfig.getInt(TestConfig.FOO)).isEqualTo(3);
+        assertThat(prefixedConfig.getInt(TestConfig.BAR)).isEqualTo(4);
+        assertThat(prefixedConfig.containsKey(TestConfig.BAZ)).isFalse();
+    }
+
+    @Test
+    void loadPrefixedConfigItems_clashingNames() throws IOException, ConfigKeysNotRecognisedException {
+        Builder builder = new Builder(new String[]{});
+
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                .build();
+
+        Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
+
+        Config<TestConfig> prefixedConfig = testConfig.getPrefixedConfigItems("Prefix6");
+
+        // Get values for prefixed config files.
+        assertThat(prefixedConfig.getInt(FirstSubConfig.WOO)).isEqualTo(1);
+        assertThat(prefixedConfig.getInt(SecondSubConfig.WOO)).isEqualTo(2);
+    }
+
+    @Test
+    void loadPrefixedConfigItems_noUnprefixedEquivalent() throws IOException, ConfigKeysNotRecognisedException {
+        Builder builder = new Builder(new String[]{});
+
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                .build();
+
+        Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
+
+        assertThat(testConfig.getPrefixedConfigItems("Prefix5").getInt(TestConfig.BAZ)).isEqualTo(13);
     }
 
     @Test
     void loadPrefixedConfigItems_prefixNotFound() throws IOException, ConfigKeysNotRecognisedException {
         Builder builder = new Builder(new String[]{});
 
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -369,11 +430,11 @@ class ConfigManagerTest {
     void environmentVariableMatchesEnumInSubclass() throws Exception {
         ConfigManager.Builder builder = new ConfigManager.Builder(new String[]{});
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
-                ImmutableMap.of("WOO", "1"), ImmutableSet.of(TestConfig.class)
+                ImmutableMap.of("HOO", "1"), ImmutableSet.of(TestConfig.class)
         ).build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.SubConfig.WOO)).isEqualTo(1);
+        assertThat(config.getInt(FirstSubConfig.HOO)).isEqualTo(1);
     }
 
     @Test

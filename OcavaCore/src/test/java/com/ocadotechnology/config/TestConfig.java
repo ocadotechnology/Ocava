@@ -18,10 +18,11 @@ package com.ocadotechnology.config;
 enum TestConfig {
     FOO,
     BAR,
+    BAZ,
     DUPLICATED_KEY,
     @SecretConfig SECRET_1;
 
-    enum SubConfig {
+    enum FirstSubConfig {
         WOO,
         HOO,
         DUPLICATED_KEY,
@@ -31,6 +32,10 @@ enum TestConfig {
             X,
             Y;
         }
+    }
+
+    enum SecondSubConfig {
+        WOO
     }
 
     enum Colours {

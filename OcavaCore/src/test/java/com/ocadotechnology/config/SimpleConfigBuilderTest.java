@@ -26,6 +26,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.physics.units.LengthUnit;
 
@@ -50,14 +51,26 @@ class SimpleConfigBuilderTest {
     void testSimpleConfig_canBeBuiltWithStringKeys() {
         Config<TestConfig> config = configBuilder.put("TestConfig.FOO", "42")
                 .put("TestConfig.BAR", "First")
-                .put("TestConfig.SubConfig.WOO", "Second")
-                .put("TestConfig.SubConfig.HOO", "Third")
+                .put("TestConfig.FirstSubConfig.WOO", "Second")
+                .put("TestConfig.FirstSubConfig.HOO", "Third")
                 .buildWrapped();
 
         assertThat(config.getInt(TestConfig.FOO)).isEqualTo(42);
         assertThat(config.getString(TestConfig.BAR)).isEqualTo("First");
-        assertThat(config.getString(TestConfig.SubConfig.WOO)).isEqualTo("Second");
-        assertThat(config.getString(TestConfig.SubConfig.HOO)).isEqualTo("Third");
+        assertThat(config.getString(FirstSubConfig.WOO)).isEqualTo("Second");
+        assertThat(config.getString(FirstSubConfig.HOO)).isEqualTo("Third");
+    }
+
+    @Test
+    @DisplayName("can be built using prefixes")
+    void testSimpleConfig_canBeBuiltWithPrefixes() {
+        Config<TestConfig> config = configBuilder
+                .put("TestConfig.FOO", "10", "Prefix1")
+                .put("TestConfig.FOO", "20", "Prefix2")
+                .buildWrapped();
+
+        assertThat(config.getKeyValueStringMapWithPrefixesWithoutSecrets().get("Prefix1@TestConfig.FOO")).isEqualTo("10");
+        assertThat(config.getKeyValueStringMapWithPrefixesWithoutSecrets().get("Prefix2@TestConfig.FOO")).isEqualTo("20");
     }
 
     @Test

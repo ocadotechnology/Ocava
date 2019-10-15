@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
+import com.ocadotechnology.config.ConfigManager.PrefixedProperty;
+import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 import com.ocadotechnology.testing.InternalClassTest;
 import com.ocadotechnology.testing.UtilityClassTest;
 
@@ -40,30 +42,42 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
     @DisplayName("read() method")
     class ReadMethodTests {
 
-        protected Config<TestConfig> readConfigFromProperties(Properties props) throws ConfigKeysNotRecognisedException {
-            return ConfigFactory.read(TestConfig.class, props::getProperty, ImmutableSet.of());
+        protected Config<TestConfig> readConfigFromProperties(Properties props, ImmutableSet<PrefixedProperty> prefixedProperties) throws ConfigKeysNotRecognisedException {
+            return ConfigFactory.read(TestConfig.class, props::getProperty, prefixedProperties);
         }
 
         @Test
         @DisplayName("with all properties provided")
         void allPropertiesProvided() throws ConfigKeysNotRecognisedException {
             Properties props = fullySpecifiedProperties();
-            Config<TestConfig> config = readConfigFromProperties(props);
+            Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of());
 
             assertSoftly(softly -> {
                 softly.assertThat(config.getInt(TestConfig.FOO)).isEqualTo(1);
                 softly.assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
-                softly.assertThat(config.getInt(TestConfig.SubConfig.WOO)).isEqualTo(3);
-                softly.assertThat(config.getInt(TestConfig.SubConfig.HOO)).isEqualTo(4);
-                softly.assertThat(config.getInt(TestConfig.SubConfig.SubSubConfig.X)).isEqualTo(5);
-                softly.assertThat(config.getInt(TestConfig.SubConfig.SubSubConfig.Y)).isEqualTo(6);
+                softly.assertThat(config.getInt(FirstSubConfig.WOO)).isEqualTo(3);
+                softly.assertThat(config.getInt(FirstSubConfig.HOO)).isEqualTo(4);
+                softly.assertThat(config.getInt(FirstSubConfig.SubSubConfig.X)).isEqualTo(5);
+                softly.assertThat(config.getInt(FirstSubConfig.SubSubConfig.Y)).isEqualTo(6);
+            });
+        }
+
+        @Test
+        @DisplayName("with prefixed properties")
+        void prefixedPropertiesProvided() throws ConfigKeysNotRecognisedException {
+            Properties props = fullySpecifiedProperties();
+            PrefixedProperty prefixedProperty = new PrefixedProperty("Prefix1@TestConfig.FOO", "7");
+            Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of(prefixedProperty));
+
+            assertSoftly(softly -> {
+                softly.assertThat(config.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(7);
             });
         }
 
         @Test
         @DisplayName("does not include config for missing properties")
         void notAllPropertiesProvided() throws ConfigKeysNotRecognisedException {
-                Config<TestConfig> config = readConfigFromProperties(new Properties());
+                Config<TestConfig> config = readConfigFromProperties(new Properties(), ImmutableSet.of());
                 assertThat(config.containsKey(TestConfig.FOO)).isFalse();
         }
     }
@@ -72,10 +86,10 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
         Properties props = new Properties();
         props.setProperty("TestConfig.FOO", "1");
         props.setProperty("TestConfig.BAR", "2");
-        props.setProperty("TestConfig.SubConfig.WOO", "3");
-        props.setProperty("TestConfig.SubConfig.HOO", "4");
-        props.setProperty("TestConfig.SubConfig.SubSubConfig.X", "5");
-        props.setProperty("TestConfig.SubConfig.SubSubConfig.Y", "6");
+        props.setProperty("TestConfig.FirstSubConfig.WOO", "3");
+        props.setProperty("TestConfig.FirstSubConfig.HOO", "4");
+        props.setProperty("TestConfig.FirstSubConfig.SubSubConfig.X", "5");
+        props.setProperty("TestConfig.FirstSubConfig.SubSubConfig.Y", "6");
         return props;
     }
 }

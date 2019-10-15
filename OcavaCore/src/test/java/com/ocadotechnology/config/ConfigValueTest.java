@@ -79,7 +79,6 @@ class ConfigValueTest {
 
         assertThat(prefixedConfigValue.prefixedValues).isEmpty();
         assertThat(prefixedConfigValue.currentValue).isEqualTo("3");
-
     }
 
     @Test
@@ -90,4 +89,16 @@ class ConfigValueTest {
         assertThat(prefixedConfigValue.currentValue).isEqualTo("1");
     }
 
+    @Test
+    void testCase_getPrefixes() {
+        assertThat(configValue.getPrefixes()).isEqualTo(ImmutableSet.of("Prefix1", "Prefix2", "Prefix3"));
+    }
+
+    @Test
+    void testCase_getValuesByPrefixedKeys() {
+        ImmutableMap<String, String> expectedValuesByPrefixedKey = ImmutableMap.of(
+                "Prefix1@VALUE", "2", "Prefix2@Prefix3@VALUE", "3");
+
+        assertThat(configValue.getValuesByPrefixedKeys("VALUE")).isEqualTo(expectedValuesByPrefixedKey);
+    }
 }

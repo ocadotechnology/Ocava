@@ -16,16 +16,22 @@
 package com.ocadotechnology.config;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.CheckForNull;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 class ConfigValue implements Serializable {
 
+    static final String PREFIX_SEPARATOR = "@";
+
     final ImmutableMap<ImmutableSet<String>, String> prefixedValues;
-    final String currentValue;
+    @CheckForNull final String currentValue;
 
     ConfigValue(String currentValue, ImmutableMap<ImmutableSet<String>, String> prefixedValues) {
         this.prefixedValues = prefixedValues;
@@ -55,6 +61,25 @@ class ConfigValue implements Serializable {
         });
 
         return new ConfigValue(currentValue, prefixedValues.build());
+    }
+
+    ImmutableMap<String, String> getValuesByPrefixedKeys(String constant) {
+        return prefixedValues.entrySet().stream()
+                .collect(ImmutableMap.toImmutableMap(
+                        e -> getPrefixedConfigString(e.getKey(), constant),
+                        Entry::getValue));
+    }
+
+    String getPrefixedConfigString(ImmutableSet<String> prefixes, String constant) {
+        return prefixes.stream()
+                .map(k -> k + PREFIX_SEPARATOR)
+                .collect(Collectors.joining()) + constant;
+    }
+
+    ImmutableSet<String> getPrefixes() {
+        return prefixedValues.keySet().stream()
+                .flatMap(Collection::stream)
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     private ImmutableSet<String> removePrefix(String prefix, ImmutableSet<String> prefixes) {

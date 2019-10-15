@@ -60,10 +60,10 @@ class ConfigUsageCheckerTest implements InternalClassTest {
         props.setProperty("TestConfig.FOO", "1");
         props.setProperty("TestConfig.BAR", "2");
         props.setProperty("TestConfig.VAL_3", "3");
-        props.setProperty("TestConfig.SubConfig.WOO", "4");
-        props.setProperty("TestConfig.SubConfig.HOO", "5");
-        props.setProperty("TestConfig.SubConfig.SubSubConfig.X", "6");
-        props.setProperty("TestConfig.SubConfig.SubSubConfig.Y", "7");
+        props.setProperty("TestConfig.FirstSubConfig.WOO", "4");
+        props.setProperty("TestConfig.FirstSubConfig.HOO", "5");
+        props.setProperty("TestConfig.FirstSubConfig.SubSubConfig.X", "6");
+        props.setProperty("TestConfig.FirstSubConfig.SubSubConfig.Y", "7");
         return props;
     }
 

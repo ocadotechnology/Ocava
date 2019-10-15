@@ -86,6 +86,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return new Config(this.cls, values, subConfig, this.qualifier, null, null);
     }
 
+    public ImmutableSet<String> getPrefixes() {
+        Stream<String> subConfigStream = subConfig.values().stream()
+                .flatMap(subConfig -> subConfig.getPrefixes().stream());
+
+        Stream<String> valuesStream = values.values().stream()
+                .flatMap(value -> value.getPrefixes().stream());
+
+        return Stream.concat(subConfigStream, valuesStream)
+                .collect(ImmutableSet.toImmutableSet());
+    }
+
     public ImmutableMap<E, ConfigValue> getValues() {
         return this.values;
     }
@@ -584,17 +595,27 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     @Deprecated
     public ImmutableMap<String, String> getKeyValueStringMap() {
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
-        consumeStringValues((k, v, isSecret) -> map.put(k, v));
+        consumeConfigValues((k, v, isSecret) -> map.put(k, v), false);
         return map.build();
     }
 
     public ImmutableMap<String, String> getKeyValueStringMapWithoutSecrets() {
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
-        consumeStringValues((k, v, isSecret) -> {
+        consumeConfigValues((k, v, isSecret) -> {
             if (!isSecret) {
                 map.put(k, v);
             }
-        });
+        }, false);
+        return map.build();
+    }
+
+    public ImmutableMap<String, String> getKeyValueStringMapWithPrefixesWithoutSecrets() {
+        ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
+        consumeConfigValues((k, v, isSecret) -> {
+            if (!isSecret) {
+                map.put(k, v);
+            }
+        }, true);
         return map.build();
     }
 
@@ -602,32 +623,47 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public <T extends Enum<T>> ImmutableMap<String, String> getUnqualifiedKeyValueStringMap(Class<T> key) {
         Config<T> subConfig = getSubConfig(key);
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
-        subConfig.consumeStringValues((k, v, isSecret) -> map.put(k.substring(subConfig.qualifier.length() + 1), v));
+        subConfig.consumeConfigValues((k, v, isSecret) -> map.put(k.substring(subConfig.qualifier.length() + 1), v), false);
         return map.build();
     }
 
     public <T extends Enum<T>> ImmutableMap<String, String> getUnqualifiedKeyValueStringMapWithoutSecrets(Class<T> key) {
         Config<T> subConfig = getSubConfig(key);
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
-        subConfig.consumeStringValues((k, v, isSecret) -> {
+        subConfig.consumeConfigValues((k, v, isSecret) -> {
             if (!isSecret) {
                 map.put(k.substring(subConfig.qualifier.length() + 1), v);
             }
-        });
+        }, false);
         return map.build();
     }
 
-    private void consumeStringValues(ToStringHelper toStringHelper) {
+    private void consumeConfigValues(ToStringHelper toStringHelper, boolean includePrefixes) {
         values.entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().toString()))
-                .forEach(e -> toStringHelper.accept(
-                        getQualifiedKeyName(e.getKey()),
-                        e.getValue().currentValue,
-                        isSecretConfig(e.getKey())));
+                .forEach(e -> consumeConfigValue(toStringHelper, includePrefixes, e.getKey(), e.getValue()));
 
         subConfig.entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().toString()))
-                .forEach(x -> x.getValue().consumeStringValues(toStringHelper));
+                .forEach(x -> x.getValue().consumeConfigValues(toStringHelper, includePrefixes));
+    }
+
+    private void consumeConfigValue(ToStringHelper toStringHelper, boolean includePrefixes, E key, ConfigValue value) {
+        // currentValue is null when a prefixed Config value has no un-prefixed equivalent
+        if (value.currentValue != null) {
+            toStringHelper.accept(
+                    getQualifiedKeyName(key),
+                    value.currentValue,
+                    isSecretConfig(key));
+        }
+
+        if (includePrefixes) {
+            value.getValuesByPrefixedKeys(getQualifiedKeyName(key)).forEach((prefixedKey, prefixedValue) ->
+                    toStringHelper.accept(
+                            prefixedKey,
+                            prefixedValue,
+                            isSecretConfig(key)));
+        }
     }
 
     private boolean isSecretConfig(E key) {
@@ -687,11 +723,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
 
     private String getStringValues(Joiner joiner) {
         List<String> entries = new ArrayList<>();
-        consumeStringValues((k, v, isSecret) -> {
+        consumeConfigValues((k, v, isSecret) -> {
             if (!isSecret) {
                 entries.add(k + '=' + v);
             }
-        });
+        }, false);
         return joiner.join(entries);
     }
 

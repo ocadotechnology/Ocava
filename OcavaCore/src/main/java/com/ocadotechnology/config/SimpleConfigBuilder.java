@@ -15,10 +15,12 @@
  */
 package com.ocadotechnology.config;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
@@ -52,8 +54,11 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      *              by the accessor.  If it does not, the accessor method will throw a runtime exception.
      * @return {@code this}, to facilitate fluent call chains.
      */
-    public SimpleConfigBuilder<E> put(String key, String value) {
-        configMap.put(key, value);
+    public SimpleConfigBuilder<E> put(String key, String value, String... prefixes) {
+        String joinedPrefixes = Arrays.stream(prefixes)
+                .map(prefix -> prefix + ConfigValue.PREFIX_SEPARATOR)
+                .collect(Collectors.joining());
+        configMap.put(joinedPrefixes + key, value);
         return this;
     }
 
@@ -74,8 +79,8 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      * @param value A config value.  This will be converted to a String using its {@code toString()} method.
      * @return {@code this}, to facilitate fluent call chains.
      */
-    public SimpleConfigBuilder<E> put(Enum<?> key, Object value) {
-        return put(getKeyName(key), value.toString());
+    public SimpleConfigBuilder<E> put(Enum<?> key, Object value, String... prefixes) {
+        return put(getKeyName(key), value.toString(), prefixes);
     }
 
     /**
@@ -149,7 +154,7 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      *              recognised within the specified {@code configType} class.
      */
     public Config<E> build() throws ConfigKeysNotRecognisedException {
-        ConfigManager.Builder configManagerBuilder = new ConfigManager.Builder(new String[]{});
+        ConfigManager.Builder configManagerBuilder = new ConfigManager.Builder(new String[] {});
         configManagerBuilder.loadConfigFromMap(ImmutableMap.copyOf(configMap), ImmutableSet.of(configType));
         configManagerBuilder.setTimeUnit(timeUnit);
         configManagerBuilder.setLengthUnit(lengthUnit);
