@@ -4,7 +4,7 @@
     <artifactId>OcavaParent</artifactId>
     <url><!--link to our git repo --></url>
 
-    <version>5.4-SNAPSHOT</version>
+    <version>5.4</version>
     <packaging>pom</packaging>
     <inceptionYear>2017</inceptionYear>
     <organization>
@@ -196,7 +196,7 @@
         <developerConnection>
             scm:git:git@github.com:ocadotechnology/Ocava.git
         </developerConnection>
-        <tag>HEAD</tag>
+        <tag>OcavaParent-5.4</tag>
     </scm>
 
     <build>
