@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ExceptionCheckStep extends NamedStep {
     protected final AtomicBoolean finished = new AtomicBoolean(false);
-    protected Throwable throwable;
 
     public boolean checkThrowable(Throwable throwable) {
         if (testThrowable(throwable)) {

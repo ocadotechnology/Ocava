@@ -58,6 +58,15 @@
         <maven-site-plugin.version>3.8.2</maven-site-plugin.version>
         <wagon-webdav-jackrabbit.version>3.2.0</wagon-webdav-jackrabbit.version>
 
+        <!-- Spotbugs versions -->
+        <spotbugs.version>3.1.11</spotbugs.version>
+        <spotbugs-annotations.version>3.1.12</spotbugs-annotations.version>
+        <spotbugs-maven-plugin.version>3.1.12.2</spotbugs-maven-plugin.version>
+        <findbugs-annotations.version>3.0.1</findbugs-annotations.version>
+
+        <!-- parent dir for spotbugs DO NOT REMOVE-->
+        <spotbugs.exclude.path />
+
         <inceptionYear>2017</inceptionYear>
         <organizationName>Ocado</organizationName>
     </properties>
@@ -67,6 +76,14 @@
         <module>OcavaScenarioTest</module>
         <module>OcavaS3</module>
     </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+            <version>${findbugs-annotations.version}</version>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -332,6 +349,24 @@
                     <threshold>Medium</threshold>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                    <excludeFilterFile>${spotbugs.exclude.path}spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
         </plugins>
     </build>
 </project>

@@ -33,6 +33,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.RecoverableException;
@@ -208,6 +210,7 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
     }
 
     @ParametersAreNonnullByDefault
+    @SuppressFBWarnings(value = "EQ_COMPARETO_USE_OBJECT_EQUALS", justification = "Equals method is correct for this singleton class and compareTo throws UnsupportedOperationException")
     private static class PlaceholderScheduledFuture implements ScheduledFuture<Void> {
 
         @Override

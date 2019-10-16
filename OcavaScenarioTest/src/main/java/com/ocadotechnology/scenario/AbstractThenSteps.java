@@ -97,7 +97,7 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
      */
     public T within(double magnitude, TimeUnit timeUnit) {
         double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
-        return create(stepManager, notificationCache, CheckStepExecutionType.within(() -> stepManager.simulation.getEventScheduler(), timeLimit), isFailingStep);
+        return create(stepManager, notificationCache, CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit), isFailingStep);
     }
 
     /**
@@ -117,7 +117,7 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
 
     protected <N extends Notification> void addCheckStep(CheckStep<N> checkStep) {
         if (isFailingStep) {
-            stepManager.stepsCache.addFailingStep(checkStep);
+            stepManager.getStepsCache().addFailingStep(checkStep);
             stepManager.add(checkStep, checkStepExecutionType.markFailingStep());
         } else {
             stepManager.add(checkStep, checkStepExecutionType);
@@ -129,7 +129,7 @@ public abstract class AbstractThenSteps<T extends AbstractThenSteps<?>> {
 
         ExecuteStep step = new SimpleExecuteStep(runnable);
         if (isFailingStep) {
-            stepManager.stepsCache.addFailingStep(step);
+            stepManager.getStepsCache().addFailingStep(step);
         }
         stepManager.add(step);
     }

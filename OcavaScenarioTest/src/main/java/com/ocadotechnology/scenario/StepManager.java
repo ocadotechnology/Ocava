@@ -28,10 +28,10 @@ import com.ocadotechnology.id.StringIdGenerator;
 import com.ocadotechnology.validation.Failer;
 
 public class StepManager {
-    protected StepCache stepsCache;
-    protected ScenarioSimulationApi simulation;
-    public NotificationCache notificationCache;
-    protected ScenarioNotificationListener listener;
+    private final StepCache stepsCache;
+    protected final ScenarioSimulationApi simulation;
+    protected final NotificationCache notificationCache;
+    protected final ScenarioNotificationListener listener;
 
     public StepManager(StepCache stepsCache, ScenarioSimulationApi simulation, NotificationCache notificationCache, ScenarioNotificationListener listener) {
         this.stepsCache = stepsCache;
@@ -40,7 +40,9 @@ public class StepManager {
         this.listener = listener;
     }
 
-    public StepCache getStepsCache() { return stepsCache; }
+    public StepCache getStepsCache() {
+        return stepsCache;
+    }
 
     public TimeUnit getTimeUnit() {
         return simulation.getSchedulerTimeUnit();
@@ -270,7 +272,7 @@ public class StepManager {
             return Preconditions.checkNotNull(duration, "Duration not provided");
         }
 
-        public Type getType(){
+        public Type getType() {
             return type;
         }
 

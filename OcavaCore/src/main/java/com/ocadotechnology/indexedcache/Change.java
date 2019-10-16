@@ -38,6 +38,7 @@ public class Change<C extends Identified<?>> implements Serializable {
     @CheckForNull public final C newObject;
 
     private Change(@Nullable C originalObject, @Nullable C newObject) {
+        Preconditions.checkState(originalObject != null || newObject != null, "Change should have at least one non null object");
         this.originalObject = originalObject;
         this.newObject = newObject;
     }
@@ -144,6 +145,7 @@ public class Change<C extends Identified<?>> implements Serializable {
         if (originalObject != null) {
             return originalObject.getId();
         }
+        Preconditions.checkNotNull(newObject, "Unreachable code. Constructor ensures that at least one field is non-null");
         return newObject.getId();
     }
 

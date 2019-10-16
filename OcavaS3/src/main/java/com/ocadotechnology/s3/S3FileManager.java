@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.http.IdleConnectionReaper;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -50,7 +52,7 @@ public class S3FileManager implements Serializable {
     private final String endpoint;
     private final String bucketPrefix;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory.getLogger(S3FileManager.class);
 
     public S3FileManager(Config<S3Config> s3Config) {
         s3 = new SerializableS3Client(s3Config);
@@ -144,16 +146,19 @@ public class S3FileManager implements Serializable {
         FileLock lock = getFileLock(channel);
 
         // double checking to see if something which had the lock first has created the file.
-        Optional<File> cachedFile = fileCache.get(fullyQualifiedBucket, key);
-        if (cachedFile.isPresent()) {
-            logger.info("Verifying size of {}", cachedFile.get().getAbsolutePath());
-            if (cacheOnly || verifyFileSize(cachedFile.get(), fullyQualifiedBucket, key)) {
-                logger.info("{} loaded from S3FileCache", cachedFile.get().getAbsolutePath());
+        Optional<File> optionalCachedFile = fileCache.get(fullyQualifiedBucket, key);
+        if (optionalCachedFile.isPresent()) {
+            File cachedFile = optionalCachedFile.get();
+            if (cacheOnly || verifyFileSize(cachedFile, fullyQualifiedBucket, key)) {
+                logger.info("{} loaded from S3FileCache", cachedFile.getAbsolutePath());
                 releaseLock(channel, lock, lockFileHandle);
-                return cachedFile.get();
+                return cachedFile;
             } else {
-                logger.warn("{} failed verification.  Deleting.", cachedFile.get().getAbsolutePath());
-                cachedFile.get().delete();
+                logger.warn("{} failed verification. Deleting.", cachedFile.getAbsolutePath());
+                Preconditions.checkState(
+                        cachedFile.delete(),
+                        "Failed to delete cached file which is of the wrong file size. File: %s",
+                        cachedFile.toString());
             }
         }
         Preconditions.checkState(!cacheOnly, "File Bucket=%s Key=%s not found in S3 cache.", fullyQualifiedBucket, key);
@@ -165,6 +170,9 @@ public class S3FileManager implements Serializable {
         return writableFileHandle;
     }
 
+    @SuppressFBWarnings(
+            value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
+            justification = "Don't care if the lockFileHandle exists, we just want to make sure there is one")
     private AsynchronousFileChannel getFileChannel(File lockFileHandle) {
         try {
             AsynchronousFileChannel channel;
@@ -191,7 +199,10 @@ public class S3FileManager implements Serializable {
         try {
             lock.release();
             channel.close();
-            lockFileHandle.delete();
+            Preconditions.checkState(
+                    lockFileHandle.delete(),
+                    "Failed to delete lock file %s when trying to release lock. This may remain locked forever",
+                    lockFileHandle);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -229,6 +240,7 @@ public class S3FileManager implements Serializable {
     }
 
     private boolean verifyFileSize(File cachedFileHandle, String fullyQualifiedBucket, String key) {
+        logger.info("Verifying size of {}", cachedFileHandle.getAbsolutePath());
         for (int retry = 0; retry < MAX_RETRY_ATTEMPTS; retry++) {
             try {
                 long remoteSizeInBytes = s3.getS3Client().getObjectMetadata(fullyQualifiedBucket, key).getContentLength();

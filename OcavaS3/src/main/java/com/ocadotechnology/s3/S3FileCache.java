@@ -29,11 +29,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 class S3FileCache implements Serializable {
-
-    public static final String DEFAULT_S3_CACHE_DIR = System.getProperty("user.home") + File.separatorChar + ".s3cache";
     private static final long serialVersionUID = 1L;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    static final String DEFAULT_S3_CACHE_DIR = System.getProperty("user.home") + File.separatorChar + ".s3cache";
+    private static final Logger logger = LoggerFactory.getLogger(S3FileCache.DEFAULT_S3_CACHE_DIR);
 
     private final File rootCacheDirectory;
 

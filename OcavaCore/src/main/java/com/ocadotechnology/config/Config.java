@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -757,6 +758,28 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     @Override
     public int compareTo(Config<?> o) {
         return qualifier.compareTo(o.qualifier);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Config<?> config = (Config<?>) o;
+        return Objects.equals(cls, config.cls)
+                && Objects.equals(values, config.values)
+                && Objects.equals(subConfig, config.subConfig)
+                && Objects.equals(qualifier, config.qualifier)
+                && timeUnit == config.timeUnit
+                && lengthUnit == config.lengthUnit;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cls, values, subConfig, qualifier, timeUnit, lengthUnit);
     }
 
     /**

@@ -31,8 +31,8 @@ import com.ocadotechnology.validation.Failer;
 @ExtendWith(ScenarioTestWrapper.class)
 @DefaultStory
 public abstract class AbstractStory {
-    public static final String TEST_PASSES_WITH_FIX_REQUIRED = "Test is successful but it is annotated with FixRequired:\n\t%s\nMarked failing steps:\n\t%s";
-    private static Logger logger;
+    public static final String TEST_PASSES_WITH_FIX_REQUIRED = "Test is successful but it is annotated with FixRequired:%n\t%s%nMarked failing steps:%n\t%s";
+    private static Logger logger = LoggerFactory.getLogger(AbstractStory.class);
 
     protected final StepsRunner stepsRunner;
     protected final ScenarioSimulationApi simulation;
@@ -55,8 +55,6 @@ public abstract class AbstractStory {
                 "Missing @Story annotation in %s", getClass().getSimpleName());
         RepeatableRandom.initialiseWithSeed(0);
         restartLogger();
-
-        logger = LoggerFactory.getLogger(AbstractStory.class);
     }
 
     /**
