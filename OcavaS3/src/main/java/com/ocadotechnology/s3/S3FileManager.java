@@ -200,7 +200,7 @@ public class S3FileManager implements Serializable {
             lock.release();
             channel.close();
             Preconditions.checkState(
-                    lockFileHandle.delete(),
+                    lockFileHandle.delete() || !lockFileHandle.exists(),
                     "Failed to delete lock file %s when trying to release lock. This may remain locked forever",
                     lockFileHandle);
         } catch (IOException e) {
