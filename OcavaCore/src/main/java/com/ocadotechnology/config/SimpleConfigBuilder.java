@@ -52,9 +52,10 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      *            provided to the constructor (see {@link ConfigManager}).
      * @param value A String representation of the config value.  This should adhere to the appropriate syntax expected
      *              by the accessor.  If it does not, the accessor method will throw a runtime exception.
+     * @param prefixes The prefixes for this config, represented as a List of Objects.
      * @return {@code this}, to facilitate fluent call chains.
      */
-    public SimpleConfigBuilder<E> put(String key, String value, String... prefixes) {
+    public SimpleConfigBuilder<E> put(String key, String value, Object... prefixes) {
         String joinedPrefixes = Arrays.stream(prefixes)
                 .map(prefix -> prefix + ConfigValue.PREFIX_SEPARATOR)
                 .collect(Collectors.joining());
@@ -77,9 +78,10 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      * Adds a config value to the builder.
      * @param key An enum key.
      * @param value A config value.  This will be converted to a String using its {@code toString()} method.
+     * @param prefixes The prefixes for this config, represented as a List of Objects.
      * @return {@code this}, to facilitate fluent call chains.
      */
-    public SimpleConfigBuilder<E> put(Enum<?> key, Object value, String... prefixes) {
+    public SimpleConfigBuilder<E> put(Enum<?> key, Object value, Object... prefixes) {
         return put(getKeyName(key), value.toString(), prefixes);
     }
 
