@@ -270,9 +270,17 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return index;
     }
 
+    /**
+     * @param function key extraction function.
+     * @param comparator A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
     public <R> SortedOneToManyIndex<R, C> addSortedOneToManyIndex(
         Function<? super C, R> function,
-        Comparator<C> comparator) {
+        Comparator<? super C> comparator) {
         SortedOneToManyIndex<R, C> index = new SortedOneToManyIndex<>(function, comparator);
         addIndex(index);
         return index;

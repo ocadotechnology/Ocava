@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
@@ -34,9 +36,17 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
 
     private final Map<R, SortedSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, R> function;
-    private final Comparator<C> comparator;
+    private final Comparator<? super C> comparator;
 
-    public SortedOneToManyIndex(Function<? super C, R> function, Comparator<C> comparator) {
+    /**
+     * @param function key extraction function
+     * @param comparator A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public SortedOneToManyIndex(Function<? super C, R> function, Comparator<? super C> comparator) {
         this.function = function;
         this.comparator = comparator;
     }
@@ -45,12 +55,16 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         return getMutable(r).stream();
     }
 
-    public TreeSet<C> getCopy(R r) {
-        return new TreeSet<>(getMutable(r));
+    public Stream<R> streamKeys() {
+        return indexValues.keySet().stream();
     }
 
-    public int size(R r) {
-        return getMutable(r).size();
+    public ImmutableSet<R> keySet() {
+        return ImmutableSet.copyOf(indexValues.keySet());
+    }
+
+    public TreeSet<C> getCopy(R r) {
+        return new TreeSet<>(getMutable(r));
     }
 
     public ImmutableSet<C> getCopyAsSet(R r) {
@@ -61,12 +75,20 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         return stream(r).map(mappingFunction).collect(ImmutableSet.toImmutableSet());
     }
 
-    public ImmutableSet<R> keySet() {
-        return ImmutableSet.copyOf(indexValues.keySet());
+    public boolean isEmpty(R r) {
+        return getMutable(r).isEmpty();
     }
 
-    public Stream<R> streamKeys() {
-        return indexValues.keySet().stream();
+    public int size(R r) {
+        return getMutable(r).size();
+    }
+
+    public C first(R r) {
+        return getMutable(r).first();
+    }
+
+    public UnmodifiableIterator<C> iterator(R r) {
+        return Iterators.unmodifiableIterator(getMutable(r).iterator());
     }
 
     @Override
@@ -82,7 +104,8 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
     @Override
     protected void add(C object) {
         R r = function.apply(object);
-        indexValues.computeIfAbsent(r, this::newValues).add(object);
+        SortedSet<C> cs = indexValues.computeIfAbsent(r, this::newValues);
+        Preconditions.checkState(cs.add(object), "Trying to add [%s] to SortedOneToManyIndex, but an equal value already exists in the set. Does your comparator conform to the requirements?", object);
     }
 
     private SortedSet<C> getMutable(R r) {
@@ -91,14 +114,6 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
 
     private TreeSet<C> newValues(R ignore) {
         return new TreeSet<>(comparator);
-    }
-
-    public boolean isEmpty(R r) {
-        return getMutable(r).isEmpty();
-    }
-
-    public C first(R r) {
-        return getMutable(r).first();
     }
 
 }
