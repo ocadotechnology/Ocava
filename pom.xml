@@ -6,7 +6,7 @@
 
     <version>5.12-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <inceptionYear>2017</inceptionYear>
+    <inceptionYear>2017-2019</inceptionYear>
     <organization>
         <name>Ocado</name>
     </organization>
