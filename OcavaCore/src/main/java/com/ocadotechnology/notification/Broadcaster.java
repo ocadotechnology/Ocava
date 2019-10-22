@@ -52,19 +52,29 @@ class Broadcaster<T> {
         return notificationBus.canHandleNotification(notification);
     }
 
+    void broadcast(Object notification) {
+        if (requiresScheduling()) {
+            scheduleBroadcast(notification);
+        } else {
+            directBroadcast(notification);
+        }
+    }
+
     /**
      * @return whether thread handover was required
      */
+    boolean requiresScheduling() {
+        return eventScheduler.isThreadHandoverRequired();
+    }
+
+    void scheduleBroadcast(Object notification) {
+        // Optimization: do not use String.format in event name - too expensive
+        eventScheduler.doNow(() -> directBroadcast(notification), "Broadcasting event across thread");
+    }
+
     @SuppressWarnings("unchecked")
-    boolean broadcast(Object notification) {
-        if (eventScheduler.isThreadHandoverRequired()) {
-            // Optimization: do not use String.format in event name - too expensive
-            eventScheduler.doNow(() -> notificationBus.broadcast((T) notification), "Broadcasting event across thread");
-            return true;
-        } else {
-            notificationBus.broadcast((T) notification);
-            return false;
-        }
+    void directBroadcast(Object notification) {
+        notificationBus.broadcast((T) notification);
     }
 
     void clearAllHandlers() {

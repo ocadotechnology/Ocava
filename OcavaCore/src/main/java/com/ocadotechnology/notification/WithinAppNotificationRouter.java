@@ -23,11 +23,19 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.utils.RememberingSupplier;
 
 class WithinAppNotificationRouter implements NotificationRouter {
     private static final Logger logger = LoggerFactory.getLogger(WithinAppNotificationRouter.class);
+
+    /**
+     * Configuration to allow scheduling the cross-thread broadcasts first.
+     */
+    private static final String CROSS_THREAD_BROADCAST_TYPE = "CROSS_THREAD_FIRST";
+    private static final String CONFIGURED_BROADCAST_TYPE = System.getProperties().getProperty("com.ocadotechnology.notificationrouter.broadcast");
+    private static final boolean SCHEDULE_CROSS_THREAD_BROADCAST_FIRST = CROSS_THREAD_BROADCAST_TYPE.equalsIgnoreCase(CONFIGURED_BROADCAST_TYPE);
 
     private static class SingletonHolder {
         private static final WithinAppNotificationRouter instance = new WithinAppNotificationRouter();
@@ -77,14 +85,48 @@ class WithinAppNotificationRouter implements NotificationRouter {
             return;
         }
 
-        passToBroadcasters(messageSupplier, notificationClass, shouldHandToBroadcaster);
+        if (SCHEDULE_CROSS_THREAD_BROADCAST_FIRST) {
+            passToBroadcastersCrossThreadFirst(messageSupplier, notificationClass, shouldHandToBroadcaster);
+            return;
+        }
+
+        passToBroadcastersInOrder(messageSupplier, notificationClass, shouldHandToBroadcaster);
     }
 
-    private <T> void passToBroadcasters(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+    /**
+     * @deprecated (8.15)
+     * Provides no guarantees that cross-thread notifications will be received in the order they are sent.
+     * Use {@link #passToBroadcastersCrossThreadFirst} passToBroadcastersCrossThreadFirst instead.
+     */
+    @Deprecated
+    private <T> void passToBroadcastersInOrder(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
         for (Broadcaster<?> broadcaster : broadcasters) {
             if (shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
                 broadcaster.broadcast(messageSupplier.get());
             }
+        }
+    }
+
+    /**
+     * Guarantees that cross-thread notifications are received in the order they are sent.
+     */
+    private <T> void passToBroadcastersCrossThreadFirst(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+        Broadcaster<?> inThreadBroadcaster = null;
+        for (Broadcaster<?> broadcaster : broadcasters) {
+            if (!shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
+                continue;
+            }
+
+            if (broadcaster.requiresScheduling()) {
+                broadcaster.scheduleBroadcast(messageSupplier.get());
+            } else {
+                Preconditions.checkState(inThreadBroadcaster == null, "There should be at most one broadcaster per scheduler/thread.");
+                inThreadBroadcaster = broadcaster;
+            }
+        }
+
+        if (inThreadBroadcaster != null) {
+            inThreadBroadcaster.directBroadcast(messageSupplier.get());
         }
     }
 
@@ -103,6 +145,10 @@ class WithinAppNotificationRouter implements NotificationRouter {
      */
     @Override
     public synchronized <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus) {
+        if (defaultMode) {
+            String broadcasterOrder = SCHEDULE_CROSS_THREAD_BROADCAST_FIRST ? "CROSS_THREAD_FIRST" : "BROADCASTER_REGISTRATION_ORDER";
+            logger.info("The configured broadcast order is: {}", broadcasterOrder);
+        }
         defaultMode = false;
         List<Broadcaster<?>> registeredBroadcasters = new ArrayList<>(broadcasters);
         registeredBroadcasters.add(new Broadcaster<>(scheduler, notificationBus, scheduler.getType()));

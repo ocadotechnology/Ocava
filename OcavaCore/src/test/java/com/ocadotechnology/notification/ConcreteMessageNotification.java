@@ -15,10 +15,19 @@
  */
 package com.ocadotechnology.notification;
 
+import com.google.common.base.MoreObjects;
+
 public class ConcreteMessageNotification implements TestNotification {
     public final String contents;
 
     public ConcreteMessageNotification(String contents) {
         this.contents = contents;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("contents", contents)
+                .toString();
     }
 }

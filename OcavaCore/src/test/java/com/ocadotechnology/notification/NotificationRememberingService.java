@@ -16,6 +16,7 @@
 package com.ocadotechnology.notification;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.eventbus.Subscribe;
@@ -23,22 +24,36 @@ import com.ocadotechnology.event.scheduling.EventSchedulerType;
 
 public class NotificationRememberingService implements Subscriber {
     private final List<ConcreteMessageNotification> receivedNotifications = new ArrayList<>();
+    private final HashMap<ConcreteMessageNotification, Runnable> notificationTriggers = new HashMap<>();
+    private final EventSchedulerType schedulerType;
+
+    public NotificationRememberingService(EventSchedulerType schedulerType) {
+        this.schedulerType = schedulerType;
+    }
 
     @Subscribe
     public void concreteMessage(ConcreteMessageNotification n) {
         receivedNotifications.add(n);
+        if (notificationTriggers.containsKey(n)) {
+            notificationTriggers.remove(n).run();
+        }
     }
 
     public List<ConcreteMessageNotification> getReceivedNotifications() {
         return receivedNotifications;
     }
 
+    public void onReceiptDo(ConcreteMessageNotification notification, Runnable action) {
+        notificationTriggers.put(notification, action);
+    }
+
     @Override
     public EventSchedulerType getSchedulerType() {
-        return TestSchedulerType.TEST_SCHEDULER_TYPE;
+        return schedulerType;
     }
 
     public void clear() {
         receivedNotifications.clear();
+        notificationTriggers.clear();
     }
 }

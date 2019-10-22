@@ -30,13 +30,13 @@ import com.ocadotechnology.event.scheduling.EventExecutor;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 
-public class NotificationRouterTest {
+class NotificationRouterTest {
     private static final AdjustableTimeProvider ADJUSTABLE_TIME_PROVIDER = new AdjustableTimeProvider(0);
 
-    private final NotificationRememberingService notificationRememberingService = new NotificationRememberingService();
+    private final NotificationRememberingService notificationRememberingService = new NotificationRememberingService(TestSchedulerType.TEST_SCHEDULER_TYPE);
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         SimpleDiscreteEventScheduler dashControllerEventScheduler = new SimpleDiscreteEventScheduler(new EventExecutor(), () -> {}, TestSchedulerType.TEST_SCHEDULER_TYPE, ADJUSTABLE_TIME_PROVIDER, true);
         NotificationRouter.get().registerExecutionLayer(dashControllerEventScheduler, TestBus.get());
 
@@ -44,7 +44,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenMessageBroadcastThatNoServiceListensToAndInfoLogLevel_thenSupplierGetIsNotCalled() {
+    void whenMessageBroadcastThatNoServiceListensToAndInfoLogLevel_thenSupplierGetIsNotCalled() {
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         Level previousLevel = root.getLevel();
         root.setLevel(Level.INFO);
@@ -59,7 +59,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenMessageBroadcastThatServiceListensTo_thenSupplierIsCalledAndNotificationIsReceivedByService() {
+    void whenMessageBroadcastThatServiceListensTo_thenSupplierIsCalledAndNotificationIsReceivedByService() {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
@@ -67,7 +67,7 @@ public class NotificationRouterTest {
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0) );
     }
     @Test
-    public void whenMessageBroadcastThatEavesDropperListensTo_thenSupplierIsCalledAndNotificationIsReceivedByEavesdropper() {
+    void whenMessageBroadcastThatEavesDropperListensTo_thenSupplierIsCalledAndNotificationIsReceivedByEavesdropper() {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         RememberingConsumer<Notification> eavesdropper = new RememberingConsumer<>();
@@ -78,7 +78,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenTheBroadCastIsDisabled_ThenServiceWillNotReceiveTheMessage(){
+    void whenTheBroadCastIsDisabled_ThenServiceWillNotReceiveTheMessage(){
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         CrossAppNotificationRouter.get().setShouldSuppressBroadcast(true);
@@ -87,7 +87,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenNotificationIsInDefaultModeAndMessageBroadCasts_thenSupplierIsCalledAndNotificationIsReceivedByService(){
+    void whenNotificationIsInDefaultModeAndMessageBroadCasts_thenSupplierIsCalledAndNotificationIsReceivedByService(){
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         NotificationRouter.get().clearAllHandlers();
@@ -98,7 +98,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void IfMessageBroadcastViaUnLazyBroadcastMethod_thenSupplierIsCalledAndNotificationIsReceivedByService(){
+    void IfMessageBroadcastViaUnLazyBroadcastMethod_thenSupplierIsCalledAndNotificationIsReceivedByService(){
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         NotificationRouter.get().broadcast(concreteMessageNotification);
         Assertions.assertTrue(notificationRememberingService.getReceivedNotifications().size() == 1);
@@ -106,7 +106,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenNotificationAcceptedByLogger_thenLoggerIsCalled() {
+    void whenNotificationAcceptedByLogger_thenLoggerIsCalled() {
         TestLogger logger = new TestLogger();
         CrossAppNotificationRouter.get().setLogger(logger);
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
@@ -115,7 +115,7 @@ public class NotificationRouterTest {
     }
 
     @Test
-    public void whenNotificationNotAcceptedByLogger_thenLoggerIsNotCalled() {
+    void whenNotificationNotAcceptedByLogger_thenLoggerIsNotCalled() {
         TestLogger logger = new TestLogger();
         CrossAppNotificationRouter.get().setLogger(logger);
         NotificationRouter.get().broadcast(new UnlistenedToNotification());
@@ -123,7 +123,7 @@ public class NotificationRouterTest {
     }
 
     @AfterEach
-    public void after() {
+    void after() {
         notificationRememberingService.clear();
         CrossAppNotificationRouter.get().setShouldSuppressBroadcast(false);
         CrossAppNotificationRouter.get().setEavesDropper(null);
