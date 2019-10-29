@@ -63,6 +63,8 @@ public abstract class NotificationBus<N> {
     @GuardedBy("rwLock")
     private final Map<Class<?>, Boolean> cacheOfImpliedNotifications = new HashMap<>();
 
+    private final PointToPointValidator pointToPointValidator = new PointToPointValidator();
+
     protected NotificationBus(Class<N> notificationClass) {
         this.notificationClass = notificationClass;
         eventBus = new BlockingEventBus();
@@ -70,6 +72,7 @@ public abstract class NotificationBus<N> {
 
     protected void addHandler(Object handler) {
         List<Class<?>> newNotifications = collectSubscribingTypes(handler);
+        pointToPointValidator.validate(handler, newNotifications);
         Lock lock = rwLock.writeLock();
         try {
             lock.lock();
@@ -103,6 +106,7 @@ public abstract class NotificationBus<N> {
     }
 
     public void clearAllHandlers() {
+        pointToPointValidator.reset();
         Lock lock = rwLock.writeLock();
         try {
             lock.lock();
