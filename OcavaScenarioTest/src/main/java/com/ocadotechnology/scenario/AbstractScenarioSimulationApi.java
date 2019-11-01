@@ -66,14 +66,20 @@ public abstract class AbstractScenarioSimulationApi extends Cleanable implements
 
         //This call should actually start the scheduler and is not expected to return as startSimulation should trigger the then step which continues the process.
         //See com.ocadotechnology.scenario.CoreSimulationWhenSteps.starts
-        getEventScheduler().doNow(() -> {
+        simulationExecutor(() -> {
             startListener(listener);
             if (timeout > 0) {
                 getEventScheduler().doAt(getSchedulerStartTime() + timeout, () -> Assertions.fail("Discrete event timeout reached"));
             }
-
             startSimulation();
         });
+    }
+
+    /**
+     * Can be overridden to one that does not use scheduler.doNow()
+     */
+    protected void simulationExecutor(Runnable execute)  {
+        getEventScheduler().doNow(execute);
     }
 
     protected void startListener(ScenarioNotificationListener listener) {
