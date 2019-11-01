@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
 
@@ -159,6 +161,11 @@ public class HashMapObjectStore<C extends Identified<? extends I>, I> implements
     @Override
     public Stream<C> stream() {
         return objects.values().stream();
+    }
+
+    @Override
+    public UnmodifiableIterator<C> iterator() {
+        return Iterators.unmodifiableIterator(objects.values().iterator());
     }
 
     @Override

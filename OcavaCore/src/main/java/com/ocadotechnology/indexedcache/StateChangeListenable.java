@@ -18,6 +18,7 @@ package com.ocadotechnology.indexedcache;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public interface StateChangeListenable<C extends Identified<?>> {
@@ -53,6 +54,8 @@ public interface StateChangeListenable<C extends Identified<?>> {
     default void forEach(Consumer<C> action) {
         stream().forEach(action);
     }
+
+    UnmodifiableIterator<C> iterator();
 
     /**
      * Register a listener which will be notified whenever an object in the cache changes, including when it is added to

@@ -17,6 +17,7 @@ package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
@@ -372,6 +374,23 @@ class HashMapObjectStoreTest {
             testStore.snapshot(); // Snapshot before change to show change invalidates snapshot. This snapshot tested elsewhere.
             testStore.clear();
             assertTrue(testStore.snapshot().isEmpty());
+        }
+
+        @Test
+        void iterator_whenRemovalIsAttempted_thenUnsupportedOperationExceptionIsThrown() {
+            testStore.add(AN_OBJECT);
+            UnmodifiableIterator<TestObject> it = testStore.iterator();
+            assertThrows(UnsupportedOperationException.class, it::remove);
+        }
+
+        @Test
+        void iterator_whenCacheIsIterated_thenAllElementsAreReturned() {
+            testStore.addAll(MANY_OBJECTS);
+            UnmodifiableIterator<TestObject> it = testStore.iterator();
+
+            assertTrue(it.hasNext());
+            MANY_OBJECTS.forEach(testObject -> assertEquals(testObject, it.next()));
+            assertFalse(it.hasNext());
         }
     }
 

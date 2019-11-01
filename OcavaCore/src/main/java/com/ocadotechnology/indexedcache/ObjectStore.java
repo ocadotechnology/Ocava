@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
 
@@ -96,6 +97,11 @@ interface ObjectStore<C extends Identified<? extends I>, I> {
      * @return a stream of the stored objects
      */
     Stream<C> stream();
+
+    /**
+     * @return an unmodifiable iterator over the stored objects
+     */
+    UnmodifiableIterator<C> iterator();
 
     /**
      * Apply the action to each stored object
