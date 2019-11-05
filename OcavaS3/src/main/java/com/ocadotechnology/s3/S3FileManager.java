@@ -46,13 +46,13 @@ public class S3FileManager implements Serializable {
     private static final int RETRY_WAIT_PERIOD = 5;
     private static final long serialVersionUID = 1L;
 
+    private static final Logger logger = LoggerFactory.getLogger(S3FileManager.class);
+
     private final S3FileCache fileCache;
 
     protected final SerializableS3Client s3;
     private final String endpoint;
     private final String bucketPrefix;
-
-    private static final Logger logger = LoggerFactory.getLogger(S3FileManager.class);
 
     public S3FileManager(Config<S3Config> s3Config) {
         s3 = new SerializableS3Client(s3Config);

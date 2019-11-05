@@ -16,6 +16,7 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.Comparator;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,11 +45,12 @@ class SortedOneToManyIndexTest {
         @Override
         SortedOneToManyIndex<Integer, TestState>  addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
-            // DO NOT inline indexFunction, as that will not fail to compile should addSortedOneToManyIndex() require a type
-            // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
-            // to automatic type coercion of the lambda.
+            // DO NOT inline indexFunction or comparator, as that will not fail to compile should addSortedOneToManyIndex()
+            // require a type of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate>>,
+            // due to automatic type coercion of the lambda.
+            Function<LocationState, Integer> indexFunction = LocationState::getIndexingValue;
             Comparator<LocationState> comparator = Comparator.comparingInt(LocationState::getComparatorValue);
-            return cache.addSortedOneToManyIndex(LocationState::getIndexingValue, comparator);
+            return cache.addSortedOneToManyIndex(indexFunction, comparator);
         }
     }
 

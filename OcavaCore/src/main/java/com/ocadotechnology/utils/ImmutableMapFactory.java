@@ -261,7 +261,7 @@ public class ImmutableMapFactory {
      * @param keyFilter the predicate used to filter the keys of the base map.
      * @param <K>       The type of the keys of the new map.
      * @param <V>       the type of the values of the new map.
-     *                  * @return the filtered ImmutableMap.
+     * @return the filtered ImmutableMap.
      */
     public static <K, V> ImmutableMap<K, V> filterByKeys(
             Map<K, V> baseMap,
