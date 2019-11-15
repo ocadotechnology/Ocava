@@ -101,8 +101,8 @@ public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identi
         Pair<A, B> newPair = Pair.of(a, b);
         Pair<A, B> putA = aIdToPair.put(a.getId(), newPair);
         Pair<A, B> putB = bIdToPair.put(b.getId(), newPair);
-        Preconditions.checkState(putA == null);
-        Preconditions.checkState(putB == null);
+        Preconditions.checkState(putA == null, "Trying to add new pair [%s] to the OneToOneJoinView, but [%s] already exists in pair [%s].", newPair, a, putA);
+        Preconditions.checkState(putB == null, "Trying to add new pair [%s] to the OneToOneJoinView, but [%s] already exists in pair [%s].", newPair, b, putB);
         return newPair;
     }
 
