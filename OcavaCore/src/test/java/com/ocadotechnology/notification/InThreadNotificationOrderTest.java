@@ -83,7 +83,7 @@ class InThreadNotificationOrderTest {
     private void setup() {
         NotificationRouter.get().registerExecutionLayer(t1Scheduler, new TestBus(Notification.class));
         NotificationRouter.get().registerExecutionLayer(t2Scheduler, new TestBus(Notification.class));
-        t1Scheduler.doNow(Runnables::doNothing, "Empty event to set the active scheduler type.");
+
         notificationRememberingServiceOnT1.subscribeForNotifications();
         notificationRememberingServiceOnT2.subscribeForNotifications();
     }
