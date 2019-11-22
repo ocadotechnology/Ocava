@@ -16,7 +16,8 @@
 package com.ocadotechnology.event.scheduling;
 
 public class SourceSchedulerTracker {
-    private EventSchedulerType activeSchedulerType = null;
+    private enum UnknownEventSchedulerType implements EventSchedulerType {NOT_SET};
+    private EventSchedulerType activeSchedulerType = UnknownEventSchedulerType.NOT_SET;
 
     EventSchedulerType getActiveSchedulerType() {
         return activeSchedulerType;
