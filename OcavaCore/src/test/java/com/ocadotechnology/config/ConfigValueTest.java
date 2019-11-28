@@ -26,7 +26,8 @@ class ConfigValueTest {
 
     private ConfigValue configValue = new ConfigValue("1", ImmutableMap.of(
             ImmutableSet.of("Prefix1"), "2",
-            ImmutableSet.of("Prefix2", "Prefix3"), "3"));
+            ImmutableSet.of("Prefix2", "Prefix3"), "3",
+            ImmutableSet.of("Prefix4"), "4"));
 
     @Test
     void testCase_defaultCaseNoPrefixCalled() {
@@ -91,14 +92,36 @@ class ConfigValueTest {
 
     @Test
     void testCase_getPrefixes() {
-        assertThat(configValue.getPrefixes()).isEqualTo(ImmutableSet.of("Prefix1", "Prefix2", "Prefix3"));
+        assertThat(configValue.getPrefixes()).isEqualTo(ImmutableSet.of("Prefix1", "Prefix2", "Prefix3", "Prefix4"));
     }
 
     @Test
     void testCase_getValuesByPrefixedKeys() {
         ImmutableMap<String, String> expectedValuesByPrefixedKey = ImmutableMap.of(
-                "Prefix1@VALUE", "2", "Prefix2@Prefix3@VALUE", "3");
+                "Prefix1@VALUE", "2", "Prefix2@Prefix3@VALUE", "3", "Prefix4@VALUE", "4");
 
         assertThat(configValue.getValuesByPrefixedKeys("VALUE")).isEqualTo(expectedValuesByPrefixedKey);
+    }
+
+    @Test
+    void testCase_biasNonExistentPrefix() {
+        assertThat(configValue.getWithPrefixBias("Prefix0").currentValue).isEqualTo("1");
+    }
+
+    @Test
+    void testCase_biasExistingPrefix() {
+        assertThat(configValue.getWithPrefixBias("Prefix1").currentValue).isEqualTo("2");
+    }
+
+    @Test
+    void testCase_biasOverwritePrefix() {
+        assertThat(configValue.getWithPrefixBias("Prefix1").getWithPrefixBias("Prefix4").currentValue).isEqualTo("4");
+    }
+
+    @Test
+    void testCase_biasKeepsPrefixes() {
+        ConfigValue biasedConfigValue = configValue.getWithPrefixBias("Prefix1");
+        assertThat(biasedConfigValue.getPrefix("Prefix2").getPrefix("Prefix3").currentValue).isEqualTo("3");
+        assertThat(biasedConfigValue.getPrefix("Prefix4").currentValue).isEqualTo("4");
     }
 }

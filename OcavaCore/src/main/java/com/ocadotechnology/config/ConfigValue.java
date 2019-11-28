@@ -39,20 +39,10 @@ class ConfigValue implements Serializable {
     }
 
     ConfigValue getPrefix(String prefix) {
-        ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues = prefixedValues.entrySet()
-                .stream()
-                .filter(setStringEntry -> setStringEntry.getKey().contains(prefix))
-                .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
-
-        String currentValue = filteredPrefixedValues.entrySet()
-                .stream()
-                .filter(e -> hasSinglePrefix(e.getKey()))
-                .findFirst()
-                .map(Entry::getValue)
-                .orElse(this.currentValue);
+        ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues = getFilteredPrefixedValues(prefix);
+        String currentValue = getPrefixValue(prefix, filteredPrefixedValues);
 
         ImmutableMap.Builder<ImmutableSet<String>, String> prefixedValues = ImmutableMap.builder();
-
         filteredPrefixedValues.forEach((prefixes, value) -> {
             ImmutableSet<String> updatedPrefixes = removePrefix(prefix, prefixes);
             if (!updatedPrefixes.isEmpty()) {
@@ -61,6 +51,31 @@ class ConfigValue implements Serializable {
         });
 
         return new ConfigValue(currentValue, prefixedValues.build());
+    }
+
+    /**
+     * If the prefix exists, it will use it as the current value while keeping all prefix values in place.
+     * @param prefix The prefix to bias to.
+     * @return A new ConfigValue with the currentValue set to the given prefix' value if it is present.
+     */
+    ConfigValue getWithPrefixBias(String prefix) {
+        return new ConfigValue(getPrefixValue(prefix, getFilteredPrefixedValues(prefix)), prefixedValues);
+    }
+
+    private ImmutableMap<ImmutableSet<String>, String> getFilteredPrefixedValues(String prefix) {
+        return prefixedValues.entrySet()
+                .stream()
+                .filter(setStringEntry -> setStringEntry.getKey().contains(prefix))
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+    }
+
+    private String getPrefixValue(String prefix, ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues) {
+        return filteredPrefixedValues.entrySet()
+                .stream()
+                .filter(e -> hasSinglePrefix(e.getKey()))
+                .findFirst()
+                .map(Entry::getValue)
+                .orElse(this.currentValue);
     }
 
     ImmutableMap<String, String> getValuesByPrefixedKeys(String constant) {

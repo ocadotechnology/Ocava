@@ -89,6 +89,18 @@ public class ConfigManager {
         return config.values();
     }
 
+    /**
+     * For each config, it will bias the config values to match that of the prefix if the prefix value is present,
+     * otherwise it will keep its current value
+     * @return A new ConfigManager with Config objects that have been biased to use the given prefix
+     */
+    public ConfigManager getPrefixBiasedConfigManager(String prefix) {
+        ImmutableMap<Class<? extends Enum<?>>, Config<?>> biasedConfig = config.entrySet().stream()
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().getPrefixBiasedConfigItems(prefix)));
+
+        return new ConfigManager(commandLineArgs, biasedConfig);
+    }
+
     public static class Builder {
         private final CLISetup commandLineArgs;
 

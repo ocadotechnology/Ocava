@@ -78,13 +78,43 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         this(cls, values, subConfig, qualifier, null, null);
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Returns a new Config that has entered one layer into the prefix config values.
+     * This means that when multi-prefix values are being used,
+     * the sub-prefixes can now be accessed below the given prefix.
+     * For each config item, it will set the value to be that of the prefix value if present,
+     * otherwise it will keep its original value.
+     * @param prefix The prefix to use for the current value / the prefix tree to use for multi-prefix configs
+     * @return A new Config object with config values and prefixes from the given prefix
+     */
     public Config<E> getPrefixedConfigItems(String prefix) {
+        return map(configValue -> configValue.getPrefix(prefix));
+    }
+
+    /**
+     * Returns a new Config where for each config item, it will set the value to be that of the prefix value if present,
+     * otherwise it will keep its original value.
+     * The Config returned will have the same prefix data as the original, so multi-prefixed values are not accessible
+     * and prefixed values with a different root are still present.
+     * @param prefix The prefix to use for the current value / the prefix tree to use for multi-prefix configs
+     * @return A new Config object with config values and prefixes from the given prefix
+     */
+
+    public Config<E> getPrefixBiasedConfigItems(String prefix) {
+        return map(configValue -> configValue.getWithPrefixBias(prefix));
+    }
+
+    /**
+     * Perform a function on all config values in the config tree
+     * @param f function to apply
+     * @return A new config with the function applied
+     */
+    private Config<E> map(Function<ConfigValue, ConfigValue> f) {
         ImmutableMap<E, ConfigValue> values =  this.values.entrySet().stream()
-                .collect(Maps.toImmutableEnumMap(Entry::getKey, value -> value.getValue().getPrefix(prefix)));
+                .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> f.apply(e.getValue())));
         ImmutableMap<?, Config<?>> subConfig = this.subConfig.entrySet().stream()
-                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().getPrefixedConfigItems(prefix)));
-        return new Config(this.cls, values, subConfig, this.qualifier, null, null);
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(f)));
+        return new Config<E>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
     }
 
     public ImmutableSet<String> getPrefixes() {
