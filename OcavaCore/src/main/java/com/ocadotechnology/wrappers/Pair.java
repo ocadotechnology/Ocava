@@ -16,7 +16,10 @@
 package com.ocadotechnology.wrappers;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import com.google.common.base.MoreObjects;
 
@@ -32,6 +35,52 @@ public class Pair<A, B> implements Serializable {
 
     public static <A, B> Pair<A, B> of(A a, B b) {
         return new Pair<>(a, b);
+    }
+
+    /**
+     * Converts a Map.Entry into a Pair
+     */
+    public static <A, B> Pair<A, B> fromEntry(Map.Entry<A, B> entry) {
+        return Pair.of(entry.getKey(), entry.getValue());
+    }
+
+    /**
+     * To be used when Pair is boxed in a monad (Stream/Optional), Map
+     * the two pair values using the function provided.
+     * @param f The function to map from the two pair values
+     * @param <A> Pair<A,?>
+     * @param <B> Pair<?,B>
+     * @param <C> Resulting type
+     * @return New value of type C
+     */
+    public static <A, B, C> Function<Pair<A, B>, C> map(BiFunction<A, B, C> f) {
+        return p -> f.apply(p.a, p.b);
+    }
+
+    /**
+     * To be used when Pair is boxed in a monad (Stream/Optional), Map
+     * the 'a' value while keeping the 'b' value in place.
+     * @param f The mapping function to apply to side 'a'
+     * @param <A> Original Pair<A, ?>
+     * @param <B> Pair<?, B>
+     * @param <C> New Pair<C, ?>
+     * @return New pair with side 'a' type changed from A -> C
+     */
+    public static <A, B, C> Function<Pair<A, B>, Pair<C, B>> mapA(Function<A, C> f) {
+        return p -> Pair.of(f.apply(p.a), p.b);
+    }
+
+    /**
+     * To be used when Pair is boxed in a monad (Stream/Optional), Map
+     * the 'b' value while keeping the 'a' value in place.
+     * @param f The mapping function to apply to side 'a'
+     * @param <A> Pair<A, ?>
+     * @param <B> Original Pair<?, B>
+     * @param <C> New Pair<?, C>
+     * @return New pair with side 'b' type changed from B -> C
+     */
+    public static <A, B, C> Function<Pair<A, B>, Pair<A, C>> mapB(Function<B, C> f) {
+        return p -> Pair.of(p.a, f.apply(p.b));
     }
 
     public A a() {
