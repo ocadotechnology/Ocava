@@ -41,12 +41,12 @@ public class MessageChecker<N> implements Subscriber {
     }
 
     public MessageChecker<N> expect(Class<? extends N> notificationClass) {
-        expectationSequence.add(Either.left(notificationClass));
+        expectationSequence.add(Either.createLeft(notificationClass));
         return this;
     }
 
     public MessageChecker<N> expect(Predicate<N> predicate) {
-        expectationSequence.add(Either.right(predicate));
+        expectationSequence.add(Either.createRight(predicate));
         return this;
     }
 
