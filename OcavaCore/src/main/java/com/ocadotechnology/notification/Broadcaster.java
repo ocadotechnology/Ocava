@@ -68,7 +68,7 @@ class Broadcaster<T> {
     }
 
     void scheduleBroadcast(Object notification) {
-        // Optimization: do not use String.format in event name - too expensive
+        // Optimization: This method is called a lot in larger systems.  It is important to avoid constructing a String object per call.
         eventScheduler.doNow(() -> directBroadcast(notification), "Broadcasting event across thread");
     }
 

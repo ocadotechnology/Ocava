@@ -106,14 +106,14 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
 
     /**
      * Perform a function on all config values in the config tree
-     * @param f function to apply
+     * @param mutator function to apply
      * @return A new config with the function applied
      */
-    private Config<E> map(Function<ConfigValue, ConfigValue> f) {
+    private Config<E> map(Function<ConfigValue, ConfigValue> mutator) {
         ImmutableMap<E, ConfigValue> values =  this.values.entrySet().stream()
-                .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> f.apply(e.getValue())));
+                .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> mutator.apply(e.getValue())));
         ImmutableMap<?, Config<?>> subConfig = this.subConfig.entrySet().stream()
-                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(f)));
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(mutator)));
         return new Config<E>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
     }
 

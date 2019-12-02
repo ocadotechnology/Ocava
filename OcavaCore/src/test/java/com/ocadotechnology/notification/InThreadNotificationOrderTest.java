@@ -46,7 +46,9 @@ class InThreadNotificationOrderTest {
     private final NotificationRememberingService notificationRememberingServiceOnT1 = new NotificationRememberingService(TestSchedulerType.T1);
     private final NotificationRememberingService notificationRememberingServiceOnT2 = new NotificationRememberingService(TestSchedulerType.T2);
 
-    //Configures the broadcast order in WithinAppNotificationRouter to 'CROSS_THREAD_FIRST' by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to true.
+    /**
+     * Configures the broadcast order in WithinAppNotificationRouter to 'CROSS_THREAD_FIRST' by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to true.
+     */
     @BeforeAll
     static void setBroadcastImplementation() {
         try {
@@ -63,7 +65,9 @@ class InThreadNotificationOrderTest {
         }
     }
 
-    //Reverts the broadcast order in WithinAppNotificationRouter to the default (BROADCASTER_REGISTRATION_ORDER) by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to false.
+    /**
+     * Reverts the broadcast order in WithinAppNotificationRouter to the default (BROADCASTER_REGISTRATION_ORDER) by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to false.
+     */
     @AfterAll
     static void revertBroadcastImplementation() {
         try {
