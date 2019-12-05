@@ -145,7 +145,7 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
 
     @Override
     public boolean isThreadHandoverRequired() {
-        return !tracker.getActiveSchedulerType().equals(type);
+        return !type.equals(tracker.getActiveSchedulerType());
     }
 
     private Runnable wrappedForDoNow(MutableCancelableHolder cancelableHolder) {

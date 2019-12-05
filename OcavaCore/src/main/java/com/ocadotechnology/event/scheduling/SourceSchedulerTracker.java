@@ -15,10 +15,12 @@
  */
 package com.ocadotechnology.event.scheduling;
 
-public class SourceSchedulerTracker {
-    private enum UnknownEventSchedulerType implements EventSchedulerType {NOT_SET};
-    private EventSchedulerType activeSchedulerType = UnknownEventSchedulerType.NOT_SET;
+import javax.annotation.CheckForNull;
 
+public class SourceSchedulerTracker {
+    private EventSchedulerType activeSchedulerType = null;
+
+    @CheckForNull
     EventSchedulerType getActiveSchedulerType() {
         return activeSchedulerType;
     }

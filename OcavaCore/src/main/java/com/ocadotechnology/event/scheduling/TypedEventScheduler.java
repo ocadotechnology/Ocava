@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Concretes EventScheduler's `getType` method using the type passed to the constructor.
  */
@@ -22,6 +24,7 @@ public abstract class TypedEventScheduler implements EventSchedulerWithCanceling
     protected final EventSchedulerType type;
 
     public TypedEventScheduler(EventSchedulerType type) {
+        Preconditions.checkNotNull(type, "Type can't be null");
         this.type = type;
     }
 
