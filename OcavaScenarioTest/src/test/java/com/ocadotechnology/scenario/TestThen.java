@@ -21,6 +21,7 @@ public class TestThen {
     public final TimeThenSteps time;
     public final UnorderedSteps unordered;
     public final ExceptionThenSteps exception;
+    public final FuturesThenSteps futures;
 
     public final TestEventThenSteps testEvent;
 
@@ -28,6 +29,7 @@ public class TestThen {
         this.time = new TimeThenSteps(simulationApi, stepManager, listener);
         this.unordered = new UnorderedSteps(stepManager.getStepsCache(), stepManager);
         this.exception = new ExceptionThenSteps(stepManager);
+        this.futures = new FuturesThenSteps(stepManager);
         this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered());
     }
 }

@@ -18,6 +18,7 @@ package com.ocadotechnology.scenario;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 
@@ -34,6 +35,8 @@ public class UnorderedSteps {
 
     /**
      * Used to remove unordered steps by name, which is particularly useful for removing a "never" step that no longer applies.
+     *
+     * @param names the names of steps that should be removed
      */
     public void removesUnorderedSteps(String... names) {
         stepManager.addExecuteStep(() -> {
@@ -45,6 +48,8 @@ public class UnorderedSteps {
 
     /**
      * Like removesUnorderedSteps, except continues even if the step was never added.
+     *
+     * @param names the names of steps that this step will try to remove
      */
     public void removesUnorderedStepsIfPresent(String... names) {
         stepManager.addExecuteStep(() -> {
@@ -58,6 +63,8 @@ public class UnorderedSteps {
      * Used to wait for unordered steps specified by name, to fix the group specified by the names to have to have
      * happened before subsequent steps. This is not required if there are no subsequent steps (the scenario test will
      * wait for the steps anyway).
+     *
+     * @param names the names of steps that this step will wait for
      */
     public void waitForSteps(String... names) {
         stepManager.add(new ExecuteStep() {
@@ -84,6 +91,8 @@ public class UnorderedSteps {
 
     /**
      * Like waitForSteps, except continues even if the step was never added.
+     *
+     * @param names the names of steps that this step will try to wait for
      */
     public void waitForStepsIfPresent(String... names) {
         stepManager.add(new ExecuteStep() {
@@ -106,7 +115,53 @@ public class UnorderedSteps {
     }
 
     /**
+     * Used to wait for any of a list of unordered steps to have happened before subsequent steps. This allows an OR of
+     * unordered steps to be done e.g. for scenarios with multiple valid sequences of events.
+     *
+     * @param names the names of steps that this step will wait for
+     *
+     * @return the list of steps that have finished and therefore caused this wait step to finish
+     */
+    public StepFuture<List<String>> waitForAnyOfSteps(String... names) {
+        MutableStepFuture<List<String>> finishedStepsFuture = new MutableStepFuture<>();
+
+        stepManager.add(new ExecuteStep() {
+            private ImmutableList<String> waitSteps = ImmutableList.copyOf(names);
+            private boolean isComplete = false;
+
+            @Override
+            protected void executeStep() {
+                Assertions.assertTrue(waitSteps.stream().allMatch(stepCache::hasAddedStepWithName),
+                        "Not all steps that we are waiting for have been previously added. Waiting for: "
+                                + waitSteps + ", previously added: " + stepCache.getAllUnorderedStepNames());
+
+                List<String> finishedSteps = waitSteps.stream()
+                        .filter(stepCache::isUnorderedStepFinished)
+                        .collect(Collectors.toList());
+                if (!finishedSteps.isEmpty()) {
+                    finishedStepsFuture.populate(finishedSteps);
+                    waitSteps.forEach(stepCache::removeAndCancelIfPresent);
+                    isComplete = true;
+                }
+            }
+
+            @Override
+            public boolean isFinished() {
+                return isComplete;
+            }
+
+            @Override protected String info() {
+                return "Waiting for any of steps " + waitSteps + " to finish; have any finished = " + isComplete;
+            }
+        });
+
+        return finishedStepsFuture;
+    }
+
+    /**
      * Asserts that the steps specified by name are finished by the time this step executes.
+     *
+     * @param names the steps that should have already finished
      */
     public void allStepsAreAlreadyFinished(String... names) {
         stepManager.addExecuteStep(() -> {
@@ -118,6 +173,9 @@ public class UnorderedSteps {
     /**
      * Asserts that step a is finished before step b, unless they are both finished before this step executes, in which
      * case, there is currently no way to tell. FIXME: "correct" this behaviour?
+     *
+     * @param a the name of the step which should finish first
+     * @param b the name of the step which should finish second
      */
     public void stepAIsFinishedBeforeStepB(String a, String b) {
         String name = stepCache.getRandomUnorderedStepName();
