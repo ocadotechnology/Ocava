@@ -20,6 +20,7 @@ public class ScalableOffsetUtcTimeProvider extends OffsetUtcTimeProvider {
     private final double delta;
 
     public ScalableOffsetUtcTimeProvider(double simulationStartTime, double delta) {
+        //Divide the given simulation start time by delta as it will be multiplied by delta when `getTime()` is called
         super(simulationStartTime / delta);
 
         this.delta = delta;
