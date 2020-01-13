@@ -27,10 +27,35 @@ import com.google.common.collect.ImmutableList;
 public class UnorderedSteps {
     private final StepCache stepCache;
     private final StepManager stepManager;
+    private final boolean isFailingStep;
 
-    public UnorderedSteps(StepCache stepCache, StepManager stepManager) {
-        this.stepCache = stepCache;
+    private UnorderedSteps(StepManager stepManager, boolean isFailingStep) {
         this.stepManager = stepManager;
+        this.stepCache = stepManager.getStepsCache();
+        this.isFailingStep = isFailingStep;
+    }
+
+    public UnorderedSteps(StepManager stepManager) {
+        this(stepManager, false);
+    }
+
+    public UnorderedSteps failingStep() {
+        return new UnorderedSteps(stepManager, true);
+    }
+
+    private void addSimpleExecuteStep(Runnable runnable) {
+        ExecuteStep step = new SimpleExecuteStep(runnable);
+        if (isFailingStep) {
+            stepCache.addFailingStep(step);
+        }
+        stepManager.add(step);
+    }
+
+    private void addExecuteStep(ExecuteStep step) {
+        if (isFailingStep) {
+            stepCache.addFailingStep(step);
+        }
+        stepManager.add(step);
     }
 
     /**
@@ -39,7 +64,7 @@ public class UnorderedSteps {
      * @param names the names of steps that should be removed
      */
     public void removesUnorderedSteps(String... names) {
-        stepManager.addExecuteStep(() -> {
+        addSimpleExecuteStep(() -> {
             for (String name : names) {
                 stepCache.removeAndCancel(name);
             }
@@ -52,7 +77,7 @@ public class UnorderedSteps {
      * @param names the names of steps that this step will try to remove
      */
     public void removesUnorderedStepsIfPresent(String... names) {
-        stepManager.addExecuteStep(() -> {
+        addSimpleExecuteStep(() -> {
             for (String name : names) {
                 stepCache.removeAndCancelIfPresent(name);
             }
@@ -67,7 +92,7 @@ public class UnorderedSteps {
      * @param names the names of steps that this step will wait for
      */
     public void waitForSteps(String... names) {
-        stepManager.add(new ExecuteStep() {
+        addExecuteStep(new ExecuteStep() {
             private final List<String> waitSteps = new LinkedList<>(Arrays.asList(names));
 
             @Override
@@ -95,7 +120,7 @@ public class UnorderedSteps {
      * @param names the names of steps that this step will try to wait for
      */
     public void waitForStepsIfPresent(String... names) {
-        stepManager.add(new ExecuteStep() {
+        addExecuteStep(new ExecuteStep() {
             private final List<String> waitSteps = new LinkedList<>(Arrays.asList(names));
 
             @Override
@@ -125,7 +150,7 @@ public class UnorderedSteps {
     public StepFuture<List<String>> waitForAnyOfSteps(String... names) {
         MutableStepFuture<List<String>> finishedStepsFuture = new MutableStepFuture<>();
 
-        stepManager.add(new ExecuteStep() {
+        addExecuteStep(new ExecuteStep() {
             private ImmutableList<String> waitSteps = ImmutableList.copyOf(names);
             private boolean isComplete = false;
 
@@ -164,7 +189,7 @@ public class UnorderedSteps {
      * @param names the steps that should have already finished
      */
     public void allStepsAreAlreadyFinished(String... names) {
-        stepManager.addExecuteStep(() -> {
+        addSimpleExecuteStep(() -> {
             ImmutableList<String> unfinished = Arrays.stream(names).filter(name -> !stepCache.isUnorderedStepFinished(name)).collect(ImmutableList.toImmutableList());
             Assertions.assertTrue(unfinished.isEmpty(), "Steps " + unfinished + " are not finished");
         });
@@ -179,7 +204,7 @@ public class UnorderedSteps {
      */
     public void stepAIsFinishedBeforeStepB(String a, String b) {
         String name = stepCache.getRandomUnorderedStepName();
-        stepManager.add(name, new ExecuteStep() {
+        ExecuteStep step = new ExecuteStep() {
             private boolean finished = false;
 
             @Override
@@ -197,6 +222,10 @@ public class UnorderedSteps {
             public boolean isFinished() {
                 return finished;
             }
-        });
+        };
+        if (isFailingStep) {
+            stepCache.addFailingStep(step);
+        }
+        stepManager.add(name, step);
     }
 }

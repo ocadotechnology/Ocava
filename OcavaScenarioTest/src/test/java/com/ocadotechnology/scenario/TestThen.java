@@ -27,7 +27,7 @@ public class TestThen {
 
     public TestThen(StepManager stepManager, NotificationCache notificationCache, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener) {
         this.time = new TimeThenSteps(simulationApi, stepManager, listener);
-        this.unordered = new UnorderedSteps(stepManager.getStepsCache(), stepManager);
+        this.unordered = new UnorderedSteps(stepManager);
         this.exception = new ExceptionThenSteps(stepManager);
         this.futures = new FuturesThenSteps(stepManager);
         this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered());
