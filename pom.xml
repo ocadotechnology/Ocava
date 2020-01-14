@@ -75,6 +75,7 @@
         <module>OcavaCore</module>
         <module>OcavaScenarioTest</module>
         <module>OcavaS3</module>
+        <module>TrafficLightSimulation</module>
     </modules>
 
     <dependencies>
