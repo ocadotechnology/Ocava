@@ -16,7 +16,7 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 import com.ocadotechnology.id.Identified;
 
 public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
-    private final Map<R, C> indexValues = new HashMap<>();
+    private final Map<R, C> indexValues = new LinkedHashMap<>();
     private Function<? super C, Collection<R>> indexingFunction;
 
     public ManyToOneIndex(Function<? super C, Collection<R>> indexingFunction) {

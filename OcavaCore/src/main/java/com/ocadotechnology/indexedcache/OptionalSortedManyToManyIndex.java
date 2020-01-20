@@ -17,7 +17,7 @@ package com.ocadotechnology.indexedcache;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +34,7 @@ import com.ocadotechnology.id.Identified;
 
 public final class OptionalSortedManyToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
 
-    private final Map<R, Set<C>> indexValues = new HashMap<>();
+    private final Map<R, Set<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, Optional<Set<R>>> function;
     private final Comparator<? super C> comparator;
 
