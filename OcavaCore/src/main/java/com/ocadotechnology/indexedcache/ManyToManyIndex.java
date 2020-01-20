@@ -16,8 +16,8 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -28,7 +28,7 @@ import com.ocadotechnology.id.Identified;
 
 public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
 
-    private final Map<R, Set<C>> indexValues = new HashMap<>();
+    private final Map<R, Set<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, Set<R>> function;
 
     ManyToManyIndex(Function<? super C, Set<R>> function) {
@@ -69,7 +69,7 @@ public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractI
 
     @Override
     protected void add(C object) {
-        function.apply(object).forEach(value -> indexValues.computeIfAbsent(value, set -> new HashSet<>()).add(object));
+        function.apply(object).forEach(value -> indexValues.computeIfAbsent(value, set -> new LinkedHashSet<>()).add(object));
     }
 
     public Stream<C> streamIncludingDuplicates(ImmutableCollection<R> keys) {
