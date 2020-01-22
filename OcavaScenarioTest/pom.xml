@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.ocadotechnology</groupId>
         <artifactId>OcavaParent</artifactId>
-        <version>5.24-SNAPSHOT</version>
+        <version>5.24</version>
     </parent>
 
     <dependencies>
