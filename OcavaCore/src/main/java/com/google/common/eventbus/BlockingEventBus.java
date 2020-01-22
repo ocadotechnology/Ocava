@@ -34,6 +34,15 @@ public class BlockingEventBus extends EventBus {
      */
     @Override
     void handleSubscriberException(Throwable e, SubscriberExceptionContext context) {
-        throw new IllegalStateException("Exception encountered in Subscriber", e);
+        throwThrowableUnchecked(e);
+    }
+
+    /**
+     * This will propagate throwables which normally require handling without the compiler requirement to handle them.
+     * This makes it possible to propagate checked {@link Exception}s without wrapping them in {@link RuntimeException}s
+     */
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwThrowableUnchecked(Throwable t) throws E {
+        throw (E) t;
     }
 }
