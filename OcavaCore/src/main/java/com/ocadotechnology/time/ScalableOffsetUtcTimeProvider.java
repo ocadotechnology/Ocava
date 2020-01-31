@@ -15,19 +15,38 @@
  */
 package com.ocadotechnology.time;
 
+/**
+ * Provides a time based on realtime but offset and scaled based on user specification
+ *
+ * Given a multiplier of 2, this will mean that for every 1 second that passes in realtime, 2 seconds will pass on
+ * this time provider.
+ *
+ * This time provider can be used for modelling more or less computing (network/cpu) resources within a realtime simulation
+ * as execution events can be given longer or shorter amounts of times to be computed in.
+ * In realtime systems that are highly unconstrained by system resources, this time provider allows for the simulation to
+ * be run faster.
+ */
 public class ScalableOffsetUtcTimeProvider extends OffsetUtcTimeProvider {
 
-    private final double delta;
+    private final double multiplier;
 
-    public ScalableOffsetUtcTimeProvider(double simulationStartTime, double delta) {
+    /**
+     * Creates a new scaled realtime time provider starting at the time specified by the user
+     * and advancing that the multiplier rate against realtime
+     *
+     * @param simulationStartTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     * @param multiplier The multiplier to apply to realtime. A multiplier of 1.0 will act in the same way as
+     *                   the underlying `OffsetUtcTimeProvider`
+     */
+    public ScalableOffsetUtcTimeProvider(double simulationStartTime, double multiplier) {
         //Divide the given simulation start time by delta as it will be multiplied by delta when `getTime()` is called
-        super(simulationStartTime / delta);
+        super(simulationStartTime / multiplier);
 
-        this.delta = delta;
+        this.multiplier = multiplier;
     }
 
     @Override
     public double getTime() {
-        return super.getTime() * delta;
+        return super.getTime() * multiplier;
     }
 }

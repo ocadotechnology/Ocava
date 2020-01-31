@@ -17,9 +17,16 @@ package com.ocadotechnology.time;
 
 import java.io.Serializable;
 
+/**
+ * Provides a time based on realtime but offset by an amount specified by the user
+ */
 public class OffsetUtcTimeProvider extends UtcTimeProvider implements Serializable {
     private final double offset;
 
+    /**
+     * Creates a new realtime time provider starting at the time specified by the user.
+     * @param simulationStartTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     */
     public OffsetUtcTimeProvider(double simulationStartTime) {
         this.offset = super.getTime() - simulationStartTime;
     }
