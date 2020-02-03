@@ -150,10 +150,11 @@ See http://checkstyle.sourceforge.net/checks.html for available checks
         <property name="message" value="Don't use Collection.stream().forEach(), use Collection.forEach()"/>
     </module>
 
+    <module name="LineLength">
+        <property name="max" value="300"/>
+    </module>
+
     <module name="TreeWalker">
-        <module name="LineLength">
-            <property name="max" value="300"/>
-        </module>
 
         <module name="WhitespaceAround">
             <property name="ignoreEnhancedForColon" value="false"/>
