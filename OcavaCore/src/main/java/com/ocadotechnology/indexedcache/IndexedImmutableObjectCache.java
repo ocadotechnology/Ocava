@@ -35,7 +35,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
@@ -380,7 +379,10 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         // The cast is safe as the objects in the cache should be immutable and the interface uses only immutable collections
         Index<C> castedIndex = (Index<C>)index;
         indexes.add(castedIndex);
-        castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableSet.toImmutableSet()));
+
+        //Do not collect to an ImmutableSet - Guava's default collector does not infer the stream size
+        //which results in a lot of collisions and array extensions.
+        castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
     }
 
     private void updateIndexes(C newValue, C oldValue) {
@@ -425,7 +427,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public void clear() {
-        ImmutableCollection<Change<C>> clearedObjects = objectStore.stream().map(Change::delete).collect(ImmutableSet.toImmutableSet());
+        ImmutableCollection<Change<C>> clearedObjects = objectStore.stream().map(Change::delete).collect(ImmutableList.toImmutableList());
         objectStore.clear();
         updateIndexes(clearedObjects);
     }
