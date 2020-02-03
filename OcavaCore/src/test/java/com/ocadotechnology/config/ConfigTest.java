@@ -75,6 +75,27 @@ class ConfigTest {
         }
 
         @Test
+        @DisplayName("returns default values for getOrDefaults")
+        void returnsDefaultValues() {
+            assertThat(config.getStringOrDefault(TestConfig.FOO, "default")).isEqualTo("default");
+            assertThat(config.getIntOrDefault(TestConfig.FOO, -1)).isEqualTo(-1);
+            assertThat(config.getLongOrDefault(TestConfig.FOO, -1L)).isEqualTo(-1L);
+            assertThat(config.getDoubleOrDefault(TestConfig.FOO, -1D)).isEqualTo(-1D);
+            assertThat(config.getEnumOrDefault(TestConfig.FOO, TestConfig.Colours.class, Colours.BLUE)).isEqualTo(Colours.BLUE);
+            assertThat(config.getBooleanOrDefault(TestConfig.FOO, false)).isEqualTo(false);
+            assertThat(config.getAccelerationOrDefault(TestConfig.FOO, -1D)).isEqualTo(-1D);
+            assertThat(config.getSpeedOrDefault(TestConfig.FOO, -1D)).isEqualTo(-1D);
+            assertThat(config.getLengthOrDefault(TestConfig.FOO, -1D)).isEqualTo(-1D);
+            assertThat(config.getTimeOrDefault(TestConfig.FOO, -1L)).isEqualTo(-1L);
+            assertThat(config.getFractionalTimeOrDefault(TestConfig.FOO, -1D)).isEqualTo(-1D);
+            assertThat(config.getDurationOrDefault(TestConfig.FOO, Duration.ofMillis(1))).isEqualTo(Duration.ofMillis(1));
+
+            assertThat(config.getStringOrDefault(TestConfig.FOO, null)).isNull();
+            assertThat(config.getEnumOrDefault(TestConfig.FOO, TestConfig.Colours.class, null)).isNull();
+            assertThat(config.getDurationOrDefault(TestConfig.FOO, null)).isNull();
+        }
+
+        @Test
         @DisplayName("throws exception for getters")
         void returnsNull() {
             assertThatThrownBy(() -> config.getString(TestConfig.FOO)).isInstanceOf(ConfigKeyNotFoundException.class);
@@ -148,7 +169,7 @@ class ConfigTest {
 
         @DisplayName("returns Integer.MAX_VALUE")
         @ParameterizedTest(name = "for config value \"{0}\"")
-        @ValueSource(strings = {"max", "MAX", "mAx", " max ", "maximum", "maximumwithadditionalletters", "MAX1234"})
+        @ValueSource(strings = {"max", "MAX", "mAx", " max "})
         void testMaxValues(String value) {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, value);
             assertThat(config.getInt(TestConfig.FOO)).isEqualTo(Integer.MAX_VALUE);
@@ -156,7 +177,7 @@ class ConfigTest {
 
         @DisplayName("returns Integer.MIN_VALUE")
         @ParameterizedTest(name = "for config value \"{0}\"")
-        @ValueSource(strings = {"min", "MIN", "MiN", " min ", "minimum", "minumumwithadditionalletters", "MIN1234"})
+        @ValueSource(strings = {"min", "MIN", "MiN", " min "})
         void testMinValues(String value) {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, value);
             assertThat(config.getInt(TestConfig.FOO)).isEqualTo(Integer.MIN_VALUE);
@@ -874,6 +895,13 @@ class ConfigTest {
         }
 
         @Test
+        @DisplayName("List of 3 comma or colon separated strings case")
+        void testMixedSeparated() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED:YELLOW,APPLE");
+            assertThat(config.getListOfStrings(TestConfig.FOO)).isEqualTo(ImmutableList.of("RED:YELLOW", "APPLE"));
+        }
+
+        @Test
         @DisplayName("Single case returns singleton list")
         void testSingleElement() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "RED");
@@ -979,6 +1007,69 @@ class ConfigTest {
         void testTrimSpaces() {
             Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " 1234 ");
             assertThat(config.getListOfIntegers(TestConfig.FOO)).isEqualTo(ImmutableList.of(1234));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("test get List Of Doubles")
+    class ListOfDoublesTests {
+
+        @Test
+        @DisplayName("List of 3 comma-separated integers case")
+        void testThreeDoubles() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234.0,321.2,266.3");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(1234.0, 321.2, 266.3));
+        }
+
+        @Test
+        @DisplayName("List of 3 colon-separated integers case")
+        void testColonSeparatedThreeDoubles() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234.0:321.2:266.3");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(1234.0, 321.2, 266.3));
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton list")
+        void testSingleNumber() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234.0");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(1234.0));
+        }
+
+        @Test
+        @DisplayName("Empty case returns empty list")
+        void testEmptyList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("Partly empty list returns non empty values")
+        void testPartlyEmptyList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "123.0,,456.0,");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(123.0, 456.0));
+        }
+
+        @Test
+        @DisplayName("Config doesn't exist case")
+        void testUnknownConfig() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.BAR, "1234,321");
+            assertThatThrownBy(() -> config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles()))
+                    .isInstanceOf(ConfigKeyNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("List of ints with space is trimmed")
+        void testTrimSpacesInList() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1234.0,321.0, 266.0");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(1234.0, 321.0, 266.0));
+        }
+
+        @Test
+        @DisplayName("Single int with space is trimmed")
+        void testTrimSpaces() {
+            Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, " 1234 ");
+            assertThat(config.get(TestConfig.FOO, ConfigParsers.getListOfDoubles())).isEqualTo(ImmutableList.of(1234.0));
         }
 
     }
@@ -1396,6 +1487,8 @@ class ConfigTest {
 
             abstract ImmutableMap<K, V> readMap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
 
+            abstract ImmutableMap<K, V> readMapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
+
             abstract void verifyMapIsComplete(ImmutableMap<K, V> map);
 
             /** Convenience overload that reads and writes the config value to TestConfig.FOO */
@@ -1413,7 +1506,7 @@ class ConfigTest {
             @Test
             @DisplayName("returns an empty map if config key does not exist")
             void configKeyNotPresent() {
-                ImmutableMap<K, V> map = readMap(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR);
+                ImmutableMap<K, V> map = readMapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR);
                 assertThat(map).isEmpty();
             }
 
@@ -1464,6 +1557,12 @@ class ConfigTest {
             }
 
             @Override
+            ImmutableMap<String, String> readMapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getStringMapOrEmpty(keyToRead);
+            }
+
+            @Override
             void verifyMapIsComplete(ImmutableMap<String, String> map) {
                 assertThat(map).containsOnlyKeys("1", "2", "3", "4");
                 assertThat(map).containsEntry("1", "True");
@@ -1492,12 +1591,28 @@ class ConfigTest {
             }
 
             @Override
+            ImmutableMap<Integer, Boolean> readMapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getMapOrEmpty(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+            }
+
+            @Override
             void verifyMapIsComplete(ImmutableMap<Integer, Boolean> map) {
                 assertThat(map).containsOnlyKeys(1, 2, 3, 4);
                 assertThat(map).containsEntry(1, true);
                 assertThat(map).containsEntry(2, false);
                 assertThat(map).containsEntry(3, false);
                 assertThat(map).containsEntry(4, false);
+            }
+
+            @Test
+            @DisplayName("uses listParser as valueParser")
+            void mapOfLists() {
+                Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1=4,5;2=6,7");
+                ImmutableMap<Integer, ImmutableList<Integer>> map = config.getMap(TestConfig.FOO, Integer::parseInt, ConfigParsers.getListOfIntegers());
+                assertThat(map).containsOnlyKeys(1, 2);
+                assertThat(map).containsEntry(1, ImmutableList.of(4, 5));
+                assertThat(map).containsEntry(2, ImmutableList.of(6, 7));
             }
 
             @Test

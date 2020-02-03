@@ -18,7 +18,6 @@ package com.ocadotechnology.config;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +39,6 @@ import com.google.common.collect.Maps;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 import com.ocadotechnology.physics.units.LengthUnit;
-import com.ocadotechnology.validation.Failer;
 
 /**
  * Ocava Configuration is a properties file parser where keys are backed by an Enum.
@@ -82,6 +80,19 @@ import com.ocadotechnology.validation.Failer;
  *     <li><strong>Map</strong> - See {@link #getMap(Enum, Function, Function)}</li>
  *     <li><strong>Integer</strong></li>
  * </ul>
+ *
+ * <h3>GetOrDefault and not Optional</h3>
+ * Because of the way the configuration library works by layering multiple configuration on top of each other, the
+ * idea of using optional may seem nice but can lead to complications.
+ * <p>
+ * If for instance the presence of a config value is used to change the flow of logic (i.e. a config flag) it might be
+ * that you wish to override it's presence by command line or specific additional config file, however once a config
+ * key is present it cannot be removed.
+ * <p>
+ * A good use for Optionals is to getOptional().orElse(), in this case it is identical to having a getOrDefault,
+ * without the ability to use it for controlling logic flow based on presence of a key.
+ * <p>
+ * It is still possible to check for presence of a configuration key using {@link #containsKey(Enum)}
  *
  * <h2>Prefixes</h2>
  * Additionally to the configuration Object and the different data types it can handle there is also the concept of
@@ -180,20 +191,6 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return map(configValue -> configValue.getWithPrefixBias(prefix));
     }
 
-    /**
-     * Perform a function on all config values in the config tree
-     *
-     * @param mutator function to apply
-     * @return A new config with the function applied
-     */
-    private Config<E> map(Function<ConfigValue, ConfigValue> mutator) {
-        ImmutableMap<E, ConfigValue> values = this.values.entrySet().stream()
-                .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> mutator.apply(e.getValue())));
-        ImmutableMap<?, Config<?>> subConfig = this.subConfig.entrySet().stream()
-                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(mutator)));
-        return new Config<E>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
-    }
-
     public ImmutableSet<String> getPrefixes() {
         Stream<String> subConfigStream = subConfig.values().stream()
                 .flatMap(subConfig -> subConfig.getPrefixes().stream());
@@ -231,9 +228,14 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     public int getInt(Enum<?> key) {
-        return parseInt(getString(key));
+        return ConfigParsers.parseInt(getString(key));
     }
 
+    public int getIntOrDefault(Enum<?> key, int defaultValue) {
+        return getOrDefault(key, ConfigParsers::parseInt, defaultValue);
+    }
+
+    @Deprecated
     public OptionalInt getIntIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return OptionalInt.empty();
@@ -241,21 +243,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return OptionalInt.of(getInt(key));
     }
 
-    public static int parseInt(String configValue) {
-        if (configValue.length() > 0 && !Character.isDigit(configValue.charAt(0))) {
-            configValue = configValue.toLowerCase();
-            if (configValue.startsWith("max")) {
-                return Integer.MAX_VALUE;
-            } else if (configValue.startsWith("min")) {
-                return Integer.MIN_VALUE;
-            }
-        }
-        return Integer.parseInt(configValue);
-    }
-
     /**
      * Using Optional in place of OptionalDouble as OptionalDouble is missing some features.
      */
+    @Deprecated
     public Optional<Double> getDoubleIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return Optional.empty();
@@ -265,11 +256,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     public double getDouble(Enum<?> key) {
-        return parseDouble(getString(key));
+        return ConfigParsers.parseDouble(getString(key));
     }
 
-    public static double parseDouble(String configValue) {
-        return Double.parseDouble(configValue);
+    public double getDoubleOrDefault(Enum<?> key, double defaultValue) {
+        return getOrDefault(key, ConfigParsers::parseDouble, defaultValue);
     }
 
     /**
@@ -278,38 +269,28 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException if the value is not equal to either the string "true" or "false", ignoring case.
      */
     public boolean getBoolean(Enum<?> key) {
-        String value = getString(key);
-        if ("true".equalsIgnoreCase(value)) {
-            return true;
-        } else if ("false".equalsIgnoreCase(value)) {
-            return false;
-        } else {
-            throw Failer.fail("Invalid boolean value %s.  Must be equal to true or false, case insensitive", value);
-        }
+        return ConfigParsers.parseBoolean(getString(key));
+    }
+
+    public boolean getBooleanOrDefault(Enum<?> key, boolean defaultValue) {
+        return getOrDefault(key, ConfigParsers::parseBoolean, defaultValue);
     }
 
     public long getLong(Enum<?> key) {
-        return parseLong(getString(key));
+        return ConfigParsers.parseLong(getString(key));
     }
 
+    public long getLongOrDefault(Enum<?> key, long defaultValue) {
+        return getOrDefault(key, ConfigParsers::parseLong, defaultValue);
+    }
+
+    @Deprecated
     public OptionalLong getLongIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return OptionalLong.empty();
         }
 
         return OptionalLong.of(getLong(key));
-    }
-
-    public static long parseLong(String configValue) {
-        if (configValue.length() > 0 && !Character.isDigit(configValue.charAt(0))) {
-            configValue = configValue.toLowerCase();
-            if (configValue.startsWith("max")) {
-                return Long.MAX_VALUE;
-            } else if (configValue.startsWith("min")) {
-                return Long.MIN_VALUE;
-            }
-        }
-        return Long.parseLong(configValue);
     }
 
     /**
@@ -326,17 +307,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double getLength(Enum<?> key) {
-        String[] parts = getParts(key);
-        double length = Double.parseDouble(parts[0].trim());
-        LengthUnit sourceUnit;
-        if (parts.length == 1) {
-            sourceUnit = LengthUnit.METERS;
-        } else if (parts.length == 2) {
-            sourceUnit = LengthUnit.valueOf(parts[1].trim());
-        } else {
-            throw Failer.fail("Length values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>' or '<value>:<length unit>'", Arrays.toString(parts));
-        }
-        return length * getLengthUnit().getUnitsIn(sourceUnit);
+        return ConfigParsers.parseLength(getString(key), getLengthUnit());
+    }
+
+    public double getLengthOrDefault(Enum<?> key, double defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseLength(v, getLengthUnit()), defaultValue);
     }
 
     /**
@@ -353,23 +328,18 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double getFractionalTime(Enum<?> key) {
-        String[] parts = getParts(key);
-        double time = Double.parseDouble(parts[0].trim());
-        TimeUnit sourceUnit;
-        if (parts.length == 1) {
-            sourceUnit = TimeUnit.SECONDS;
-        } else if (parts.length == 2) {
-            sourceUnit = TimeUnit.valueOf(parts[1].trim());
-        } else {
-            throw Failer.fail("Time values (%s) need to be specified without units (for SI) or in the following format: '<value>,<time unit>' or '<value>:<time unit>'", Arrays.toString(parts));
-        }
-        return time * getTimeUnitsInSourceTimeUnit(sourceUnit);
+        return ConfigParsers.parseFractionalTime(getString(key), getTimeUnit());
+    }
+
+    public double getFractionalTimeOrDefault(Enum<?> key, double defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseFractionalTime(v, getTimeUnit()), defaultValue);
     }
 
     /**
      * @return the result of {@link Config#getFractionalTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalDouble as OptionalDouble is missing some features.
      */
+    @Deprecated
     public Optional<Double> getFractionalTimeIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return Optional.empty();
@@ -394,10 +364,15 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return Math.round(getFractionalTime(key));
     }
 
+    public long getTimeOrDefault(Enum<?> key, long defaultValue) {
+        return getOrDefault(key, v -> Math.round(ConfigParsers.parseFractionalTime(v, getTimeUnit())), defaultValue);
+    }
+
     /**
      * @return the result of {@link Config#getTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalLong as OptionalLong is missing some features.
      */
+    @Deprecated
     public Optional<Long> getTimeIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return Optional.empty();
@@ -418,16 +393,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public Duration getDuration(Enum<?> key) {
-        String[] parts = getParts(key);
-        Preconditions.checkState(parts.length > 0 && parts.length <= 2, "Duration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<time unit>' or '<value>:<time unit>'", Arrays.toString(parts));
-        TimeUnit unit = parts.length == 1 ? TimeUnit.SECONDS : TimeUnit.valueOf(parts[1].trim());
-        double nanoTime = Double.parseDouble(parts[0].trim()) * unit.toNanos(1);
-        return Duration.ofNanos(Math.round(nanoTime));
+        return ConfigParsers.parseDuration(getString(key));
+    }
+
+    public Duration getDurationOrDefault(Enum<?> key, Duration defaultValue) {
+        return getOrDefault(key, ConfigParsers::parseDuration, defaultValue);
     }
 
     /**
      * @return the result of {@link Config#getDuration} if the config key has a defined value, else {@link Optional#empty()}
      */
+    @Deprecated
     public Optional<Duration> getDurationIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return Optional.empty();
@@ -449,20 +425,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double getSpeed(Enum<?> key) {
-        String[] parts = getParts(key);
-        double speed = Double.parseDouble(parts[0].trim());
-        LengthUnit sourceLengthUnit;
-        TimeUnit sourceTimeUnit;
-        if (parts.length == 1) {
-            sourceLengthUnit = LengthUnit.METERS;
-            sourceTimeUnit = TimeUnit.SECONDS;
-        } else if (parts.length == 3) {
-            sourceLengthUnit = LengthUnit.valueOf(parts[1].trim());
-            sourceTimeUnit = TimeUnit.valueOf(parts[2].trim());
-        } else {
-            throw Failer.fail("Speed values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
-        }
-        return speed * getLengthUnit().getUnitsIn(sourceLengthUnit) / getTimeUnitsInSourceTimeUnit(sourceTimeUnit);
+        return ConfigParsers.parseSpeed(getString(key), getLengthUnit(), getTimeUnit());
+    }
+
+    public double getSpeedOrDefault(Enum<?> key, double defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseSpeed(v, getLengthUnit(), getTimeUnit()), defaultValue);
     }
 
     /**
@@ -479,41 +446,214 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double getAcceleration(Enum<?> key) {
-        String[] parts = getParts(key);
-        double acceleration = Double.parseDouble(parts[0].trim());
-        LengthUnit sourceLengthUnit;
-        TimeUnit sourceTimeUnit;
-        if (parts.length == 1) {
-            sourceLengthUnit = LengthUnit.METERS;
-            sourceTimeUnit = TimeUnit.SECONDS;
-        } else if (parts.length == 3) {
-            sourceLengthUnit = LengthUnit.valueOf(parts[1].trim());
-            sourceTimeUnit = TimeUnit.valueOf(parts[2].trim());
-        } else {
-            throw Failer.fail("Acceleration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
-        }
-        return acceleration * getLengthUnit().getUnitsIn(sourceLengthUnit) / (Math.pow(getTimeUnitsInSourceTimeUnit(sourceTimeUnit), 2));
+        return ConfigParsers.parseAcceleration(getString(key), getLengthUnit(), getTimeUnit());
     }
 
-    private double getTimeUnitsInSourceTimeUnit(TimeUnit sourceUnit) {
-        return sourceUnit.toNanos(1) * 1.0 / getTimeUnit().toNanos(1);
+    public double getAccelerationOrDefault(Enum<?> key, double defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseAcceleration(v, getLengthUnit(), getTimeUnit()), defaultValue);
     }
 
+    /**
+     * Returns a list of T
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public <T> ImmutableList<T> getListOf(Enum<?> key, Function<String, T> valueFunction) {
+        return ConfigParsers.getListOf(valueFunction).apply(getString(key));
+    }
+
+    /**
+     * Returns a list of T or empty if the key is not present
+     */
+    public <T> ImmutableList<T> getListOfOrEmpty(Enum<?> key, Function<String, T> valueFunction) {
+        return getListOfOrDefault(key, valueFunction, ImmutableList.of());
+    }
+
+    /**
+     * Returns a list of T or the default value if the key is not present
+     */
+    public <T> ImmutableList<T> getListOfOrDefault(Enum<?> key, Function<String, T> valueFunction, ImmutableList<T> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOf(valueFunction), defaultValue);
+    }
+
+    /**
+     * Returns a set of T
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public <T> ImmutableSet<T> getSetOf(Enum<?> key, Function<String, T> valueFunction) {
+        return ConfigParsers.getSetOf(valueFunction).apply(getString(key));
+    }
+
+    /**
+     * Returns a set of T or empty if the key is not present
+     */
+    public <T> ImmutableSet<T> getSetOfOrEmpty(Enum<?> key, Function<String, T> valueFunction) {
+        return getSetOfOrDefault(key, valueFunction, ImmutableSet.of());
+    }
+
+    /**
+     * Returns a set of T or the default value if the key is not present
+     */
+    public <T> ImmutableSet<T> getSetOfOrDefault(Enum<?> key, Function<String, T> valueFunction, ImmutableSet<T> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOf(valueFunction), defaultValue);
+    }
+
+    /**
+     * Returns a list of Integers. Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
     public ImmutableList<Integer> getListOfIntegers(Enum<?> key) {
-        String[] parts = getParts(key);
-        ImmutableList.Builder<Integer> builder = ImmutableList.builder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                builder.add(Integer.parseInt(part));
-            }
-        }
-        return builder.build();
+        return ConfigParsers.getListOfIntegers().apply(getString(key));
+    }
+
+    /**
+     * Returns a list of Integers or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     */
+    public ImmutableList<Integer> getListOfIntegersOrEmpty(Enum<?> key) {
+        return getListOfIntegersOrDefault(key, ImmutableList.of());
+    }
+
+    /**
+     * Returns a list of Integers or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     */
+    public ImmutableList<Integer> getListOfIntegersOrDefault(Enum<?> key, ImmutableList<Integer> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfIntegers(), defaultValue);
+    }
+
+    /**
+     * Returns a Set of Integers. Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public ImmutableSet<Integer> getSetOfIntegers(Enum<?> key) {
+        return ConfigParsers.getSetOfIntegers().apply(getString(key));
+    }
+
+    /**
+     * Returns a Set of Integers or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     */
+    public ImmutableSet<Integer> getSetOfIntegersOrEmpty(Enum<?> key) {
+        return getSetOfIntegersOrDefault(key, ImmutableSet.of());
+    }
+
+    /**
+     * Returns a Set of Integers or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     */
+    public ImmutableSet<Integer> getSetOfIntegersOrDefault(Enum<?> key, ImmutableSet<Integer> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfIntegers(), defaultValue);
+    }
+
+    /**
+     * Returns a list of Longs. Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public ImmutableList<Long> getListOfLongs(Enum<?> key) {
+        return ConfigParsers.getListOfLongs().apply(getString(key));
+    }
+
+    /**
+     * Returns a list of Longs or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     */
+    public ImmutableList<Long> getListOfLongsOrEmpty(Enum<?> key) {
+        return getListOfLongsOrDefault(key, ImmutableList.of());
+    }
+
+    /**
+     * Returns a list of Longs or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     */
+    public ImmutableList<Long> getListOfLongsOrDefault(Enum<?> key, ImmutableList<Long> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfLongs(), defaultValue);
+    }
+
+    /**
+     * Returns a Set of Longs. Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public ImmutableSet<Long> getSetOfLongs(Enum<?> key) {
+        return ConfigParsers.getSetOfLongs().apply(getString(key));
+    }
+
+    /**
+     * Returns a Set of Longs or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     */
+    public ImmutableSet<Long> getSetOfLongsOrEmpty(Enum<?> key) {
+        return getSetOfLongsOrDefault(key, ImmutableSet.of());
+    }
+
+    /**
+     * Returns a Set of Longs or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     */
+    public ImmutableSet<Long> getSetOfLongsOrDefault(Enum<?> key, ImmutableSet<Long> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfLongs(), defaultValue);
+    }
+
+    /**
+     * Returns a list of Doubles. Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public ImmutableList<Double> getListOfDoubles(Enum<?> key) {
+        return ConfigParsers.getListOfDoubles().apply(getString(key));
+    }
+
+    /**
+     * Returns a list of Doubles or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     */
+    public ImmutableList<Double> getListOfDoublesOrEmpty(Enum<?> key) {
+        return getListOfDoublesOrDefault(key, ImmutableList.of());
+    }
+
+    /**
+     * Returns a list of Doubles or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     */
+    public ImmutableList<Double> getListOfDoublesOrDefault(Enum<?> key, ImmutableList<Double> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfDoubles(), defaultValue);
+    }
+
+    /**
+     * Returns a Set of Doubles. Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     *
+     * @throws ConfigKeyNotFoundException if the key is not present
+     */
+    public ImmutableSet<Double> getSetOfDoubles(Enum<?> key) {
+        return ConfigParsers.getSetOfDoubles().apply(getString(key));
+    }
+
+    /**
+     * Returns a Set of Doubles or empty if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     */
+    public ImmutableSet<Double> getSetOfDoublesOrEmpty(Enum<?> key) {
+        return getSetOfDoublesOrDefault(key, ImmutableSet.of());
+    }
+
+    /**
+     * Returns a Set of Doubles or the default value if the key is not present.
+     * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     */
+    public ImmutableSet<Double> getSetOfDoublesOrDefault(Enum<?> key, ImmutableSet<Double> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfDoubles(), defaultValue);
     }
 
     /**
      * @return The same as {@link #getListOfIds} or an empty list if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
+    @Deprecated
     public <T> ImmutableList<Id<T>> getListOfIdsIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return ImmutableList.of();
@@ -522,37 +662,27 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The same as {@link #parseListOfIds} with the value linked to the given config key
+     * @return The same as {@link ConfigParsers#getListOfIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      * @throws NumberFormatException      if the values given cannot be parsed as longs
      */
     public <T> ImmutableList<Id<T>> getListOfIds(Enum<?> key) {
-        return parseListOfIds(getString(key));
+        return ConfigParsers.<T>getListOfIds().apply(getString(key));
     }
 
-    /**
-     * Converts a string of ',' or ':' separated values to an {@link ImmutableList} of {@link Id}s
-     *
-     * @throws NumberFormatException if the values given cannot be parsed as longs
-     */
-    public static <T> ImmutableList<Id<T>> parseListOfIds(String configValue) {
-        if (configValue.length() == 0) {
-            return ImmutableList.of();
-        }
-        String[] parts = parseParts(configValue);
-        ImmutableList.Builder<Id<T>> builder = ImmutableList.builder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                builder.add(Id.create(Long.parseLong(part)));
-            }
-        }
-        return builder.build();
+    public <T> ImmutableList<Id<T>> getListOfIdsOrEmpty(Enum<?> key) {
+        return getListOfIdsOrDefault(key, ImmutableList.of());
+    }
+
+    public <T> ImmutableList<Id<T>> getListOfIdsOrDefault(Enum<?> key, ImmutableList<Id<T>> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfIds(), defaultValue);
     }
 
     /**
      * @return The same as {@link #getSetOfIds} or an empty set if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
+    @Deprecated
     public <T> ImmutableSet<Id<T>> getSetOfIdsIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return ImmutableSet.of();
@@ -561,40 +691,74 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The set of ids in the list returned by {@link #parseListOfIds} for the given config key
+     * @return The set of ids in the list returned by {@link ConfigParsers#getSetOfIds()} for the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      * @throws NumberFormatException      if the values given cannot be parsed as longs
      */
     public <T> ImmutableSet<Id<T>> getSetOfIds(Enum<?> key) {
-        return ImmutableSet.copyOf(parseListOfIds(getString(key)));
+        return ImmutableSet.copyOf(getListOfIds(key));
+    }
+
+    public <T> ImmutableSet<Id<T>> getSetOfIdsOrEmpty(Enum<?> key) {
+        return getSetOfIdsOrDefault(key, ImmutableSet.of());
+    }
+
+    public <T> ImmutableSet<Id<T>> getSetOfIdsOrDefault(Enum<?> key, ImmutableSet<Id<T>> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfIds(), defaultValue);
     }
 
     public <T extends Enum<T>> ImmutableSet<T> getSetOfEnums(Enum<?> key, Class<T> enumClass) {
-        return getStreamOfEnums(key, enumClass)
-                .collect(ImmutableSet.toImmutableSet());
+        return ConfigParsers.getSetOfEnums(enumClass).apply(getString(key));
+    }
+
+    public <T extends Enum<T>> ImmutableSet<T> getSetOfEnumsOrEmpty(Enum<?> key, Class<T> enumClass) {
+        return getSetOfEnumsOrDefault(key, enumClass, ImmutableSet.of());
+    }
+
+    public <T extends Enum<T>> ImmutableSet<T> getSetOfEnumsOrDefault(Enum<?> key, Class<T> enumClass, ImmutableSet<T> defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.getSetOfEnums(enumClass).apply(v), defaultValue);
     }
 
     public <T extends Enum<T>> ImmutableList<T> getListOfEnums(Enum<?> key, Class<T> enumClass) {
-        return getStreamOfEnums(key, enumClass)
-                .collect(ImmutableList.toImmutableList());
+        return ConfigParsers.getListOfEnums(enumClass).apply(getString(key));
     }
 
-    private <T extends Enum<T>> Stream<T> getStreamOfEnums(Enum<?> key, Class<T> enumClass) {
-        return Arrays.stream(getParts(key))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> Enum.valueOf(enumClass, s));
+    public <T extends Enum<T>> ImmutableList<T> getListOfEnumsOrEmpty(Enum<?> key, Class<T> enumClass) {
+        return getOrDefault(key, ConfigParsers.getListOfEnums(enumClass), ImmutableList.of());
+    }
+
+    public <T extends Enum<T>> ImmutableList<T> getListOfEnumsOrDefault(Enum<?> key, Class<T> enumClass, ImmutableList<T> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfEnums(enumClass), defaultValue);
     }
 
     public ImmutableList<String> getListOfStrings(Enum<?> key) {
-        return Arrays.stream(getParts(key))
-                .filter(s -> !s.equals(""))
-                .collect(ImmutableList.toImmutableList());
+        return ConfigParsers.getListOf(Function.identity()).apply(getString(key));
+    }
+
+    public ImmutableList<String> getListOfStringsOrEmpty(Enum<?> key) {
+        return getListOfStringsOrDefault(key, ImmutableList.of());
+    }
+
+    public ImmutableList<String> getListOfStringsOrDefault(Enum<?> key, ImmutableList<String> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfStrings(), defaultValue);
+    }
+
+    public ImmutableSet<String> getSetOfStrings(Enum<?> key) {
+        return ConfigParsers.getSetOf(Function.identity()).apply(getString(key));
+    }
+
+    public ImmutableSet<String> getSetOfStringsOrEmpty(Enum<?> key) {
+        return getSetOfStringsOrDefault(key, ImmutableSet.of());
+    }
+
+    public ImmutableSet<String> getSetOfStringsOrDefault(Enum<?> key, ImmutableSet<String> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfStrings(), defaultValue);
     }
 
     /**
      * @return The same as {@link #getListOfStringIds} or an empty list if the config key isn't found
      */
+    @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIdsIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return ImmutableList.of();
@@ -603,33 +767,25 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The same as {@link #parseListOfStringIds} with the value linked to the given config key
+     * @return The same as {@link ConfigParsers#getListOfStringIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableList<StringId<T>> getListOfStringIds(Enum<?> key) {
-        return parseListOfStringIds(getString(key));
+        return ConfigParsers.<T>getListOfStringIds().apply(getString(key));
     }
 
-    /**
-     * Converts a string of ',' or ':' separated values to an {@link ImmutableList} of {@link StringId}s
-     */
-    public static <T> ImmutableList<StringId<T>> parseListOfStringIds(String configValue) {
-        if (configValue.length() == 0) {
-            return ImmutableList.of();
-        }
-        String[] parts = parseParts(configValue);
-        ImmutableList.Builder<StringId<T>> builder = ImmutableList.builder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                builder.add(StringId.create(part));
-            }
-        }
-        return builder.build();
+    public <T> ImmutableList<StringId<T>> getListOfStringIdsOrEmpty(Enum<?> key) {
+        return getListOfStringIdsOrDefault(key, ImmutableList.of());
+    }
+
+    public <T> ImmutableList<StringId<T>> getListOfStringIdsOrDefault(Enum<?> key, ImmutableList<StringId<T>> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getListOfStringIds(), defaultValue);
     }
 
     /**
      * @return The same as {@link #getSetOfStringIds} or an empty set if the config key isn't found
      */
+    @Deprecated
     public <T> ImmutableSet<StringId<T>> getSetOfStringIdsIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
             return ImmutableSet.of();
@@ -638,27 +794,19 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The set of ids in the list returned by {@link #parseListOfStringIds} for the given config key
+     * @return The set of ids in the list returned by {@link ConfigParsers#getSetOfStringIds()} for the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableSet<StringId<T>> getSetOfStringIds(Enum<?> key) {
-        return ImmutableSet.copyOf(parseListOfStringIds(getString(key)));
+        return ImmutableSet.copyOf(getListOfStringIds(key));
     }
 
-    private String[] getParts(Enum<?> key) {
-        return parseParts(getString(key));
+    public <T> ImmutableSet<StringId<T>> getSetOfStringIdsOrEmpty(Enum<?> key) {
+        return getSetOfStringIdsOrDefault(key, ImmutableSet.of());
     }
 
-    private static String[] parseParts(String value) {
-        String[] splitArray = value.contains(",")
-                ? value.split(",")
-                : value.split(":");
-
-        for (int i = 0; i < splitArray.length; i++) {
-            splitArray[i] = splitArray[i].trim();
-        }
-
-        return splitArray;
+    public <T> ImmutableSet<StringId<T>> getSetOfStringIdsOrDefault(Enum<?> key, ImmutableSet<StringId<T>> defaultValue) {
+        return getOrDefault(key, ConfigParsers.getSetOfStringIds(), defaultValue);
     }
 
     public String getString(Enum<?> key) {
@@ -669,6 +817,41 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return val.trim();
     }
 
+    public String getStringOrDefault(Enum<?> key, String defaultValue) {
+        return getOrDefault(key, Function.identity(), defaultValue);
+    }
+
+    /**
+     * Get a single value and transform is using the valueFunction
+     *
+     * @param key           Configuration key
+     * @param valueFunction Function for extracting the value from the config
+     * @param <V>           Result type
+     * @return The value of the key after valueFunction is applied
+     * @throws ConfigKeyNotFoundException if the key is not found
+     */
+    public <V> V get(Enum<?> key, Function<String, V> valueFunction) {
+        return valueFunction.apply(getString(key));
+    }
+
+    /**
+     * Wrapper for handling a get or default
+     *
+     * @param key            Configuration key
+     * @param valueExtractor Function for extracting the value from a String
+     * @param defaultValue   Default value to return if the key is not present in the config
+     * @param <V>            Result type
+     * @return If the Key exists in the config then the result of valueExtractor otherwise defaultValue
+     */
+    public <V> V getOrDefault(Enum<?> key, Function<String, V> valueExtractor, V defaultValue) {
+        if (containsKey(key)) {
+            return get(key, valueExtractor);
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Deprecated
     public Optional<String> getStringIfPresent(Enum<?> key) {
         return Optional.ofNullable(getOrNull(key)).map(String::trim);
     }
@@ -687,6 +870,14 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      */
     public ImmutableMap<String, String> getStringMap(Enum<?> key) {
         return getMap(key, Function.identity(), Function.identity());
+    }
+
+    public ImmutableMap<String, String> getStringMapOrEmpty(Enum<?> key) {
+        return getStringMapOrDefault(key, ImmutableMap.of());
+    }
+
+    public ImmutableMap<String, String> getStringMapOrDefault(Enum<?> key, ImmutableMap<String, String> defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseMap(v, Function.identity(), Function.identity()), defaultValue);
     }
 
     /**
@@ -708,21 +899,12 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws NullPointerException     if the keyParser or valueParser return null for any provided string.
      */
     public <K, V> ImmutableMap<K, V> getMap(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
-        String val = getOrNull(configKey);
-        if (val == null) {
-            return ImmutableMap.of();
-        }
-        ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
-        for (String pair : val.split(";")) {
-            int x = pair.indexOf('=');
-            if (x <= 0) {
-                continue;
-            }
-            K propertyKey = keyParser.apply(pair.substring(0, x).trim());
-            V propertyValue = valueParser.apply(pair.substring(x + 1).trim());
-            builder.put(propertyKey, propertyValue);
-        }
-        return builder.build();
+        String val = getString(configKey);
+        return ConfigParsers.parseMap(val, keyParser, valueParser);
+    }
+
+    public <K, V> ImmutableMap<K, V> getMapOrEmpty(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
+        return getOrDefault(configKey, v -> ConfigParsers.parseMap(v, keyParser, valueParser), ImmutableMap.of());
     }
 
     /**
@@ -737,8 +919,18 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalArgumentException   when the config value does not match any of the values in the specified enum.
      */
     public <T extends Enum<T>> T getEnum(Enum<?> key, Class<T> enumClass) {
-        String value = getString(key);
-        return Enum.valueOf(enumClass, value);
+        return Enum.valueOf(enumClass, getString(key));
+    }
+
+    /**
+     * Like {@link #getEnum(Enum, Class)} but if the key is not present return the default value instead of an exception
+     *
+     * @param defaultValue Value to return if the key is not present
+     * @return The value from the specified enum class which corresponds to the config value associated with the given
+     * key, or default if the key is not present
+     */
+    public <T extends Enum<T>> T getEnumOrDefault(Enum<?> key, Class<T> enumClass, T defaultValue) {
+        return getOrDefault(key, v -> ConfigParsers.parseEnum(v, enumClass), defaultValue);
     }
 
     /**
@@ -751,25 +943,12 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * key, or {@link Optional#empty()} if no entry for that key exists.
      * @throws IllegalArgumentException when the config value does not match any of the values in the specified enum.
      */
+    @Deprecated
     public <T extends Enum<T>> Optional<T> getEnumIfPresent(Enum<?> key, Class<T> enumClass) {
         if (!containsKey(key)) {
             return Optional.empty();
         }
         return Optional.of(getEnum(key, enumClass));
-    }
-
-    private String getOrNull(Enum<?> key) {
-        if (key.getClass().equals(cls) && values.containsKey(cls.cast(key))) {
-            return values.get(cls.cast(key)).currentValue;
-        }
-        Class<?> declaringClass = key.getDeclaringClass();
-        while (declaringClass != null) {
-            if (subConfig.containsKey(declaringClass)) {
-                return subConfig.get(declaringClass).getOrNull(key);
-            }
-            declaringClass = declaringClass.getDeclaringClass();
-        }
-        return null;
     }
 
     public String getQualifiedKeyName(E key) {
@@ -941,5 +1120,33 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     @FunctionalInterface
     private interface ToStringHelper {
         void accept(String key, String value, Boolean isSecret);
+    }
+
+    private String getOrNull(Enum<?> key) {
+        if (key.getClass().equals(cls) && values.containsKey(cls.cast(key))) {
+            return values.get(cls.cast(key)).currentValue;
+        }
+        Class<?> declaringClass = key.getDeclaringClass();
+        while (declaringClass != null) {
+            if (subConfig.containsKey(declaringClass)) {
+                return subConfig.get(declaringClass).getOrNull(key);
+            }
+            declaringClass = declaringClass.getDeclaringClass();
+        }
+        return null;
+    }
+
+    /**
+     * Perform a function on all config values in the config tree
+     *
+     * @param mutator function to apply
+     * @return A new config with the function applied
+     */
+    private Config<E> map(Function<ConfigValue, ConfigValue> mutator) {
+        ImmutableMap<E, ConfigValue> values = this.values.entrySet().stream()
+                .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> mutator.apply(e.getValue())));
+        ImmutableMap<?, Config<?>> subConfig = this.subConfig.entrySet().stream()
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(mutator)));
+        return new Config<E>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
     }
 }
