@@ -107,6 +107,7 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
     }
 
     public void start() {
+        shouldStop = false;
         if (heartbeatMonitor) {
             addHeartbeatMonitor();
         }
