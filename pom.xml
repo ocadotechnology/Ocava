@@ -36,7 +36,7 @@
         <googe-jsr.version>3.0.2</googe-jsr.version>
         <junit-jupiter.version>5.6.0</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
-        <assertj.version>3.13.2</assertj.version>
+        <assertj.version>3.15.0</assertj.version>
         <jfreechart.version>1.5.0</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.11.728</aws-java-sdk-s3.version>
