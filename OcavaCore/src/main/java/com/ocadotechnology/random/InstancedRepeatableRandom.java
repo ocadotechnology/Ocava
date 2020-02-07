@@ -103,6 +103,25 @@ public class InstancedRepeatableRandom {
         return repeatableDoubleSupplier.getAsDouble();
     }
 
+    /**
+     * The form of nextDouble used by DoubleStream Spliterators.
+     *
+     * @param origin the least value, unless greater than bound
+     * @param bound the upper bound (exclusive), must not equal origin
+     * @return a pseudorandom value
+     * @throws IllegalStateException if {@code origin} is greater than
+     * or equal to {@code bound}
+     */
+    public double nextDouble(double origin, double bound) {
+        Preconditions.checkState(origin < bound, "bound must be greater than origin");
+        double random = nextDouble() * (bound - origin) + origin;
+
+        if (random >= bound) { // correct for rounding
+            random = Double.longBitsToDouble(Double.doubleToLongBits(bound) - 1);
+        }
+        return random;
+    }
+
     public int nextInt(int bound) {
         return repeatableIntSupplier.applyAsInt(bound);
     }
