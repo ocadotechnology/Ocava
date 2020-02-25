@@ -32,8 +32,8 @@
         <guava.version>27.0.1-jre</guava.version>
         <apache-commons.version>2.2</apache-commons.version>
         <jcommander.version>1.78</jcommander.version>
+
         <slf4j-api.version>1.7.30</slf4j-api.version>
-        <googe-jsr.version>3.0.2</googe-jsr.version>
         <junit-jupiter.version>5.6.0</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
         <assertj.version>3.15.0</assertj.version>
@@ -138,12 +138,12 @@
                 <artifactId>jaxb-api</artifactId>
                 <version>${jaxb.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>${googe-jsr.version}</version>
-            </dependency>
+	            <groupId>com.github.spotbugs</groupId>
+	            <artifactId>spotbugs-annotations</artifactId>
+	            <version>${spotbugs-annotations.version}</version>
+	            <optional>true</optional>
+        	</dependency>
             <dependency>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
