@@ -60,7 +60,6 @@
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.0.0</spotbugs.version>
-        <spotbugs-annotations.version>4.0.0</spotbugs-annotations.version>
         <spotbugs-maven-plugin.version>3.1.12.2</spotbugs-maven-plugin.version>
         <findbugs-annotations.version>3.0.1</findbugs-annotations.version>
 
@@ -141,7 +140,7 @@
             <dependency>
 	            <groupId>com.github.spotbugs</groupId>
 	            <artifactId>spotbugs-annotations</artifactId>
-	            <version>${spotbugs-annotations.version}</version>
+	            <version>${spotbugs.version}</version>
 	            <optional>true</optional>
         	</dependency>
             <dependency>
