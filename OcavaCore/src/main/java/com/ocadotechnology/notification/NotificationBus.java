@@ -32,6 +32,7 @@ import javax.annotation.concurrent.GuardedBy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.eventbus.BlockingEventBus;
 import com.google.common.eventbus.EventBus;
@@ -70,6 +71,7 @@ public abstract class NotificationBus<N> {
         eventBus = new BlockingEventBus();
     }
 
+    /** This method is and needs to remain ThreadSafe. */
     protected void addHandler(Object handler) {
         List<Class<?>> newNotifications = collectSubscribingTypes(handler);
         pointToPointValidator.validate(handler, newNotifications);
@@ -229,4 +231,12 @@ public abstract class NotificationBus<N> {
     }
 
     protected abstract boolean hasCorrectType(Class<?> notification);
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("notificationClass", notificationClass)
+                .add("registeredNotifications", registeredNotifications)
+                .toString();
+    }
 }

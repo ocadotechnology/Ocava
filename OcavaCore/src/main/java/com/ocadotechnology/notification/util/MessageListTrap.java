@@ -21,27 +21,26 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.Subscribe;
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
-import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.Subscriber;
 
-public class MessageListTrap<T> implements Subscriber {
+public class MessageListTrap<T extends Notification> implements Subscriber {
     private final Class<T> type;
     private final boolean acceptSubclasses;
-    
+    private final EventSchedulerType schedulerType;
+
     private final List<T> trappedNotifications = new ArrayList<>();
 
-    public MessageListTrap(Class<T> type, boolean acceptSubclasses) {
-        NotificationRouter.get().addHandler(this);
+    private MessageListTrap(Class<T> type, boolean acceptSubclasses, EventSchedulerType schedulerType) {
         this.type = type;
         this.acceptSubclasses = acceptSubclasses;
+        this.schedulerType = schedulerType;
     }
 
-    public MessageListTrap(Class<T> type) {
-        this(type, false);
-    }
-
-    public static <T> MessageListTrap<T> createAcceptingSubclasses(Class<T> type) {
-        return new MessageListTrap<>(type, true);
+    public static <T extends Notification> MessageListTrap<T> createAndSubscribe(Class<T> type, boolean acceptSubclasses, EventSchedulerType schedulerType) {
+        MessageListTrap<T> messageListTrap = new MessageListTrap<>(type, acceptSubclasses, schedulerType);
+        messageListTrap.subscribeForNotifications();
+        return messageListTrap;
     }
     
     @Subscribe
@@ -57,6 +56,6 @@ public class MessageListTrap<T> implements Subscriber {
 
     @Override
     public EventSchedulerType getSchedulerType() {
-        return null;
+        return schedulerType;
     }
 }

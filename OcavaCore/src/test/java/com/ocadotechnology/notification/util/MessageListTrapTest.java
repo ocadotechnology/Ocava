@@ -17,25 +17,37 @@ package com.ocadotechnology.notification.util;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.ocadotechnology.event.scheduling.NonExecutingEventScheduler;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.notification.SimpleBus;
+import com.ocadotechnology.notification.TestSchedulerType;
+import com.ocadotechnology.time.AdjustableTimeProvider;
 
 public class MessageListTrapTest {
-    private static class TestNotification  implements Notification {}
+    private static class TestNotification implements Notification {}
 
-    @Test
-    public void getCapturedNotifications() {
-        MessageListTrap<TestNotification> trap = new MessageListTrap<>(TestNotification.class);
-        NotificationRouter.get().broadcast(new TestNotification());
-        NotificationRouter.get().broadcast(new TestNotification());
-        NotificationRouter.get().broadcast(new TestNotification());
-        Assertions.assertEquals(3, trap.getCapturedNotifications().size(), "Expected 3 Notifications");
+    @BeforeEach
+    public void before() {
+        NonExecutingEventScheduler scheduler = new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, AdjustableTimeProvider.NULL);
+        NotificationRouter.get().registerExecutionLayer(scheduler, SimpleBus.create());
     }
 
     @AfterEach
     public void after() {
         NotificationRouter.get().clearAllHandlers();
     }
+
+    @Test
+    public void getCapturedNotifications() {
+        MessageListTrap<TestNotification> trap = MessageListTrap.createAndSubscribe(TestNotification.class, false, TestSchedulerType.TEST_SCHEDULER_TYPE);
+        NotificationRouter.get().broadcast(new TestNotification());
+        NotificationRouter.get().broadcast(new TestNotification());
+        NotificationRouter.get().broadcast(new TestNotification());
+        Assertions.assertEquals(3, trap.getCapturedNotifications().size(), "Expected 3 Notifications");
+    }
+
 }

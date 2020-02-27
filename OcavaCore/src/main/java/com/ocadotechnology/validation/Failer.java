@@ -43,7 +43,7 @@ public final class Failer {
      *
      * @throws IllegalStateException    Guaranteed
      */
-    public static RuntimeException fail(String errorMessage, Object... stringArgs){
+    public static RuntimeException fail(String errorMessage, Object... stringArgs) {
         Preconditions.checkState(false, errorMessage, stringArgs);
         return exceptionThatWillNeverBeThrown;
     }

@@ -18,6 +18,7 @@ package com.ocadotechnology.notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.MoreObjects;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
 
@@ -27,7 +28,7 @@ class Broadcaster<T> {
     private final EventScheduler eventScheduler;
     private final NotificationBus<T> notificationBus;
 
-    Broadcaster(EventScheduler eventScheduler, NotificationBus<T> notificationBus, EventSchedulerType type) {
+    Broadcaster(EventScheduler eventScheduler, NotificationBus<T> notificationBus) {
         this.eventScheduler = eventScheduler;
         this.notificationBus = notificationBus;
     }
@@ -40,6 +41,15 @@ class Broadcaster<T> {
      */
     boolean isNotificationRegistered(Class<?> notification) {
         return notificationBus.isNotificationRegistered(notification);
+    }
+
+    /**
+     * Shortcut for checking whether a broadcaster is servicing the type of the provided Subscriber.
+     *
+     * @return true if the Subscriber has the right type to be handled by the broadcaster; otherwise false.
+     */
+    boolean handlesSubscriber(EventSchedulerType schedulerType) {
+        return getSchedulerType().equals(schedulerType);
     }
 
     /**
@@ -81,6 +91,7 @@ class Broadcaster<T> {
         notificationBus.clearAllHandlers();
     }
 
+    /** This method is and needs to remain ThreadSafe. */
     void addHandler(Object handler) {
         if (eventScheduler.isThreadHandoverRequired()) {
             logger.warn("Handler {} should be registered from scheduler {} not from thread: {}.", handler.getClass().getSimpleName(), eventScheduler.getType(), Thread.currentThread().getName());
@@ -90,7 +101,16 @@ class Broadcaster<T> {
         notificationBus.addHandler(handler);
     }
 
-    public EventSchedulerType getSchedulerType() {
+    EventSchedulerType getSchedulerType() {
         return eventScheduler.getType();
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("eventScheduler", eventScheduler)
+                .add("eventSchedulerType", getSchedulerType())
+                .add("notificationBus", notificationBus)
+                .toString();
     }
 }

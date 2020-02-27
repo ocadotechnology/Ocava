@@ -87,14 +87,9 @@ class NotificationRouterTest {
     }
 
     @Test
-    void whenNotificationIsInDefaultModeAndMessageBroadCasts_thenSupplierIsCalledAndNotificationIsReceivedByService(){
-        ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
-        Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
+    void handlersCleared_whenNewHandlerRegistered_thenExceptionForMissingBroadcasterThrown(){
         NotificationRouter.get().clearAllHandlers();
-        NotificationRouter.get().addHandler(notificationRememberingService);
-        NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
-        Assertions.assertTrue(notificationRememberingService.getReceivedNotifications().size() == 1);
-        Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0));
+        Assertions.assertThrows(IllegalStateException.class, () -> NotificationRouter.get().addHandler(notificationRememberingService));
     }
 
     @Test

@@ -109,6 +109,11 @@ public class CrossAppNotificationRouter implements NotificationRouter {
     }
 
     @Override
+    public <T> void registerExecutionLayer(Broadcaster<T> newBroadcaster) {
+        WithinAppNotificationRouter.get().registerExecutionLayer(newBroadcaster);
+    }
+
+    @Override
     public void clearAllHandlers() {
         WithinAppNotificationRouter.get().clearAllHandlers();
     }

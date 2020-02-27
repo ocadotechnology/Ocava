@@ -20,19 +20,26 @@ import java.util.Optional;
 import com.google.common.eventbus.Subscribe;
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.notification.Notification;
-import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.notification.Subscriber;
 
-public class MessageTrap<T> implements Subscriber {
+public class MessageTrap<T extends Notification> implements Subscriber {
     private T trappedNotification;
     private final Class<T> type;
+    private final EventSchedulerType schedulerType;
 
-    public MessageTrap(Class<T> type) {
-        NotificationRouter.get().addHandler(this);
+    private MessageTrap(Class<T> type, EventSchedulerType schedulerType) {
         this.type = type;
+        this.schedulerType = schedulerType;
     }
 
-    @Subscribe public void anyNotificationOfType(T n) {
+    public static <T extends Notification> MessageTrap<T> createAndSubscribe(Class<T> type, EventSchedulerType schedulerType) {
+        MessageTrap<T> messageTrap = new MessageTrap<>(type, schedulerType);
+        messageTrap.subscribeForNotifications();
+        return messageTrap;
+    }
+
+    @Subscribe
+    public void anyNotificationOfType(T n) {
         if (!type.isAssignableFrom(n.getClass())) {
             return;
         }
@@ -49,11 +56,11 @@ public class MessageTrap<T> implements Subscriber {
 
     @Override
     public EventSchedulerType getSchedulerType() {
-        return null;
+        return schedulerType;
     }
 
-    public static <N extends Notification> void verifyNotificationNotBroadcast(Class<N> notificationClass, Runnable action) {
-        MessageTrap<N> messageTrap = new MessageTrap<>(notificationClass);
+    public static <N extends Notification> void verifyNotificationNotBroadcast(Class<N> notificationClass, Runnable action, EventSchedulerType schedulerType) {
+        MessageTrap<N> messageTrap = MessageTrap.createAndSubscribe(notificationClass, schedulerType);
         action.run();
         messageTrap.getCapture().ifPresent(n -> {
             throw new AssertionError("Unexpected notification of type [" + notificationClass.getName() + "] broadcast: " + n);

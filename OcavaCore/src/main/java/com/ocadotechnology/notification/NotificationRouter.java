@@ -45,5 +45,10 @@ public interface NotificationRouter {
      */
     <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus);
 
+    /**
+     * Insertion order corresponds to Notification dispatch order.
+     */
+    <T> void registerExecutionLayer(Broadcaster<T> newBroadcaster);
+
     void clearAllHandlers();
 }

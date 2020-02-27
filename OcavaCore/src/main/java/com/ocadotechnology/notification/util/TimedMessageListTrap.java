@@ -21,20 +21,27 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.Subscribe;
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
-import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.Subscriber;
 import com.ocadotechnology.time.TimeProvider;
 
-public class TimedMessageListTrap<T> implements Subscriber {
+public class TimedMessageListTrap<T extends Notification> implements Subscriber {
     private final TimeProvider timeProvider;
     private final Class<T> type;
+    private final EventSchedulerType schedulerType;
 
     private final List<TimedMessage<T>> trappedNotifications = new ArrayList<>();
 
-    public TimedMessageListTrap(Class<T> type, TimeProvider timeProvider) {
-        NotificationRouter.get().addHandler(this);
+    private TimedMessageListTrap(Class<T> type, TimeProvider timeProvider, EventSchedulerType schedulerType) {
         this.type = type;
         this.timeProvider = timeProvider;
+        this.schedulerType = schedulerType;
+    }
+
+    public static <T extends Notification> TimedMessageListTrap<T> createAndSubscribe(Class<T> type, TimeProvider timeProvider, EventSchedulerType schedulerType) {
+        TimedMessageListTrap<T> timedMessageListTrap = new TimedMessageListTrap<>(type, timeProvider, schedulerType);
+        timedMessageListTrap.subscribeForNotifications();
+        return timedMessageListTrap;
     }
 
     @Subscribe
@@ -51,7 +58,7 @@ public class TimedMessageListTrap<T> implements Subscriber {
 
     @Override
     public EventSchedulerType getSchedulerType() {
-        return null;
+        return schedulerType;
     }
 
     public static class TimedMessage<T> {

@@ -15,8 +15,7 @@
  */
 package com.ocadotechnology.notification;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -24,8 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.event.scheduling.EventScheduler;
+import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.utils.RememberingSupplier;
+import com.ocadotechnology.validation.Failer;
 
 class WithinAppNotificationRouter implements NotificationRouter {
     private static final Logger logger = LoggerFactory.getLogger(WithinAppNotificationRouter.class);
@@ -48,17 +50,8 @@ class WithinAppNotificationRouter implements NotificationRouter {
     /** Singleton */
     private WithinAppNotificationRouter(){}
 
-    private volatile List<Broadcaster<?>> broadcasters = new ArrayList<>();
+    private final AtomicReference<ImmutableList<Broadcaster<?>>> broadcasters = new AtomicReference<>(ImmutableList.of());
 
-    private volatile boolean defaultMode = true;
-
-    /**
-     * The defaultMode uses DefaultBus to send all notifications (no forwarding is provided)
-     * DefaultMode is required for all unit tests. It seems that it is
-     * the less destructive way of using this class in tests.
-     * <p/>
-     * DefaultMode is removed with first call to registerExecutionLayer
-     */
     @Override
     public <T extends Notification> void broadcast(T notification) {
         RememberingSupplier<T> notificationHolder = new RememberingSupplier<>(notification);
@@ -80,11 +73,6 @@ class WithinAppNotificationRouter implements NotificationRouter {
             logger.trace("Broadcasting {}", messageSupplier.get());
         }
 
-        if (defaultMode) {
-            DefaultBus.get().broadcast(messageSupplier.get());
-            return;
-        }
-
         if (SCHEDULE_CROSS_THREAD_BROADCAST_FIRST) {
             passToBroadcastersCrossThreadFirst(messageSupplier, notificationClass, shouldHandToBroadcaster);
             return;
@@ -100,7 +88,7 @@ class WithinAppNotificationRouter implements NotificationRouter {
      */
     @Deprecated
     private <T> void passToBroadcastersInOrder(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
-        for (Broadcaster<?> broadcaster : broadcasters) {
+        for (Broadcaster<?> broadcaster : broadcasters.get()) {
             if (shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
                 broadcaster.broadcast(messageSupplier.get());
             }
@@ -112,7 +100,7 @@ class WithinAppNotificationRouter implements NotificationRouter {
      */
     private <T> void passToBroadcastersCrossThreadFirst(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
         Broadcaster<?> inThreadBroadcaster = null;
-        for (Broadcaster<?> broadcaster : broadcasters) {
+        for (Broadcaster<?> broadcaster : broadcasters.get()) {
             if (!shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
                 continue;
             }
@@ -132,35 +120,50 @@ class WithinAppNotificationRouter implements NotificationRouter {
 
     @Override
     public void addHandler(Subscriber handler) {
-        if (defaultMode) {
-            DefaultBus.get().addHandler(handler);
-            return;
-        }
-        broadcasters.stream().filter(b -> b.getSchedulerType() == handler.getSchedulerType()).findFirst().ifPresent(b -> b.addHandler(handler));
+        EventSchedulerType schedulerType = handler.getSchedulerType();
+        Broadcaster<?> broadcaster = broadcasters.get().stream()
+                .filter(b -> b.handlesSubscriber(schedulerType))
+                .findFirst()
+                .orElseThrow(() -> Failer.fail("Attempting to register subscriber of scheduler type %s but there are no registered broadcasters for this type.", schedulerType));
+
+        // The callee needs to be threadsafe -- no reason 2 threads can't get here at the same time
+        broadcaster.addHandler(handler);
+    }
+
+    @Override
+    public <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus) {
+        registerExecutionLayer(new Broadcaster<>(scheduler, notificationBus));
     }
 
     /**
      * Insertion order is used to send notification (LOGGING should be first)
-     * You have to register your layers to removeAndCancel defaultMode.
      */
     @Override
-    public synchronized <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus) {
-        if (defaultMode) {
+    public <T> void registerExecutionLayer(Broadcaster<T> newBroadcaster) {
+        broadcasters.updateAndGet(broadcasters -> registerExecutionLayer(broadcasters, newBroadcaster));
+    }
+
+    // Can be retried multiple times -- must be side-effect free.
+    private static <T> ImmutableList<Broadcaster<?>> registerExecutionLayer(ImmutableList<Broadcaster<?>> broadcasters, Broadcaster<T> newBroadcaster) {
+        if (broadcasters.isEmpty()) {
             String broadcasterOrder = SCHEDULE_CROSS_THREAD_BROADCAST_FIRST ? "CROSS_THREAD_FIRST" : "BROADCASTER_REGISTRATION_ORDER";
             logger.info("The configured broadcast order is: {}", broadcasterOrder);
         }
-        defaultMode = false;
-        List<Broadcaster<?>> registeredBroadcasters = new ArrayList<>(broadcasters);
-        registeredBroadcasters.add(new Broadcaster<>(scheduler, notificationBus, scheduler.getType()));
-        //thread handover
-        broadcasters = registeredBroadcasters;
+
+        Preconditions.checkArgument(!alreadyHandlesType(broadcasters, newBroadcaster.getSchedulerType()), "A broadcaster with type %s has already been registered.", newBroadcaster.getSchedulerType());
+        return copyAndAdd(broadcasters, newBroadcaster);
+    }
+
+    private static <T> ImmutableList<Broadcaster<?>> copyAndAdd(ImmutableList<Broadcaster<?>> broadcasters, Broadcaster<T> newBroadcaster) {
+        return ImmutableList.<Broadcaster<?>>builder().addAll(broadcasters).add(newBroadcaster).build();
+    }
+
+    private static boolean alreadyHandlesType(ImmutableList<Broadcaster<?>> broadcasters, EventSchedulerType broadcasterType) {
+        return broadcasters.stream().anyMatch(b -> b.handlesSubscriber(broadcasterType));
     }
 
     @Override
     public void clearAllHandlers() {
-        DefaultBus.get().clearAllHandlers();
-        defaultMode = true;
-        broadcasters.forEach(Broadcaster::clearAllHandlers);
-        broadcasters = new ArrayList<>();
+        broadcasters.getAndSet(ImmutableList.of()).forEach(Broadcaster::clearAllHandlers);
     }
 }

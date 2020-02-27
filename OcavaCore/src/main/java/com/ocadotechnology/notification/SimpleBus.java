@@ -16,22 +16,18 @@
 package com.ocadotechnology.notification;
 
 /**
- * This is a test-specific implementation of the NotificationBus, which is only used when nothing has been registered
- * on the NotificationRouter.
+ * This is a test-specific implementation of the NotificationBus, which accepts the registration of all
+ * Notification types on the NotificationRouter.
  */
-public class DefaultBus extends NotificationBus<Object> {
-    private DefaultBus(Class<Object> notificationClass) {
+public class SimpleBus extends NotificationBus<Notification> {
+    private SimpleBus(Class<Notification> notificationClass) {
         super(notificationClass);
     }
 
-    private static class SingletonHolder {
-        public static final DefaultBus instance = new DefaultBus(Object.class);
+    public static SimpleBus create() {
+        return new SimpleBus(Notification.class);
     }
 
-    public static DefaultBus get() {
-        return SingletonHolder.instance;
-    }
-    
     @Override
     protected boolean hasCorrectType(Class<?> notification) {
         return true;

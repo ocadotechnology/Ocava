@@ -112,7 +112,7 @@ class PointToPointValidatorTest {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummyP2PSupertypeNotification.class));
         IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
                 () -> validator.validate(new DummySubscriberB(), ImmutableList.of(DummySubtypeNotification.class)));
-        Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotification.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummyP2PSupertypeNotification.class.getSimpleName()));
     }
 
     /**

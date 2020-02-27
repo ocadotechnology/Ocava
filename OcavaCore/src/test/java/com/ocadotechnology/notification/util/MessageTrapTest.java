@@ -17,38 +17,48 @@ package com.ocadotechnology.notification.util;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.util.concurrent.Runnables;
+import com.ocadotechnology.event.scheduling.NonExecutingEventScheduler;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.notification.SimpleBus;
+import com.ocadotechnology.notification.TestSchedulerType;
+import com.ocadotechnology.time.AdjustableTimeProvider;
 
 public class MessageTrapTest {
-    private static class TestNotification  implements Notification {}
+    private static class TestNotification implements Notification {}
+
+    @BeforeEach
+    public void before() {
+        NonExecutingEventScheduler scheduler = new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, AdjustableTimeProvider.NULL);
+        NotificationRouter.get().registerExecutionLayer(scheduler, SimpleBus.create());
+    }
+
+    @AfterEach
+    public void after() {
+        NotificationRouter.get().clearAllHandlers();
+    }
 
     @Test
     public void getCapture() {
-        MessageTrap<TestNotification> trap = new MessageTrap<>(TestNotification.class);
+        MessageTrap<TestNotification> trap = MessageTrap.createAndSubscribe(TestNotification.class, TestSchedulerType.TEST_SCHEDULER_TYPE);
         NotificationRouter.get().broadcast(new TestNotification());
         Assertions.assertTrue(trap.getCapture().isPresent(), "Expected a Notification");
     }
 
     @Test
     public void verifyNotificationNotBroadcast_noBroadcast() {
-        MessageTrap.verifyNotificationNotBroadcast(TestNotification.class, () -> {});
+        MessageTrap.verifyNotificationNotBroadcast(TestNotification.class, Runnables::doNothing, TestSchedulerType.TEST_SCHEDULER_TYPE);
     }
 
     @Test
     public void verifyNotificationNotBroadcast_withBroadcast() {
-        try {
-            MessageTrap.verifyNotificationNotBroadcast(TestNotification.class, () -> NotificationRouter.get().broadcast(new TestNotification()));
-            Assertions.fail("Expected to capture Notification");
-        } catch (AssertionError ignored) {
-        }
-    }
-
-    @AfterEach
-    public void after() {
-        NotificationRouter.get().clearAllHandlers();
+        Assertions.assertThrows(
+                AssertionError.class,
+                () -> MessageTrap.verifyNotificationNotBroadcast(TestNotification.class, () -> NotificationRouter.get().broadcast(new TestNotification()), TestSchedulerType.TEST_SCHEDULER_TYPE));
     }
 
 }

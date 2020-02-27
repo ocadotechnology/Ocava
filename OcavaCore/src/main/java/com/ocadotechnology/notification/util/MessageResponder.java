@@ -35,24 +35,27 @@ public final class MessageResponder<N extends Notification> implements Subscribe
 
     private final Class<N> type;
     private final Consumer<? super N> action;
+    private final EventSchedulerType schedulerType;
 
-    private MessageResponder(Class<N> type, Consumer<? super N> action) {
+    private MessageResponder(Class<N> type, Consumer<? super N> action, EventSchedulerType schedulerType) {
         this.type = type;
         this.action = action;
+        this.schedulerType = schedulerType;
     }
 
-    public static <N extends Notification> MessageResponder<N> create(Class<N> type, Consumer<? super N> action) {
-        MessageResponder<N> responder = new MessageResponder<>(type, action);
+    public static <N extends Notification> MessageResponder<N> createAndSubscribe(Class<N> type, Consumer<? super N> action, EventSchedulerType schedulerType) {
+        MessageResponder<N> responder = new MessageResponder<>(type, action, schedulerType);
         responder.subscribeForNotifications();
         return responder;
     }
 
     @Override
     public EventSchedulerType getSchedulerType() {
-        return null;
+        return schedulerType;
     }
 
-    @Subscribe public void notificationReceived(N n) {
+    @Subscribe
+    public void notificationReceived(N n) {
         if (type.isAssignableFrom(n.getClass())) {
             action.accept(n);
         }

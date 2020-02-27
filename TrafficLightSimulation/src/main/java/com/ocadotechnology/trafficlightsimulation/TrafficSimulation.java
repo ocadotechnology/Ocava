@@ -32,8 +32,8 @@ import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.event.scheduling.SourceSchedulerTracker;
 import com.ocadotechnology.event.scheduling.SourceTrackingEventScheduler;
-import com.ocadotechnology.notification.DefaultBus;
 import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.notification.SimpleBus;
 import com.ocadotechnology.random.RepeatableRandom;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 import com.ocadotechnology.time.UtcTimeProvider;
@@ -117,7 +117,7 @@ public class TrafficSimulation {
                         true);
 
                 SourceTrackingEventScheduler eventScheduler = new SourceTrackingEventScheduler(new SourceSchedulerTracker(), SchedulerLayerType.SIMULATION, simpleDiscreteEventScheduler);
-                NotificationRouter.get().registerExecutionLayer(eventScheduler, DefaultBus.get());
+                NotificationRouter.get().registerExecutionLayer(eventScheduler, SimpleBus.create());
 
                 return eventScheduler;
             case REALTIME:
