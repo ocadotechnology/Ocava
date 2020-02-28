@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.scenario.scenarios;
+package com.ocadotechnology.scenario.scenarios.unordered;
 
 import java.util.List;
 
@@ -25,28 +25,34 @@ import com.ocadotechnology.scenario.StepFuture;
 import com.ocadotechnology.scenario.Story;
 
 /**
- * Test the basic functionality of handling "any of unordered steps": the test should pass if one of two specified steps
- * finishes
+ * Test that for handling "any of unordered steps" a group of steps finishing will result in the "any of" step to finish
  */
 @Story
-public class AnyOfUnorderedStepsSimpleTest extends AbstractFrameworkTestStory {
+public class AnyOfUnorderedStepsGroupFinishesTest extends AbstractFrameworkTestStory {
 
-    private static final String FINISHING_STEP = "Finishing Step";
+    private static final String GROUP_OF_STEPS = "Group Of Steps";
     private static final String NONFINISHING_STEP = "Non-finishing Step";
 
-    private static final String SENT_EVENT = "Sent Event";
+    private static final String GROUP_EVENT_1 = "Group Event 1";
+    private static final String GROUP_EVENT_2 = "Group Event 2";
+    private static final String GROUP_EVENT_3 = "Group Event 3";
     private static final String UNSENT_EVENT = "Unsent Event";
 
     @Test
     public void scenario() {
         when.simStarts();
-        when.testEvent.scheduled(1, SENT_EVENT);
 
-        then.testEvent.unordered(FINISHING_STEP).occurs(SENT_EVENT);
+        when.testEvent.scheduled(1, GROUP_EVENT_1);
+        when.testEvent.scheduled(2, GROUP_EVENT_2);
+        when.testEvent.scheduled(3, GROUP_EVENT_3);
+
+        then.testEvent.unordered(GROUP_OF_STEPS).occurs(GROUP_EVENT_1);
+        then.testEvent.unordered(GROUP_OF_STEPS).occurs(GROUP_EVENT_2);
+        then.testEvent.unordered(GROUP_OF_STEPS).occurs(GROUP_EVENT_3);
         then.testEvent.unordered(NONFINISHING_STEP).occurs(UNSENT_EVENT);
 
-        StepFuture<List<String>> finishedSteps = then.unordered.waitForAnyOfSteps(FINISHING_STEP, NONFINISHING_STEP);
+        StepFuture<List<String>> finishedSteps = then.unordered.waitForAnyOfSteps(GROUP_OF_STEPS, NONFINISHING_STEP);
 
-        then.futures.assertEquals(ImmutableList.of(FINISHING_STEP), finishedSteps);
+        then.futures.assertEquals(ImmutableList.of(GROUP_OF_STEPS), finishedSteps);
     }
 }

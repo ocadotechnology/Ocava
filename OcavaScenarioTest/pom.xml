@@ -23,6 +23,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
 
         <!-- Not test scope, so depending on OcavaScenarioTest also pulls in junit -->
         <dependency>

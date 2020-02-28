@@ -13,36 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.scenario.scenarios;
+package com.ocadotechnology.scenario.scenarios.unordered;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-class MultipleEqualUnorderedStepsRequireMultipleEventsFailureTest extends AbstractFrameworkTestStory {
+class MultipleEqualUnorderedStepsRequireMultipleEventsSuccessTest extends AbstractFrameworkTestStory {
 
     private static final String FIRST_TRACKED_EVENT = "First Tracked Event";
     private static final String SECOND_TRACKED_EVENT = "Second Tracked Event";
     private static final String UNSENT = "Unsent Event";
     private static final String TRACKED = "tracked";
 
-    @Override
-    public void executeTestSteps() {
-        IllegalStateException e = Assertions.assertThrows(
-                IllegalStateException.class,
-                super::executeTestSteps,
-                "No error thrown");
-        Assertions.assertEquals("Missing step: 7 (MultipleEqualUnorderedStepsRequireMultipleEventsFailureTest.java:54).waitForSteps   [" + SECOND_TRACKED_EVENT + "]", e.getMessage());
-    }
-
     @Test
     void scenario() {
         when.simStarts();
         when.testEvent.scheduled(1, "ignored");
         when.testEvent.scheduled(2, TRACKED);
+        when.testEvent.scheduled(3, TRACKED);
 
         //not successful test should not affect caches
         then.testEvent.unordered(UNSENT).occurs("never sent");
@@ -50,7 +41,10 @@ class MultipleEqualUnorderedStepsRequireMultipleEventsFailureTest extends Abstra
         then.testEvent.unordered(FIRST_TRACKED_EVENT).occurs(TRACKED);
         then.testEvent.unordered(SECOND_TRACKED_EVENT).occurs(TRACKED);
 
-        //we should not be able to process the same notification multiple times, so the second step should never complete, causing the failure asserted above
+        //we are sending two notifications with the same name, so this should now complete
         then.unordered.waitForSteps(FIRST_TRACKED_EVENT, SECOND_TRACKED_EVENT);
+
+        //allows the test to complete.
+        then.unordered.removesUnorderedSteps(UNSENT);
     }
 }

@@ -13,42 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.scenario.scenarios;
-
-import java.util.List;
+package com.ocadotechnology.scenario.scenarios.unordered;
 
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
-import com.ocadotechnology.scenario.StepFuture;
 import com.ocadotechnology.scenario.Story;
 
-/**
- * Test that a step handling "any of unordered steps" will not interfere with a "wait for" step for all unordered
- * steps.
- */
 @Story
-public class AnyOfUnorderedStepsAndWaitForAllSteps extends AbstractFrameworkTestStory {
+class AllStepsAreAlreadyFinishedTest extends AbstractFrameworkTestStory {
 
-    private static final String FIRST_STEP = "First Step";
-    private static final String SECOND_STEP = "Second Step";
+    private static final String STEP_1 = "A Step";
+    private static final String STEP_2 = "Another Step";
 
     private static final String EVENT_1 = "Event 1";
     private static final String EVENT_2 = "Event 2";
 
     @Test
-    public void scenario() {
+    void scenario() {
         when.simStarts();
+
+        //schedule by the order defined
         when.testEvent.scheduled(1, EVENT_1);
         when.testEvent.scheduled(2, EVENT_2);
 
-        then.testEvent.unordered(FIRST_STEP).occurs(EVENT_1);
-        then.testEvent.unordered(SECOND_STEP).occurs(EVENT_2);
+        then.testEvent.unordered(STEP_1).occurs(EVENT_1);
+        then.testEvent.unordered(STEP_2).occurs(EVENT_2);
 
-        StepFuture<List<String>> finishedSteps = then.unordered.waitForAnyOfSteps(FIRST_STEP, SECOND_STEP);
-        then.unordered.waitForSteps(FIRST_STEP, SECOND_STEP);
-
-        then.futures.assertEquals(ImmutableList.of(FIRST_STEP), finishedSteps);
+        then.unordered.waitForSteps(STEP_1, STEP_2);
+        then.unordered.allStepsAreAlreadyFinished(STEP_1, STEP_2);
     }
 }

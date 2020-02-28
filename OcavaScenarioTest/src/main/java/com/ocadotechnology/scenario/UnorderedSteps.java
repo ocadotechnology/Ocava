@@ -19,11 +19,15 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Assertions;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+//TODO: add an unit test for this class
 public class UnorderedSteps {
     private final StepCache stepCache;
     private final StepManager stepManager;
@@ -59,29 +63,66 @@ public class UnorderedSteps {
     }
 
     /**
-     * Used to remove unordered steps by name, which is particularly useful for removing a "never" step that no longer applies.
+     * Used to remove an unordered step by name. Useful for removing a "never" step that no longer applies.
      *
-     * @param names the names of steps that should be removed
+     * @param stepName the name of step to remove
      */
-    public void removesUnorderedSteps(String... names) {
-        addSimpleExecuteStep(() -> {
-            for (String name : names) {
-                stepCache.removeAndCancel(name);
-            }
-        });
+    public void removesUnorderedSteps(String stepName) {
+        removeSteps(stepName);
+    }
+
+    /**
+     * Used to remove more then one unordered step by name. Useful for removing a "never" step that no longer applies.
+     *
+     * @param stepName the name of step to remove
+     * @param otherStepNames the names of additional steps to remove
+     */
+    public void removesUnorderedSteps(String stepName, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
+
+        removeSteps(names);
+    }
+
+    private void removeSteps(String... names) {
+        Preconditions.checkState(names.length > 0, "names length must be greater than zero");
+        addSimpleExecuteStep(() -> Stream.of(names).forEach(stepCache::removeAndCancel));
     }
 
     /**
      * Like removesUnorderedSteps, except continues even if the step was never added.
      *
-     * @param names the names of steps that this step will try to remove
+     * @param stepName the name of step to try remove
      */
-    public void removesUnorderedStepsIfPresent(String... names) {
-        addSimpleExecuteStep(() -> {
-            for (String name : names) {
-                stepCache.removeAndCancelIfPresent(name);
-            }
-        });
+    public void removesUnorderedStepsIfPresent(String stepName) {
+        removeStepsIfPresent(stepName);
+    }
+
+    /**
+     * Like removesUnorderedSteps, except continues even if the step was never added.
+     *
+     * @param stepName the name of step to try remove
+     * @param otherStepNames the names of additional steps to remove
+     */
+    public void removesUnorderedStepsIfPresent(String stepName, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
+
+        removeStepsIfPresent(names);
+    }
+
+    private void removeStepsIfPresent(String... names) {
+        Preconditions.checkState(names.length > 0, "names length must be greater than zero");
+        addSimpleExecuteStep(() -> Stream.of(names).forEach(stepCache::removeAndCancelIfPresent));
+    }
+
+    /**
+     * Used to wait for a single unordered step specified by name, to fix the group specified by the name to have to have
+     * happened before subsequent steps. This is not required if there are no subsequent steps (the scenario test will
+     * wait for the step anyway).
+     *
+     * @param stepName the name of step to wait for
+     */
+    public void waitForSteps(String stepName) {
+        waitForAll(stepName);
     }
 
     /**
@@ -89,9 +130,18 @@ public class UnorderedSteps {
      * happened before subsequent steps. This is not required if there are no subsequent steps (the scenario test will
      * wait for the steps anyway).
      *
-     * @param names the names of steps that this step will wait for
+     * @param stepName the name of step to wait for
+     * @param otherStepNames the names of the additional steps to wait for
      */
-    public void waitForSteps(String... names) {
+    public void waitForSteps(String stepName, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
+
+        waitForAll(names);
+    }
+
+    private void waitForAll(String... names) {
+        Preconditions.checkState(names.length > 0, "names length must be greater than zero");
+
         addExecuteStep(new ExecuteStep() {
             private final List<String> waitSteps = new LinkedList<>(Arrays.asList(names));
 
@@ -99,7 +149,7 @@ public class UnorderedSteps {
             protected void executeStep() {
                 Assertions.assertTrue(waitSteps.stream().allMatch(stepCache::hasAddedStepWithName),
                         "Not all steps that we are waiting for have been previously added. Waiting for: "
-                                        + waitSteps + ", previously added: " + stepCache.getAllUnorderedStepNames());
+                                + waitSteps + ", previously added: " + stepCache.getAllUnorderedStepNames());
                 waitSteps.removeIf(stepCache::isUnorderedStepFinished);
             }
 
@@ -117,9 +167,27 @@ public class UnorderedSteps {
     /**
      * Like waitForSteps, except continues even if the step was never added.
      *
-     * @param names the names of steps that this step will try to wait for
+     * @param stepName the name of step to try to wait for
      */
-    public void waitForStepsIfPresent(String... names) {
+    public void waitForStepsIfPresent(String stepName) {
+        waitForAllIfPresent(stepName);
+    }
+
+    /**
+     * Like waitForSteps, except continues even if the step was never added.
+     *
+     * @param stepName the name of step to try to wait for
+     * @param otherStepNames the names of additional steps to try to wait for
+     */
+    public void waitForStepsIfPresent(String stepName, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
+
+        waitForAllIfPresent(names);
+    }
+
+    private void waitForAllIfPresent(String... names) {
+        Preconditions.checkState(names.length > 0, "names length must be greater than zero");
+
         addExecuteStep(new ExecuteStep() {
             private final List<String> waitSteps = new LinkedList<>(Arrays.asList(names));
 
@@ -143,15 +211,38 @@ public class UnorderedSteps {
      * Used to wait for any of a list of unordered steps to have happened before subsequent steps. This allows an OR of
      * unordered steps to be done e.g. for scenarios with multiple valid sequences of events.
      *
-     * @param names the names of steps that this step will wait for
+     * @param a name of a step
+     * @param b name of another step
      *
      * @return the list of steps that have finished and therefore caused this wait step to finish
      */
-    public StepFuture<List<String>> waitForAnyOfSteps(String... names) {
+    public StepFuture<List<String>> waitForAnyOfSteps(String a, String b) {
+        return waitForAny(a, b);
+    }
+
+    /**
+     * Used to wait for any of a list of unordered steps to have happened before subsequent steps. This allows an OR of
+     * unordered steps to be done e.g. for scenarios with multiple valid sequences of events.
+     *
+     * @param a name of a step
+     * @param b name of another step
+     * @param otherStepNames the names of any additional optional steps to include, optional
+     *
+     * @return the list of steps that have finished and therefore caused this wait step to finish
+     */
+    public StepFuture<List<String>> waitForAnyOfSteps(String a, String b, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, a, b);
+
+        return waitForAny(names);
+    }
+
+    private StepFuture<List<String>> waitForAny(String... names) {
+        Preconditions.checkState(names.length >= 2, "names length should be at least two");
+
         MutableStepFuture<List<String>> finishedStepsFuture = new MutableStepFuture<>();
 
         addExecuteStep(new ExecuteStep() {
-            private ImmutableList<String> waitSteps = ImmutableList.copyOf(names);
+            private List<String> waitSteps = ImmutableList.copyOf(names);
             private boolean isComplete = false;
 
             @Override
@@ -186,11 +277,29 @@ public class UnorderedSteps {
     /**
      * Asserts that the steps specified by name are finished by the time this step executes.
      *
-     * @param names the steps that should have already finished
+     * @param stepName the name of step to check
      */
-    public void allStepsAreAlreadyFinished(String... names) {
+    public void allStepsAreAlreadyFinished(String stepName) {
+        allStepsFinished(stepName);
+    }
+
+    /**
+     * Asserts that the steps specified by name are finished by the time this step executes.
+     *
+     * @param stepName the name of step to check
+     * @param otherStepNames the names of other steps to check
+     */
+    public void allStepsAreAlreadyFinished(String stepName, String... otherStepNames) {
+        String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
+
+        allStepsFinished(names);
+    }
+
+    private void allStepsFinished(String... names) {
+        Preconditions.checkState(names.length > 0, "names length must be greater than zero");
+
         addSimpleExecuteStep(() -> {
-            ImmutableList<String> unfinished = Arrays.stream(names).filter(name -> !stepCache.isUnorderedStepFinished(name)).collect(ImmutableList.toImmutableList());
+            ImmutableList<String> unfinished = Stream.of(names).filter(name -> !stepCache.isUnorderedStepFinished(name)).collect(ImmutableList.toImmutableList());
             Assertions.assertTrue(unfinished.isEmpty(), "Steps " + unfinished + " are not finished");
         });
     }
