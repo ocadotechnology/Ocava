@@ -152,7 +152,7 @@ public class SQLiteConnection implements AutoCloseable {
     }
 
     /**
-     * Executes an SQL query and then consumes the result using a {@link Consumer<ResultSet>}. Throws an {@link SQLException}
+     * Executes an SQL query and then consumes the result using a {@link Consumer} or {@link ResultSet}. Throws an {@link SQLException}
      *
      * @param resultConsumer the resultConsumer to consume the result of the SQL query.
      * @param sql            the sql queries to execute.

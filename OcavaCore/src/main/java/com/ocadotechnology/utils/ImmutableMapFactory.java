@@ -208,7 +208,7 @@ public class ImmutableMapFactory {
         return keys.stream()
                 .collect(ImmutableMap.toImmutableMap(
                         key -> key,
-                        valueCreator::apply));
+                        valueCreator));
     }
 
     /**
@@ -270,7 +270,7 @@ public class ImmutableMapFactory {
     }
 
     /**
-     * This function creates a new filtered {@link ImmutableMap} from a baseMap. The filter parameter, which is a {@link Predicate,
+     * This function creates a new filtered {@link ImmutableMap} from a baseMap. The filter parameter, which is a {@link Predicate},
      * is used to test each value in the base map. If the result of the test is true that value, along with it's key, is
      * added to the new ImmutableMap. Otherwise they are not.
      *

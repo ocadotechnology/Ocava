@@ -22,7 +22,7 @@ public class CSVRowBuilder<T extends CSVColumn> {
 
     /**
      * @param clazz The class of the {@link CSVRow} the builder will make.
-     * @return a CSVRowBuilder that can make CSVRow's of class <T>
+     * @return a CSVRowBuilder that can make CSVRow's of class T
      */
     public static <T extends CSVColumn> CSVRowBuilder<T> create(Class<T> clazz) {
         return new CSVRowBuilder<T>();
@@ -32,7 +32,7 @@ public class CSVRowBuilder<T extends CSVColumn> {
      * Adds a column with a specific value to be created when the builder is built. This value represents one field of a {@link CSVRow}
      * @param columnHeader the column to add the value to
      * @param value the value for the specified column.
-     * @return returns this CSVRowBuilder to allow {@link #withValue(CSVColumn, Object)} to be chained.
+     * @return returns this CSVRowBuilder to allow method calls to be chained.
      */
     public CSVRowBuilder<T> withValue(T columnHeader, Object value) {
         lineByHeaderBuilder.put(columnHeader.name(), value.toString());

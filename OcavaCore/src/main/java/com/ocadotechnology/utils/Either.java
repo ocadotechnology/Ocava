@@ -179,15 +179,15 @@ public abstract class Either<A, B> {
      */
     public abstract A reduceRight(Function<B, A> reduceRight);
 
-    /** Consumer: Calls either {@link #leftConsumer(Consumer)} or {@link #rightConsumer(Consumer)} (but not both). */
+    /** Consumer: Calls either leftConsumer or rightConsumer (but not both). */
     public abstract void accept(Consumer<A> leftConsumer, Consumer<B> rightConsumer);
 
     /** Monad
      * Returns an either which is returned as the result of applying the mapper function
      * to the right hand value on this either.
      * If the either has a left value, it will not do anything.
-     * This function operates identically to the way the <tt>flatMap</tt> methods on the
-     * Java standard library's <tt>Optional</tt> and <tt>Stream</tt> datatypes.
+     * This function operates identically to the way the flatMap methods on the
+     * Java standard library's Optional and Stream datatypes.
      * @param mapper The function run on the right hand value to create a new Either
      * @param <C> The new right hand type
      */
@@ -504,8 +504,8 @@ public abstract class Either<A, B> {
          * Returns the either which is returned as the result of applying the mapper function to
          * the left hand value on this either.
          * If the either has a right value, it will not do anything.
-         * This function operates identically to the way the <tt>flatMap</tt> methods on
-         * the Java standard library's <tt>Optional</tt> and <tt>Stream</tt> datatypes.
+         * This function operates identically to the way the flatMap methods on
+         * the Java standard library's Optional and Stream datatypes.
          * @param mapper The function run on the left hand value to create a new Either
          * @param <C> The new left hand type
          */
@@ -532,7 +532,7 @@ public abstract class Either<A, B> {
         }
 
         /**
-         * If <tt>this</tt> is left-leaning, test the predicate against the left value, Otherwise create a right with
+         * If this is left-leaning, test the predicate against the left value, Otherwise create a right with
          * the provided value.
          */
         public Either<A, B> filter(Predicate<A> acceptor, B onNotAccepted) {
@@ -546,7 +546,7 @@ public abstract class Either<A, B> {
         }
 
         /**
-         * If <tt>this</tt> is left-leaning, test the predicate against the left value, Otherwise create a right with
+         * If this is left-leaning, test the predicate against the left value, Otherwise create a right with
          * the value returned from the supplier.
          */
         public Either<A, B> filter(Predicate<A> acceptor, Supplier<B> onNotAccepted) {
@@ -592,8 +592,8 @@ public abstract class Either<A, B> {
          * Returns the either which is returned as the result of applying the mapper function to
          * the right hand value on this either.
          * If the either has a left value, it will not do anything.
-         * This function operates identically to the way the <tt>flatMap</tt> methods on
-         * the Java standard library's <tt>Optional</tt> and <tt>Stream</tt> datatypes.
+         * This function operates identically to the way the flatMap methods on
+         * the Java standard library's Optional and Stream datatypes.
          * @param mapper The function run on the right hand value to create a new Either
          * @param <C> The new right hand type
          */
@@ -620,7 +620,7 @@ public abstract class Either<A, B> {
         }
 
         /**
-         * If <tt>this</tt> is right-leaning, test the predicate against the right value, Otherwise create a left with
+         * If this is right-leaning, test the predicate against the right value, Otherwise create a left with
          * the provided value.
          */
         public Either<A, B> filter(Predicate<B> acceptor, A onNotAccepted) {
@@ -628,7 +628,7 @@ public abstract class Either<A, B> {
         }
 
         /**
-         * If <tt>this</tt> is right-leaning, test the predicate against the right value, Otherwise create a left with
+         * If this is right-leaning, test the predicate against the right value, Otherwise create a left with
          * the value returned from the supplier.
          */
         public Either<A, B> filter(Predicate<B> acceptor, Supplier<A> onNotAccepted) {

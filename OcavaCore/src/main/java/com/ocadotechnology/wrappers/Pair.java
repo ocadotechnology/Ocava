@@ -48,8 +48,8 @@ public class Pair<A, B> implements Serializable {
      * To be used when Pair is boxed in a monad (Stream/Optional), Map
      * the two pair values using the function provided.
      * @param f The function to map from the two pair values
-     * @param <A> Pair<A,?>
-     * @param <B> Pair<?,B>
+     * @param <A> Pair&lt;A,?&gt;
+     * @param <B> Pair&lt;?,B&gt;
      * @param <C> Resulting type
      * @return New value of type C
      */
@@ -61,10 +61,10 @@ public class Pair<A, B> implements Serializable {
      * To be used when Pair is boxed in a monad (Stream/Optional), Map
      * the 'a' value while keeping the 'b' value in place.
      * @param f The mapping function to apply to side 'a'
-     * @param <A> Original Pair<A, ?>
-     * @param <B> Pair<?, B>
-     * @param <C> New Pair<C, ?>
-     * @return New pair with side 'a' type changed from A -> C
+     * @param <A> Original Pair&lt;A, ?&gt;
+     * @param <B> Pair&lt;?, B&gt;
+     * @param <C> New Pair&lt;C, ?&gt;
+     * @return New pair with side 'a' type changed from A -&gt; C
      */
     public static <A, B, C> Function<Pair<A, B>, Pair<C, B>> mapA(Function<A, C> f) {
         return p -> Pair.of(f.apply(p.a), p.b);
@@ -74,19 +74,27 @@ public class Pair<A, B> implements Serializable {
      * To be used when Pair is boxed in a monad (Stream/Optional), Map
      * the 'b' value while keeping the 'a' value in place.
      * @param f The mapping function to apply to side 'a'
-     * @param <A> Pair<A, ?>
-     * @param <B> Original Pair<?, B>
-     * @param <C> New Pair<?, C>
-     * @return New pair with side 'b' type changed from B -> C
+     * @param <A> Pair&lt;A, ?&gt;
+     * @param <B> Original Pair&lt;?, B&gt;
+     * @param <C> New Pair&lt;?, C&gt;
+     * @return New pair with side 'b' type changed from B -&gt; C
      */
     public static <A, B, C> Function<Pair<A, B>, Pair<A, C>> mapB(Function<B, C> f) {
         return p -> Pair.of(p.a, f.apply(p.b));
     }
 
+    /**
+     * Return the first element of the pair (a)
+     * @return first element of the pair
+     */
     public A a() {
         return a;
     }
 
+    /**
+     * Return the second element of the pair (b)
+     * @return second element of the pair
+     */
     public B b() {
         return b;
     }
