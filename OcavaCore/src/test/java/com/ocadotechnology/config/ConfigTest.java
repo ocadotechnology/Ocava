@@ -1710,6 +1710,19 @@ class ConfigTest {
                     .doesNotContain("TestConfig.SECRET_1")
                     .contains("TestConfig.FOO=foo");
         }
+
+        @Test
+        @DisplayName("contains prefixed keys")
+        void prefixedValues() {
+            Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
+                    .put("prefix@TestConfig.FOO", "bar")
+                    .put("TestConfig.FOO", "foo")
+                    .buildWrapped();
+
+            assertThat(config.toString())
+                    .contains("prefix@TestConfig.FOO=bar")
+                    .contains("TestConfig.FOO=foo");
+        }
     }
 
     private static Config<TestConfig> generateConfigWithEntry(Enum<?> key, String value) {

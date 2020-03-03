@@ -1113,7 +1113,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
             if (!isSecret) {
                 entries.add(k + '=' + v);
             }
-        }, false);
+        }, true);
         return joiner.join(entries);
     }
 
