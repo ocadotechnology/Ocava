@@ -35,6 +35,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Maps;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
@@ -905,6 +906,57 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
 
     public <K, V> ImmutableMap<K, V> getMapOrEmpty(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
         return getOrDefault(configKey, v -> ConfigParsers.parseMap(v, keyParser, valueParser), ImmutableMap.of());
+    }
+
+    public ImmutableSetMultimap<String, String> getStringSetMultimap(Enum<?> key) {
+        return getSetMultimap(key, Function.identity(), Function.identity());
+    }
+
+    public ImmutableSetMultimap<String, String> getStringSetMultimapOrEmpty(Enum<?> key) {
+        return getStringSetMultimapOrDefault(key, ImmutableSetMultimap.of());
+    }
+
+    public ImmutableSetMultimap<String, String> getStringSetMultimapOrDefault(
+            Enum<?> key,
+            ImmutableSetMultimap<String, String> defaultValue) {
+        return getOrDefault(key,
+                v -> ConfigParsers.parseSetMultimap(v, Function.identity(), Function.identity()), defaultValue);
+    }
+
+    public <K, V> ImmutableSetMultimap<K, V> getSetMultimapOrEmpty(
+            Enum<?> configKey,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser) {
+        return getOrDefault(configKey,
+                v -> ConfigParsers.parseSetMultimap(v, keyParser, valueParser), ImmutableSetMultimap.of());
+    }
+
+    /**
+     * Returns a typed-Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed, before being supplied to the functions that translate them to the
+     * correct types.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * @param configKey   Config key which contains the key-value pairs as a String.
+     * @param keyParser   Function to convert a String to a key in the resulting Map.
+     * @param valueParser Function to convert a String to a value in the resulting Map.
+     * @param <K>         The type of key in resulting {@code Map}
+     * @param <V>         The type of value in resulting {@code Map}
+     * @return a Multimap of key-value pairs parsed from the config value
+     * @throws IllegalArgumentException if duplicate keys are specified
+     * @throws NullPointerException     if the keyParser or valueParser return null for any provided string.
+     */
+    public <K, V> ImmutableSetMultimap<K, V> getSetMultimap(
+            Enum<?> configKey,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser
+            ) {
+        String val = getOrNull(configKey);
+        return ConfigParsers.parseSetMultimap(val, keyParser, valueParser);
     }
 
     /**

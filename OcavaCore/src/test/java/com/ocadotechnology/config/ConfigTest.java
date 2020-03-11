@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -30,7 +31,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 import com.ocadotechnology.id.Id;
@@ -1642,6 +1645,184 @@ class ConfigTest {
                 Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, SIMPLE_CONFIG_VALUE);
 
                 assertThatThrownBy(() -> config.getMap(TestConfig.FOO, Integer::valueOf, s -> Failer.fail("Boom")))
+                        .hasMessageContaining("Boom");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("for Multimap values")
+    class MultimapConfigTests {
+
+        abstract class CommonMultimapTests<K, V> {
+
+            static final String SIMPLE_CONFIG_VALUE = "1=True;1=False;2=False;3=False;4=False";
+
+            abstract ImmutableMultimap<K, V> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
+
+            abstract ImmutableMultimap<K, V> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
+
+            abstract void verifyMultimapIsComplete(ImmutableMultimap<K, V> multimap);
+
+            /** Convenience overload that reads and writes the config value to TestConfig.FOO */
+            ImmutableMultimap<K, V> readMultimap(String configValue) {
+                return readMultimap(configValue, TestConfig.FOO, TestConfig.FOO);
+            }
+
+            @Test
+            @DisplayName("works with valid config")
+            void withValidConfig() {
+                ImmutableMultimap<K, V> multimap = readMultimap(SIMPLE_CONFIG_VALUE);
+                verifyMultimapIsComplete(multimap);
+            }
+
+            @Test
+            @DisplayName("returns an empty multimap if config key does not exist")
+            void configKeyNotPresent() {
+                ImmutableMultimap<K, V> multimap = readMultimapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR);
+                assertThat(multimap.asMap()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("returns an empty map for an empty value")
+            void configReturnsEmptyMap() {
+                ImmutableMultimap<K, V> multimap = readMultimap((""));
+                assertThat(multimap.asMap()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("works with a trailing semicolon")
+            void trailingSemiColonIsAllowed() {
+                ImmutableMultimap<K, V> multimap = readMultimap("1=True;1=False;2=False;3=False;4=False;");
+                verifyMultimapIsComplete(multimap);
+            }
+
+            @Test
+            @DisplayName("works with permutations")
+            void permutationIsAllowed() {
+                ImmutableMultimap<K, V> multimap = readMultimap("1=True;2=False;3=False;1=False;4=False");
+                verifyMultimapIsComplete(multimap);
+            }
+
+            @Test
+            @DisplayName("ignores empty entries")
+            void emptyEntries() {
+                ImmutableMultimap<K, V> multimap = readMultimap("1=True;1=False;;2=False;3=False;4=False");
+                verifyMultimapIsComplete(multimap);
+            }
+
+            @Test
+            @DisplayName("trims whitespace")
+            void trimsWhitespace() {
+                ImmutableMultimap<K, V> multimap = readMultimap(" 1 = True ; 1 = False ; 2 = False ; 3 = False ; 4 = False ");
+                verifyMultimapIsComplete(multimap);
+            }
+
+            @Test
+            @DisplayName("entries with missing keys are ignored")
+            void ignoresMissingKeys() {
+                ImmutableMultimap<K, V> multimap = readMultimap("=False;1=True;1=False;2=False;3=False;4=False");
+                verifyMultimapIsComplete(multimap);
+            }
+        }
+
+        @Nested
+        @DisplayName("read as a String map")
+        class StringMultimapTests extends CommonMultimapTests<String, String> {
+
+            @Override
+            ImmutableMultimap<String, String> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getStringSetMultimap(keyToRead);
+            }
+
+            @Override
+            ImmutableMultimap<String, String> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getStringSetMultimapOrEmpty(keyToRead);
+            }
+
+            @Override
+            void verifyMultimapIsComplete(ImmutableMultimap<String, String> multimap) {
+                assertThat(multimap.asMap()).containsOnlyKeys("1", "2", "3", "4");
+                assertThat(multimap.asMap()).containsEntry("1", ImmutableSet.of("True", "False"));
+                assertThat(multimap.asMap()).containsEntry("2", ImmutableSet.of("False"));
+                assertThat(multimap.asMap()).containsEntry("3", ImmutableSet.of("False"));
+                assertThat(multimap.asMap()).containsEntry("4", ImmutableSet.of("False"));
+            }
+
+            @Test
+            @DisplayName("ignores missing values")
+            void handlesMissingValues() {
+                ImmutableMultimap<String, String> multimap = readMultimap("1;2=");
+                assertThat(multimap.asMap().get("1")).isNull();
+                assertThat(new ArrayList<>(multimap.asMap().get("2")).get(0)).isEmpty();
+            }
+        }
+
+        @Nested
+        @DisplayName("read as a typed multimap")
+        class TypedMapTests extends CommonMultimapTests<Integer, Boolean> {
+
+            @Override
+            ImmutableMultimap<Integer, Boolean> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getSetMultimap(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+            }
+
+            @Override
+            ImmutableMultimap<Integer, Boolean> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getSetMultimapOrEmpty(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+            }
+
+            @Override
+            void verifyMultimapIsComplete(ImmutableMultimap<Integer, Boolean> multimap) {
+                assertThat(multimap.asMap()).containsOnlyKeys(1, 2, 3, 4);
+                assertThat(multimap.asMap()).containsEntry(1, ImmutableSet.of(true, false));
+                assertThat(multimap.asMap()).containsEntry(2, ImmutableSet.of(false));
+                assertThat(multimap.asMap()).containsEntry(3, ImmutableSet.of(false));
+                assertThat(multimap.asMap()).containsEntry(4, ImmutableSet.of(false));
+            }
+
+            @Test
+            @DisplayName("uses listParser as valueParser")
+            void multimapOfLists() {
+                Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1=4,5;1=8,9;2=6,7");
+                ImmutableSetMultimap<Integer, ImmutableSet<Integer>> multimap =
+                        config.getSetMultimap(TestConfig.FOO, Integer::parseInt, ConfigParsers.getSetOfIntegers());
+                assertThat(multimap.asMap()).containsOnlyKeys(1, 2);
+                assertThat(multimap.asMap()).containsEntry(1, ImmutableSet.of(ImmutableSet.of(4, 5), ImmutableSet.of(8, 9)));
+                assertThat(multimap.asMap()).containsEntry(2, ImmutableSet.of(ImmutableSet.of(6, 7)));
+            }
+
+            @Test
+            @DisplayName("applies valueParser to empty string for missing values")
+            void handlesMissingValues() {
+
+                Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "1;2=");
+                Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
+                    assertThat(v).isEmpty();
+                    return v;
+                };
+                config.getSetMultimap(TestConfig.FOO, Integer::valueOf, identityFunctionWithAssertionStringIsEmpty);
+            }
+
+            @Test
+            @DisplayName("throws exceptions generated by key parser function")
+            void throwsKeyParserExceptions() {
+                Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, SIMPLE_CONFIG_VALUE);
+
+                assertThatThrownBy(() -> config.getSetMultimap(TestConfig.FOO, s -> Failer.fail("Boom"), Boolean::parseBoolean))
+                        .hasMessageContaining("Boom");
+            }
+
+            @Test
+            @DisplayName("throws exceptions generated by key parser function")
+            void throwsValueParserExceptions() {
+                Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, SIMPLE_CONFIG_VALUE);
+
+                assertThatThrownBy(() -> config.getSetMultimap(TestConfig.FOO, Integer::valueOf, s -> Failer.fail("Boom")))
                         .hasMessageContaining("Boom");
             }
         }

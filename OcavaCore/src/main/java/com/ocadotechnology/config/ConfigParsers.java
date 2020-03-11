@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 import com.ocadotechnology.physics.units.LengthUnit;
@@ -433,5 +434,23 @@ public class ConfigParsers {
      */
     private static double getTimeUnitsInSourceTimeUnit(TimeUnit sourceUnit, TimeUnit wantedTimeUnit) {
         return (double) sourceUnit.toNanos(1) / wantedTimeUnit.toNanos(1);
+    }
+
+    public static <K, V> ImmutableSetMultimap<K, V> parseSetMultimap(
+            String value,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser) {
+        ImmutableSetMultimap.Builder<K, V> builder = ImmutableSetMultimap.builder();
+        for (String pair : value.split(";")) {
+            String[] keyValues = pair.split("=", -1);
+            if (keyValues.length < 2 || keyValues[0].isEmpty()) {
+                continue;
+            }
+
+            K propertyKey = keyParser.apply(keyValues[0].trim());
+            V propertyValue = valueParser.apply(keyValues[1].trim());
+            builder.put(propertyKey, propertyValue);
+        }
+        return builder.build();
     }
 }
