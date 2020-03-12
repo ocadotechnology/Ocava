@@ -18,7 +18,7 @@ package com.ocadotechnology.time;
 import java.io.Serializable;
 
 /**
- * Provides the current realtime  when `getTime()` is called
+ * Provides the current realtime when {@link #getTime()} is called
  */
 public class UtcTimeProvider implements TimeProvider, Serializable {
     @Override

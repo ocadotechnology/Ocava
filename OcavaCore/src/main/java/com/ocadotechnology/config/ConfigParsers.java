@@ -240,7 +240,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility to convert a comma (,) or colon (:) separated string into a {@link ImmutableCollection}of T.
+     * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableCollection} of T.
      *
      * @param conversion Function that can convert a single entry of the list from String to the desired type T
      * @param collector  ImmutableCollection collector
@@ -252,7 +252,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of T.
+     * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of T.
      *
      * @param conversion Function that can convert a single entry of the String to the desired type T
      * @param <T>        Type of value to be stored in the list
@@ -262,7 +262,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of T.
+     * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of T.
      *
      * @param conversion Function that can convert a single entry of the String to the desired type T
      * @param <T>        Type of value to be stored in the list
@@ -272,70 +272,70 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Strings.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Strings.
      */
     public static Function<String, ImmutableList<String>> getListOfStrings() {
         return getListOf(Function.identity());
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Strings.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Strings.
      */
     public static Function<String, ImmutableSet<String>> getSetOfStrings() {
         return getSetOf(Function.identity());
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Integers. The values are parsed
-     * to Long's using {@link #parseInt(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Integers.
+     * The values are parsed to Integers using {@link #parseInt(String)}.
      */
     public static Function<String, ImmutableList<Integer>> getListOfIntegers() {
         return getListOf(ConfigParsers::parseInt);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of Integers. The values are parsed
-     * to Long's using {@link #parseInt(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of Integers.
+     * The values are parsed to Integers using {@link #parseInt(String)}.
      */
     public static Function<String, ImmutableSet<Integer>> getSetOfIntegers() {
         return getSetOf(ConfigParsers::parseInt);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Longs. The values are parsed
-     * to Long's using {@link #parseLong(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Longs.
+     * The values are parsed to Longs using {@link #parseLong(String)}.
      */
     public static Function<String, ImmutableList<Long>> getListOfLongs() {
         return getListOf(ConfigParsers::parseLong);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of Longs. The values are parsed
-     * to Long's using {@link #parseLong(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of Longs.
+     * The values are parsed to Longs using {@link #parseLong(String)}.
      */
     public static Function<String, ImmutableSet<Long>> getSetOfLongs() {
         return getSetOf(ConfigParsers::parseLong);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Doubles. The values are parsed
-     * to Long's using {@link #parseDouble(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Doubles.
+     * The values are parsed to Longs using {@link #parseDouble(String)}.
      */
     public static Function<String, ImmutableList<Double>> getListOfDoubles() {
         return getListOf(ConfigParsers::parseDouble);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of Doubles. The values are parsed
-     * to Long's using {@link #parseDouble(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of Doubles.
+     * The values are parsed to Doubles using {@link #parseDouble(String)}.
      */
     public static Function<String, ImmutableSet<Double>> getSetOfDoubles() {
         return getSetOf(ConfigParsers::parseDouble);
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:)  separated string into a {@link ImmutableList} of Id's. The values are parsed
-     * to Long's using {@link #parseLong(String)}.
+     * Utility function to convert a comma (,) or colon (:)  separated string into an {@link ImmutableList} of Ids.
+     * The values are parsed to Longs using {@link #parseLong(String)}.
      *
      * @param <T> The Generic type of the Id
      */
@@ -344,8 +344,8 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of Id's. The values are parsed
-     * to Long's using {@link #parseLong(String)}.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of Ids.
+     * The values are parsed to Longs using {@link #parseLong(String)}.
      *
      * @param <T> The Generic type of the Id
      */
@@ -354,7 +354,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of StringId's.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of StringIds.
      *
      * @param <T> The Generic type of the StringId
      */
@@ -363,7 +363,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of StringId's.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of StringIds.
      *
      * @param <T> The Generic type of the StringId
      */
@@ -372,7 +372,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableList} of Enums's.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of Enums.
      *
      * @param enumClass The Enumeration to convert the Strings into.
      * @param <T>       The Enum class
@@ -382,7 +382,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility function to convert a comma (,) or colon (:) separated string into a {@link ImmutableSet} of Enums's.
+     * Utility function to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of Enums.
      *
      * @param enumClass The Enumeration to convert the Strings into.
      * @param <T>       The Enum class

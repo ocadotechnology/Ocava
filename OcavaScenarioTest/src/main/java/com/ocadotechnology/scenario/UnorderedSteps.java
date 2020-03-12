@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Assertions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-//TODO: add an unit test for this class
 public class UnorderedSteps {
     private final StepCache stepCache;
     private final StepManager stepManager;
@@ -73,7 +72,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Used to remove more then one unordered step by name. Useful for removing a "never" step that no longer applies.
+     * Used to remove more than one unordered step by name. Useful for removing a "never" step that no longer applies.
      *
      * @param stepName the name of step to remove
      * @param otherStepNames the names of additional steps to remove
@@ -90,7 +89,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Like removesUnorderedSteps, except continues even if the step was never added.
+     * Like {@link #removesUnorderedSteps}, except continues even if the step was never added.
      *
      * @param stepName the name of step to try remove
      */
@@ -99,7 +98,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Like removesUnorderedSteps, except continues even if the step was never added.
+     * Like {@link #removesUnorderedSteps}, except continues even if the step was never added.
      *
      * @param stepName the name of step to try remove
      * @param otherStepNames the names of additional steps to remove
@@ -116,7 +115,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Used to wait for a single unordered step specified by name, to fix the group specified by the name to have to have
+     * Used to wait for a single unordered step specified by name, to fix the group specified by the name to have
      * happened before subsequent steps. This is not required if there are no subsequent steps (the scenario test will
      * wait for the step anyway).
      *
@@ -177,7 +176,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Like waitForSteps, except continues even if the step was never added.
+     * Like {@link #waitForSteps}, except continues even if the step was never added.
      *
      * @param stepName the name of step to try to wait for
      */
@@ -186,7 +185,7 @@ public class UnorderedSteps {
     }
 
     /**
-     * Like waitForSteps, except continues even if the step was never added.
+     * Like {@link #waitForSteps}, except continues even if the step was never added.
      *
      * @param stepName the name of step to try to wait for
      * @param otherStepNames the names of additional steps to try to wait for
@@ -335,7 +334,7 @@ public class UnorderedSteps {
                 if (isAFinished && isBFinished) {
                     finished = true;
                 } else if (isAFinished || isBFinished) {
-                    Assertions.assertTrue(!isBFinished, "Step " + b + " has been finished before step " + a);
+                    Assertions.assertFalse(isBFinished, "Step " + b + " has been finished before step " + a);
                 }
             }
 

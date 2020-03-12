@@ -228,14 +228,35 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return (Config<T>) subConfig.get(key);
     }
 
+    /**
+     * Interprets a config value as an integer.  If it is the String "max" or "min" (case insensitive) returns
+     * {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively.
+     *
+     * @throws NumberFormatException if the value is not equal to either the string "max" or "min", ignoring case and is
+     *          not a valid base-10 integer.
+     * @throws ConfigKeyNotFoundException if the value is not defined.
+     */
     public int getInt(Enum<?> key) {
         return ConfigParsers.parseInt(getString(key));
     }
 
+    /**
+     * Interprets a config value as an integer, if it is present.  If the value is not present, returns the default
+     * value.
+     *
+     * If the value is the String "max" or "min" (case insensitive), returns {@link Integer#MAX_VALUE} or
+     * {@link Integer#MIN_VALUE} respectively.
+     *
+     * @throws NumberFormatException if the value is not equal to either the string "max" or "min", ignoring case and is
+     *          not a valid base-10 integer.
+     */
     public int getIntOrDefault(Enum<?> key, int defaultValue) {
         return getOrDefault(key, ConfigParsers::parseInt, defaultValue);
     }
 
+    /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getIntOrDefault(Enum, int)} instead.
+     */
     @Deprecated
     public OptionalInt getIntIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
@@ -245,7 +266,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * Using Optional in place of OptionalDouble as OptionalDouble is missing some features.
+     * @deprecated - see class javadoc for reasoning - use {@link #getDoubleOrDefault(Enum, double)} instead.
      */
     @Deprecated
     public Optional<Double> getDoubleIfPresent(Enum<?> key) {
@@ -285,6 +306,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return getOrDefault(key, ConfigParsers::parseLong, defaultValue);
     }
 
+    /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getLongOrDefault(Enum, long)} instead.
+     */
     @Deprecated
     public OptionalLong getLongIfPresent(Enum<?> key) {
         if (!containsKey(key)) {
@@ -337,6 +361,8 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getFractionalTimeOrDefault(Enum, double)} instead.
+     *
      * @return the result of {@link Config#getFractionalTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalDouble as OptionalDouble is missing some features.
      */
@@ -370,6 +396,8 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getTimeOrDefault(Enum, long)} instead.
+     *
      * @return the result of {@link Config#getTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalLong as OptionalLong is missing some features.
      */
@@ -402,6 +430,8 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getDurationOrDefault(Enum, Duration)} instead.
+     *
      * @return the result of {@link Config#getDuration} if the config key has a defined value, else {@link Optional#empty()}
      */
     @Deprecated
@@ -651,6 +681,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getListOfIdsOrDefault(Enum, ImmutableList)} or
+     * {@link #getListOfIdsOrEmpty(Enum)} instead.
+     *
      * @return The same as {@link #getListOfIds} or an empty list if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
@@ -680,6 +713,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getSetOfIdsOrEmpty(Enum)} or
+     * {@link #getSetOfIdsOrDefault(Enum, ImmutableSet)} instead.
+     *
      * @return The same as {@link #getSetOfIds} or an empty set if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
@@ -757,6 +793,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getListOfStringIdsOrEmpty(Enum)} or
+     * {@link #getListOfStringIdsOrDefault(Enum, ImmutableList)} instead.
+     *
      * @return The same as {@link #getListOfStringIds} or an empty list if the config key isn't found
      */
     @Deprecated
@@ -784,6 +823,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getSetOfStringIdsOrEmpty(Enum)} or
+     * {@link #getSetOfStringIdsOrDefault(Enum, ImmutableSet)} instead.
+     *
      * @return The same as {@link #getSetOfStringIds} or an empty set if the config key isn't found
      */
     @Deprecated
@@ -823,7 +865,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * Get a single value and transform is using the valueFunction
+     * Get a single value and transform it using the valueFunction.
      *
      * @param key           Configuration key
      * @param valueFunction Function for extracting the value from the config
@@ -836,7 +878,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * Wrapper for handling a get or default
+     * Wrapper for handling a get or default.
      *
      * @param key            Configuration key
      * @param valueExtractor Function for extracting the value from a String
@@ -852,6 +894,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         }
     }
 
+    /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getStringOrDefault(Enum, String)} instead.
+     */
     @Deprecated
     public Optional<String> getStringIfPresent(Enum<?> key) {
         return Optional.ofNullable(getOrNull(key)).map(String::trim);
@@ -986,6 +1031,8 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * @deprecated - see class javadoc for reasoning - use {@link #getEnumOrDefault(Enum, Class, Enum)} instead.
+     *
      * Returns the enum value to which the specified key is mapped, if present.
      *
      * @param key       Key for which to lookup the enum value.
@@ -1007,6 +1054,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return qualifier + "." + key.toString();
     }
 
+    /**
+     * @deprecated - exposes secret keys.  Use {@link #getKeyValueStringMapWithoutSecrets()} instead
+     */
     @Deprecated
     public ImmutableMap<String, String> getKeyValueStringMap() {
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
@@ -1034,6 +1084,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return map.build();
     }
 
+    /**
+     * @deprecated - exposes secret keys.  Use {@link #getUnqualifiedKeyValueStringMapWithoutSecrets(Class)} instead
+     */
     @Deprecated
     public <T extends Enum<T>> ImmutableMap<String, String> getUnqualifiedKeyValueStringMap(Class<T> key) {
         Config<T> subConfig = getSubConfig(key);
