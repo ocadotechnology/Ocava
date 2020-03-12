@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterEach;
@@ -27,14 +28,13 @@ import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.notification.TestBus;
 import com.ocadotechnology.notification.TestSchedulerType;
-import com.ocadotechnology.time.TimeProvider;
 
 class ExecutorEventSchedulerTest {
     private ExecutorEventScheduler scheduler;
 
     @BeforeEach
     void setUp() {
-        scheduler = new ExecutorEventScheduler(TimeProvider.NULL, "ExecutorEventSchedulerTest", true, TestSchedulerType.TEST_SCHEDULER_TYPE);
+        scheduler = new ExecutorEventScheduler(TimeUnit.MILLISECONDS, "ExecutorEventSchedulerTest", true, TestSchedulerType.TEST_SCHEDULER_TYPE);
     }
 
     @AfterEach

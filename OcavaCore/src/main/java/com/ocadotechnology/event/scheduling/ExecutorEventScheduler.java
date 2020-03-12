@@ -39,14 +39,19 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.RecoverableException;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.UtcTimeProvider;
 import com.ocadotechnology.validation.Failer;
 
+/**
+ * A realtime event scheduler using a {@link ScheduledThreadPoolExecutor} to schedule the execution of events for a
+ * given time in the future.
+ */
 public class ExecutorEventScheduler extends TypedEventScheduler {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorEventScheduler.class);
 
     private static final PlaceholderScheduledFuture PLACEHOLDER_FUTURE = new PlaceholderScheduledFuture();
 
-    private final TimeProvider timeProvider;
+    private final UtcTimeProvider timeProvider;
 
     private final ScheduledThreadPoolExecutor executor;
     private final Set<Consumer<Throwable>> failureListeners = new HashSet<>();
@@ -58,7 +63,25 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
 
     private final AtomicBoolean failed = new AtomicBoolean(false);
 
-    public ExecutorEventScheduler(TimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
+    /**
+     * @param timeUnit The {@link TimeUnit} that this scheduler will run in
+     * @param name A name to be associated with the thread used by this scheduler
+     * @param daemon whether the executor thread should be created as a daemon thread
+     * @param type the type of this scheduler (for use with execution layers
+     *             - see {@link com.ocadotechnology.notification.NotificationRouter})
+     */
+    public ExecutorEventScheduler(TimeUnit timeUnit, String name, boolean daemon, EventSchedulerType type) {
+        this(new UtcTimeProvider(timeUnit), name, daemon, type);
+    }
+
+    /**
+     * @param timeProvider The {@link TimeProvider} that this scheduler will be based on
+     * @param name A name to be associated with the thread used by this scheduler
+     * @param daemon whether the executor thread should be created as a daemon thread
+     * @param type the type of this scheduler (for use with execution layers
+     *             - see {@link com.ocadotechnology.notification.NotificationRouter})
+     */
+    public ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
         super(type);
         this.timeProvider = timeProvider;
 
@@ -69,6 +92,7 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
                         .setDaemon(daemon)
                         .build());
 
+        //The delay is 0 so the TimeUnit is irrelevant.
         ScheduledFuture<Long> future = executor.schedule(() -> Thread.currentThread().getId(), 0, TimeUnit.MILLISECONDS);
         try {
             threadId = future.get();
@@ -114,7 +138,7 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
         try {
             // NOTE - The scheduled event can complete before we've put a Future in eventsMap, so we first put a placeholder future then replace it (if present, atomic operation)
             eventsMap.put(event, PLACEHOLDER_FUTURE);
-            ScheduledFuture<?> future = executor.schedule(() -> executeEvent(event), (long) (event.time - now), TimeUnit.MILLISECONDS);
+            ScheduledFuture<?> future = executor.schedule(() -> executeEvent(event), (long) ((event.time - now) / timeProvider.getMillisecondMultiplier()), TimeUnit.MILLISECONDS);
             eventsMap.replace(event, PLACEHOLDER_FUTURE, future);
         } catch (RejectedExecutionException e) {
             eventsMap.remove(event, PLACEHOLDER_FUTURE);
@@ -193,7 +217,8 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
         }
     }
 
-    @Override public long getThreadId() {
+    @Override
+    public long getThreadId() {
         return threadId;
     }
 

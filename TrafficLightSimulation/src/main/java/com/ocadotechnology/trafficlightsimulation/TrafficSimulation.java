@@ -121,7 +121,7 @@ public class TrafficSimulation {
 
                 return eventScheduler;
             case REALTIME:
-                BusyLoopEventScheduler busyLoopEventScheduler = new BusyLoopEventScheduler(new UtcTimeProvider(), "Realtime scheduler", SchedulerLayerType.SIMULATION);
+                BusyLoopEventScheduler busyLoopEventScheduler = new BusyLoopEventScheduler(new UtcTimeProvider(TimeUnit.SECONDS), "Realtime scheduler", SchedulerLayerType.SIMULATION);
                 busyLoopEventScheduler.start();
                 return busyLoopEventScheduler;
             default:
@@ -135,7 +135,7 @@ public class TrafficSimulation {
         try {
             return new Builder(args)
                     .loadConfigFromLocalResources(resourceFiles, configKeys)
-                    .setTimeUnit(TimeUnit.MILLISECONDS)
+                    .setTimeUnit(TimeUnit.SECONDS)
                     .build();
         } catch (Exception e) {
             e.printStackTrace();

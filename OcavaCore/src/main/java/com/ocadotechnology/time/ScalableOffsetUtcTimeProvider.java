@@ -15,38 +15,76 @@
  */
 package com.ocadotechnology.time;
 
+import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
+
 /**
- * Provides a time based on realtime but offset and scaled based on user specification
+ * Provides a time based on realtime but offset and optionally scaled based on user specification
  *
  * Given a multiplier of 2, this will mean that for every 1 second that passes in realtime, 2 seconds will pass on
  * this time provider.
  *
- * This time provider can be used for modelling more or less computing (network/cpu) resources within a realtime simulation
+ * This multiplier can be used for modelling more or less computing (network/cpu) resources within a realtime simulation
  * as execution events can be given longer or shorter amounts of times to be computed in.
- * In realtime systems that are highly unconstrained by system resources, this time provider allows for the simulation to
- * be run faster.
+ * In realtime systems that are highly unconstrained by system resources, this time provider allows for the simulation
+ * to be run faster.
  */
-public class ScalableOffsetUtcTimeProvider extends OffsetUtcTimeProvider {
+public class ScalableOffsetUtcTimeProvider extends UtcTimeProvider implements Serializable {
+    private final double offset;
 
-    private final double multiplier;
+    /**
+     * Creates a new realtime time provider with a default time unit of MILLISECONDS,
+     * starting at the time specified by the user.
+     * @param startTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     *
+     * @deprecated since 6.00
+     * Use {@link #ScalableOffsetUtcTimeProvider(double startTime, TimeUnit timeUnit)} instead.
+     */
+    @Deprecated
+    public ScalableOffsetUtcTimeProvider(double startTime) {
+        this(startTime, TimeUnit.MILLISECONDS, 1);
+    }
+
+    /**
+     * Creates a new realtime time provider starting at the time specified by the user.
+     * @param startTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     * @param timeUnit The {@link TimeUnit} to return results in
+     */
+    public ScalableOffsetUtcTimeProvider(double startTime, TimeUnit timeUnit) {
+        this(startTime, timeUnit, 1);
+    }
+
+    /**
+     * Creates a new scaled realtime time provider with a default time unit of MILLISECONDS,
+     * starting at the time specified by the user and advancing that the multiplier rate against realtime
+     *
+     * @param startTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     * @param multiplier The multiplier to apply to realtime. A multiplier of 1.0 will act in the same way as
+     *                   the underlying `OffsetUtcTimeProvider`
+
+     * @deprecated since 6.00
+     * Use {@link #ScalableOffsetUtcTimeProvider(double startTime, TimeUnit timeUnit, double multiplier)} instead.
+     */
+    public ScalableOffsetUtcTimeProvider(double startTime, double multiplier) {
+        this(startTime, TimeUnit.MILLISECONDS, multiplier);
+    }
 
     /**
      * Creates a new scaled realtime time provider starting at the time specified by the user
      * and advancing that the multiplier rate against realtime
      *
-     * @param simulationStartTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     * @param startTime The start time from epoch (0.0 is 00:00 1st January 1970)
+     * @param timeUnit The {@link TimeUnit} to return results in
      * @param multiplier The multiplier to apply to realtime. A multiplier of 1.0 will act in the same way as
      *                   the underlying `OffsetUtcTimeProvider`
      */
-    public ScalableOffsetUtcTimeProvider(double simulationStartTime, double multiplier) {
-        //Divide the given simulation start time by delta as it will be multiplied by delta when `getTime()` is called
-        super(simulationStartTime / multiplier);
-
-        this.multiplier = multiplier;
+    public ScalableOffsetUtcTimeProvider(double startTime, TimeUnit timeUnit, double multiplier) {
+        super(timeUnit, multiplier);
+        this.offset = super.getTime() - startTime;
     }
 
     @Override
     public double getTime() {
-        return super.getTime() * multiplier;
+        return super.getTime() - offset;
     }
 }

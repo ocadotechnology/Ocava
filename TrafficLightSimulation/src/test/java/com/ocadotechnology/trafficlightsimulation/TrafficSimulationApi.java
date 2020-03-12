@@ -71,7 +71,7 @@ public class TrafficSimulationApi extends AbstractScenarioSimulationApi {
 
     @Override
     public TimeUnit getSchedulerTimeUnit() {
-        return TimeUnit.MILLISECONDS;
+        return TimeUnit.SECONDS;
     }
 
     public Map<String, String> getConfigMap() {
