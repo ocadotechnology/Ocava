@@ -40,6 +40,7 @@ import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.RecoverableException;
 import com.ocadotechnology.time.TimeProvider;
 import com.ocadotechnology.time.UtcTimeProvider;
+import com.ocadotechnology.utils.Types;
 import com.ocadotechnology.validation.Failer;
 
 /**
@@ -62,6 +63,24 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
     private final long threadId;
 
     private final AtomicBoolean failed = new AtomicBoolean(false);
+
+    /**
+     * @param timeProvider The {@link TimeProvider} that this scheduler will be based on
+     * @param name A name to be associated with the thread used by this scheduler
+     * @param daemon whether the executor thread should be created as a daemon thread
+     * @param type the type of this scheduler (for use with execution layers
+     *             - see {@link com.ocadotechnology.notification.NotificationRouter})
+     * @deprecated since 6.00
+     * Use {@link #ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type)} instead.
+     */
+    @Deprecated
+    public ExecutorEventScheduler(TimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
+        this(
+                Types.fromTypeOrFail(timeProvider, UtcTimeProvider.class),
+                name,
+                daemon,
+                type);
+    }
 
     /**
      * @param timeUnit The {@link TimeUnit} that this scheduler will run in
