@@ -18,6 +18,7 @@ package com.ocadotechnology.scenario;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -137,6 +138,17 @@ public class UnorderedSteps {
         String[] names = ArrayUtils.insert(0, otherStepNames, stepName);
 
         waitForAll(names);
+    }
+
+    /**
+     * Used to wait for unordered steps specified by name, to fix the group specified by the names to have to have
+     * happened before subsequent steps. This is not required if there are no subsequent steps (the scenario test will
+     * wait for the steps anyway).
+     *
+     * @param stepNames the names of steps to wait for, must not be empty
+     */
+    public void waitForSteps(Set<String> stepNames) {
+        waitForAll(stepNames.toArray(new String[stepNames.size()]));
     }
 
     private void waitForAll(String... names) {
