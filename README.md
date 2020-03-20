@@ -14,3 +14,7 @@ NotificationRouter/NotificationBus/Notification - These allow your code to broad
 EventScheduler/TimeProvider - These interfaces are the core of the DES system.  For simple systems, the SimpleDiscreteEventScheduler is sufficient, while for more complex systems with multiple simulated threads, the SourceTrackingEventScheduler works with the NotificationRouter to simulate thread handover between different parts of the system.  The RealtimeEventScheduler can be passed into the system to test real time, multi-threaded instances, or to be used in a production environment.
 The framework was designed to support a system with a number of isolated, single threaded sub-components communicating via immutable events (Notifications).  It is perfectly possible to use features such as parrallel streams to speed up the sub-component processing, or to branch off entire additional threads. The system is designed to support using Notifications to pass data and control back into the main sub-component thread once a branch has completed its processing.
 
+# Development Process
+
+Please note that this library is primarily developed on an internal, private repository.  This means that issue numbers referenced in commit messages refer to the issue numbers in the internal repository.
+
