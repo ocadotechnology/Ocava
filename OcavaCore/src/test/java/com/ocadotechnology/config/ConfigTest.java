@@ -1492,7 +1492,9 @@ class ConfigTest {
 
             abstract ImmutableMap<K, V> readMapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
 
-            abstract void verifyMapIsComplete(ImmutableMap<K, V> map);
+            abstract ImmutableMap<K, V> readMapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
+
+            abstract ImmutableMap<K, V> getDefaultMap();
 
             /** Convenience overload that reads and writes the config value to TestConfig.FOO */
             ImmutableMap<K, V> readMap(String configValue) {
@@ -1503,13 +1505,40 @@ class ConfigTest {
             @DisplayName("works with valid config")
             void withValidConfig() {
                 ImmutableMap<K, V> map = readMap(SIMPLE_CONFIG_VALUE);
-                verifyMapIsComplete(map);
+                assertThat(map).isEqualTo(getDefaultMap());
+            }
+
+            @Test
+            @DisplayName("throws an exception if config key does not exist")
+            void getConfigKeyNotPresent() {
+                assertThatThrownBy(() -> readMap(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR)).isInstanceOf(ConfigKeyNotFoundException.class);
             }
 
             @Test
             @DisplayName("returns an empty map if config key does not exist")
-            void configKeyNotPresent() {
+            void getOrEmptyConfigKeyNotPresent() {
                 ImmutableMap<K, V> map = readMapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR);
+                assertThat(map).isEmpty();
+            }
+
+            @Test
+            @DisplayName("returns the specified map if config key does exist")
+            void getOrEmptyConfigKeyPresent() {
+                ImmutableMap<K, V> map = readMapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.FOO);
+                assertThat(map).isEqualTo(getDefaultMap());
+            }
+
+            @Test
+            @DisplayName("returns a default map if config key does not exist")
+            void getOrDefaultConfigKeyNotPresent() {
+                ImmutableMap<K, V> map = readMapOrDefault("", TestConfig.FOO, TestConfig.BAR);
+                assertThat(map).isEqualTo(getDefaultMap());
+            }
+
+            @Test
+            @DisplayName("returns the specified map if config key does exist")
+            void getOrDefaultConfigKeyPresent() {
+                ImmutableMap<K, V> map = readMapOrDefault("", TestConfig.FOO, TestConfig.FOO);
                 assertThat(map).isEmpty();
             }
 
@@ -1524,35 +1553,34 @@ class ConfigTest {
             @DisplayName("works with a trailing semicolon")
             void trailingSemiColonIsAllowed() {
                 ImmutableMap<K, V> map = readMap("1=True;2=False;3=False;4=False;");
-                verifyMapIsComplete(map);
+                assertThat(map).isEqualTo(getDefaultMap());
             }
 
             @Test
             @DisplayName("ignores empty entries")
             void emptyEntries() {
                 ImmutableMap<K, V> map = readMap("1=True;;2=False;3=False;4=False");
-                verifyMapIsComplete(map);
+                assertThat(map).isEqualTo(getDefaultMap());
             }
 
             @Test
             @DisplayName("trims whitespace")
             void trimsWhitespace() {
                 ImmutableMap<K, V> map = readMap(" 1 = True ; 2 = False ; 3 = False ; 4 = False ");
-                verifyMapIsComplete(map);
+                assertThat(map).isEqualTo(getDefaultMap());
             }
 
             @Test
             @DisplayName("entries with missing keys are ignored")
             void ignoresMissingKeys() {
                 ImmutableMap<K, V> map = readMap("=False;1=True;2=False;3=False;4=False");
-                verifyMapIsComplete(map);
+                assertThat(map).isEqualTo(getDefaultMap());
             }
         }
 
         @Nested
         @DisplayName("read as a String map")
         class StringMapTests extends CommonMapTests<String, String> {
-
             @Override
             ImmutableMap<String, String> readMap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
@@ -1566,12 +1594,19 @@ class ConfigTest {
             }
 
             @Override
-            void verifyMapIsComplete(ImmutableMap<String, String> map) {
-                assertThat(map).containsOnlyKeys("1", "2", "3", "4");
-                assertThat(map).containsEntry("1", "True");
-                assertThat(map).containsEntry("2", "False");
-                assertThat(map).containsEntry("3", "False");
-                assertThat(map).containsEntry("4", "False");
+            ImmutableMap<String, String> readMapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getStringMapOrDefault(keyToRead, getDefaultMap());
+            }
+
+            @Override
+            ImmutableMap<String, String> getDefaultMap() {
+                return ImmutableMap.of(
+                        "1", "True",
+                        "2", "False",
+                        "3", "False",
+                        "4", "False"
+                );
             }
 
             @Test
@@ -1590,22 +1625,29 @@ class ConfigTest {
             @Override
             ImmutableMap<Integer, Boolean> readMap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
-                return config.getMap(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+                return config.getMap(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
             @Override
             ImmutableMap<Integer, Boolean> readMapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
-                return config.getMapOrEmpty(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+                return config.getMapOrEmpty(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
             @Override
-            void verifyMapIsComplete(ImmutableMap<Integer, Boolean> map) {
-                assertThat(map).containsOnlyKeys(1, 2, 3, 4);
-                assertThat(map).containsEntry(1, true);
-                assertThat(map).containsEntry(2, false);
-                assertThat(map).containsEntry(3, false);
-                assertThat(map).containsEntry(4, false);
+            ImmutableMap<Integer, Boolean> readMapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getMapOrDefault(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean, getDefaultMap());
+            }
+
+            @Override
+            ImmutableMap<Integer, Boolean> getDefaultMap() {
+                return ImmutableMap.of(
+                        1, true,
+                        2, false,
+                        3, false,
+                        4, false
+                );
             }
 
             @Test
@@ -1662,7 +1704,9 @@ class ConfigTest {
 
             abstract ImmutableMultimap<K, V> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
 
-            abstract void verifyMultimapIsComplete(ImmutableMultimap<K, V> multimap);
+            abstract ImmutableMultimap<K, V> readMultimapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead);
+
+            abstract ImmutableMultimap<K, V> getDefaultMultimap();
 
             /** Convenience overload that reads and writes the config value to TestConfig.FOO */
             ImmutableMultimap<K, V> readMultimap(String configValue) {
@@ -1673,13 +1717,40 @@ class ConfigTest {
             @DisplayName("works with valid config")
             void withValidConfig() {
                 ImmutableMultimap<K, V> multimap = readMultimap(SIMPLE_CONFIG_VALUE);
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
+            }
+
+            @Test
+            @DisplayName("throws an exception if config key does not exist")
+            void getConfigKeyNotPresent() {
+                assertThatThrownBy(() -> readMultimap(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR)).isInstanceOf(ConfigKeyNotFoundException.class);
             }
 
             @Test
             @DisplayName("returns an empty multimap if config key does not exist")
-            void configKeyNotPresent() {
+            void getOrEmptyConfigKeyNotPresent() {
                 ImmutableMultimap<K, V> multimap = readMultimapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.BAR);
+                assertThat(multimap.asMap()).isEmpty();
+            }
+
+            @Test
+            @DisplayName("returns the specified multimap if config key does exist")
+            void getOrEmptyConfigKeyPresent() {
+                ImmutableMultimap<K, V> multimap = readMultimapOrEmpty(SIMPLE_CONFIG_VALUE, TestConfig.FOO, TestConfig.FOO);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
+            }
+
+            @Test
+            @DisplayName("returns a default multimap if config key does not exist")
+            void getOrDefaultConfigKeyNotPresent() {
+                ImmutableMultimap<K, V> multimap = readMultimapOrDefault("", TestConfig.FOO, TestConfig.BAR);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
+            }
+
+            @Test
+            @DisplayName("returns the specified multimap if config key does exist")
+            void getOrDefaultConfigKeyPresent() {
+                ImmutableMultimap<K, V> multimap = readMultimapOrDefault("", TestConfig.FOO, TestConfig.FOO);
                 assertThat(multimap.asMap()).isEmpty();
             }
 
@@ -1694,35 +1765,35 @@ class ConfigTest {
             @DisplayName("works with a trailing semicolon")
             void trailingSemiColonIsAllowed() {
                 ImmutableMultimap<K, V> multimap = readMultimap("1=True;1=False;2=False;3=False;4=False;");
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
             }
 
             @Test
             @DisplayName("works with permutations")
             void permutationIsAllowed() {
                 ImmutableMultimap<K, V> multimap = readMultimap("1=True;2=False;3=False;1=False;4=False");
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
             }
 
             @Test
             @DisplayName("ignores empty entries")
             void emptyEntries() {
                 ImmutableMultimap<K, V> multimap = readMultimap("1=True;1=False;;2=False;3=False;4=False");
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
             }
 
             @Test
             @DisplayName("trims whitespace")
             void trimsWhitespace() {
                 ImmutableMultimap<K, V> multimap = readMultimap(" 1 = True ; 1 = False ; 2 = False ; 3 = False ; 4 = False ");
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
             }
 
             @Test
             @DisplayName("entries with missing keys are ignored")
             void ignoresMissingKeys() {
                 ImmutableMultimap<K, V> multimap = readMultimap("=False;1=True;1=False;2=False;3=False;4=False");
-                verifyMultimapIsComplete(multimap);
+                assertThat(multimap).isEqualTo(getDefaultMultimap());
             }
         }
 
@@ -1731,24 +1802,32 @@ class ConfigTest {
         class StringMultimapTests extends CommonMultimapTests<String, String> {
 
             @Override
-            ImmutableMultimap<String, String> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+            ImmutableSetMultimap<String, String> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
                 return config.getStringSetMultimap(keyToRead);
             }
 
             @Override
-            ImmutableMultimap<String, String> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+            ImmutableSetMultimap<String, String> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
                 return config.getStringSetMultimapOrEmpty(keyToRead);
             }
 
             @Override
-            void verifyMultimapIsComplete(ImmutableMultimap<String, String> multimap) {
-                assertThat(multimap.asMap()).containsOnlyKeys("1", "2", "3", "4");
-                assertThat(multimap.asMap()).containsEntry("1", ImmutableSet.of("True", "False"));
-                assertThat(multimap.asMap()).containsEntry("2", ImmutableSet.of("False"));
-                assertThat(multimap.asMap()).containsEntry("3", ImmutableSet.of("False"));
-                assertThat(multimap.asMap()).containsEntry("4", ImmutableSet.of("False"));
+            ImmutableSetMultimap<String, String> readMultimapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getStringSetMultimapOrDefault(keyToRead, getDefaultMultimap());
+            }
+
+            @Override
+            ImmutableSetMultimap<String, String> getDefaultMultimap() {
+                return ImmutableSetMultimap.of(
+                        "1", "True",
+                        "1", "False",
+                        "2", "False",
+                        "3", "False",
+                        "4", "False"
+                );
             }
 
             @Test
@@ -1767,22 +1846,30 @@ class ConfigTest {
             @Override
             ImmutableMultimap<Integer, Boolean> readMultimap(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
-                return config.getSetMultimap(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+                return config.getSetMultimap(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
             @Override
             ImmutableMultimap<Integer, Boolean> readMultimapOrEmpty(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
                 Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
-                return config.getSetMultimapOrEmpty(keyToRead, Integer::valueOf, Boolean::parseBoolean);
+                return config.getSetMultimapOrEmpty(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
             @Override
-            void verifyMultimapIsComplete(ImmutableMultimap<Integer, Boolean> multimap) {
-                assertThat(multimap.asMap()).containsOnlyKeys(1, 2, 3, 4);
-                assertThat(multimap.asMap()).containsEntry(1, ImmutableSet.of(true, false));
-                assertThat(multimap.asMap()).containsEntry(2, ImmutableSet.of(false));
-                assertThat(multimap.asMap()).containsEntry(3, ImmutableSet.of(false));
-                assertThat(multimap.asMap()).containsEntry(4, ImmutableSet.of(false));
+            ImmutableSetMultimap<Integer, Boolean> readMultimapOrDefault(String configValue, Enum<?> keyToWrite, Enum<?> keyToRead) {
+                Config<TestConfig> config = generateConfigWithEntry(keyToWrite, configValue);
+                return config.getSetMultimapOrDefault(keyToRead, ConfigParsers::parseInt, ConfigParsers::parseBoolean, getDefaultMultimap());
+            }
+
+            @Override
+            ImmutableSetMultimap<Integer, Boolean> getDefaultMultimap() {
+                return ImmutableSetMultimap.of(
+                        1, true,
+                        1, false,
+                        2, false,
+                        3, false,
+                        4, false
+                );
             }
 
             @Test

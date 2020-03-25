@@ -57,7 +57,7 @@ public class NonNegativeIntegerSplitterByWeights<E> {
      * (note that {@link ImmutableMap} is deterministic).
      *
      * @param weights assigned to each group.
-     * @param <E> the type of the groups the quantity will be spit amongst
+     * @param <E> the type of the groups the quantity will be split amongst
      */
     public static <E extends Comparable<? super E>> NonNegativeIntegerSplitterByWeights<E> createWithSorting(
             ImmutableMap<E, Double> weights) {
@@ -75,7 +75,7 @@ public class NonNegativeIntegerSplitterByWeights<E> {
      * (note that {@link ImmutableMap} is deterministic).
      *
      * @param weights assigned to each group.
-     * @param <E> the type of the groups the quantity will be spit amongst
+     * @param <E> the type of the groups the quantity will be split amongst
      */
     public static <E> NonNegativeIntegerSplitterByWeights<E> createFromInts(ImmutableMap<E, Integer> weights) {
         return new NonNegativeIntegerSplitterByWeights<>(
@@ -89,7 +89,7 @@ public class NonNegativeIntegerSplitterByWeights<E> {
      * (note that {@link ImmutableMap} is deterministic).
      *
      * @param weights assigned to each group.
-     * @param <E> the type of the groups the quantity will be spit amongst
+     * @param <E> the type of the groups the quantity will be split amongst
      */
     public static <E extends Comparable<? super E>> NonNegativeIntegerSplitterByWeights<E> createFromIntsWithSorting(
             ImmutableMap<E, Integer> weights) {
@@ -171,9 +171,9 @@ public class NonNegativeIntegerSplitterByWeights<E> {
 
     /**
      * Split a positive quantity amongst groups according to their weights.
-     * <br> Throws IllegalArgumentException if numberToSplit is negative.
      * @param numberToSplit     the non negative quantity to split
      * @return the group to its share of the numberToSplit map
+     * @throws IllegalArgumentException if numberToSplit is negative
      */
     public ImmutableMap<E, Integer> split(int numberToSplit) {
         Preconditions.checkArgument(numberToSplit >= 0, "Quantity to split must be non negative");

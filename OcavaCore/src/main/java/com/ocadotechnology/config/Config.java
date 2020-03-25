@@ -172,7 +172,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * otherwise it will keep its original value.
      *
      * @param prefix The prefix to use for the current value / the prefix tree to use for multi-prefix configs
-     * @return A new Config object with config values and prefixes from the given prefix
+     * @return a new Config object with config values and prefixes from the given prefix
      */
     public Config<E> getPrefixedConfigItems(String prefix) {
         return map(configValue -> configValue.getPrefix(prefix));
@@ -185,7 +185,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * and prefixed values with a different root are still present.
      *
      * @param prefix The prefix to use for the current value / the prefix tree to use for multi-prefix configs
-     * @return A new Config object with config values and prefixes from the given prefix
+     * @return a new Config object with config values and prefixes from the given prefix
      */
 
     public Config<E> getPrefixBiasedConfigItems(String prefix) {
@@ -212,11 +212,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     public TimeUnit getTimeUnit() {
-        return Preconditions.checkNotNull(timeUnit, "timeUnit not set.  See ConfigManager.Builder.setTimeUnit.");
+        return Preconditions.checkNotNull(timeUnit, "timeUnit not set. See ConfigManager.Builder.setTimeUnit.");
     }
 
     public LengthUnit getLengthUnit() {
-        return Preconditions.checkNotNull(lengthUnit, "lengthUnit not set.  See ConfigManager.Builder.setLengthUnit.");
+        return Preconditions.checkNotNull(lengthUnit, "lengthUnit not set. See ConfigManager.Builder.setLengthUnit.");
     }
 
     public boolean containsKey(Enum<?> key) {
@@ -229,19 +229,19 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * Interprets a config value as an integer.  If it is the String "max" or "min" (case insensitive) returns
+     * Interprets a config value as an integer. If it is the String "max" or "min" (case insensitive) returns
      * {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively.
      *
      * @throws NumberFormatException if the value is not equal to either the string "max" or "min", ignoring case and is
      *          not a valid base-10 integer.
-     * @throws ConfigKeyNotFoundException if the value is not defined.
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object.
      */
     public int getInt(Enum<?> key) {
         return ConfigParsers.parseInt(getString(key));
     }
 
     /**
-     * Interprets a config value as an integer, if it is present.  If the value is not present, returns the default
+     * Interprets a config value as an integer, if it is present. If the value is not present, returns the default
      * value.
      *
      * If the value is the String "max" or "min" (case insensitive), returns {@link Integer#MAX_VALUE} or
@@ -487,7 +487,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of T
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableList<T> getListOf(Enum<?> key, Function<String, T> valueFunction) {
         return ConfigParsers.getListOf(valueFunction).apply(getString(key));
@@ -510,7 +510,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a set of T
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableSet<T> getSetOf(Enum<?> key, Function<String, T> valueFunction) {
         return ConfigParsers.getSetOf(valueFunction).apply(getString(key));
@@ -533,7 +533,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Integers. Defers value parsing to {@link ConfigParsers#parseInt(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableList<Integer> getListOfIntegers(Enum<?> key) {
         return ConfigParsers.getListOfIntegers().apply(getString(key));
@@ -558,7 +558,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a Set of Integers. Defers value parsing to {@link ConfigParsers#parseInt(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableSet<Integer> getSetOfIntegers(Enum<?> key) {
         return ConfigParsers.getSetOfIntegers().apply(getString(key));
@@ -583,7 +583,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Longs. Defers value parsing to {@link ConfigParsers#parseLong(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableList<Long> getListOfLongs(Enum<?> key) {
         return ConfigParsers.getListOfLongs().apply(getString(key));
@@ -608,7 +608,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a Set of Longs. Defers value parsing to {@link ConfigParsers#parseLong(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableSet<Long> getSetOfLongs(Enum<?> key) {
         return ConfigParsers.getSetOfLongs().apply(getString(key));
@@ -633,7 +633,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Doubles. Defers value parsing to {@link ConfigParsers#parseDouble(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableList<Double> getListOfDoubles(Enum<?> key) {
         return ConfigParsers.getListOfDoubles().apply(getString(key));
@@ -658,7 +658,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a Set of Doubles. Defers value parsing to {@link ConfigParsers#parseDouble(String)}
      *
-     * @throws ConfigKeyNotFoundException if the key is not present
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public ImmutableSet<Double> getSetOfDoubles(Enum<?> key) {
         return ConfigParsers.getSetOfDoubles().apply(getString(key));
@@ -684,7 +684,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @deprecated - see class javadoc for reasoning - use {@link #getListOfIdsOrDefault(Enum, ImmutableList)} or
      * {@link #getListOfIdsOrEmpty(Enum)} instead.
      *
-     * @return The same as {@link #getListOfIds} or an empty list if the config key isn't found
+     * @return the same as {@link #getListOfIds} or an empty list if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
     @Deprecated
@@ -696,7 +696,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The same as {@link ConfigParsers#getListOfIds()} with the value linked to the given config key
+     * @return the same as {@link ConfigParsers#getListOfIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      * @throws NumberFormatException      if the values given cannot be parsed as longs
      */
@@ -716,7 +716,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @deprecated - see class javadoc for reasoning - use {@link #getSetOfIdsOrEmpty(Enum)} or
      * {@link #getSetOfIdsOrDefault(Enum, ImmutableSet)} instead.
      *
-     * @return The same as {@link #getSetOfIds} or an empty set if the config key isn't found
+     * @return the same as {@link #getSetOfIds} or an empty set if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
      */
     @Deprecated
@@ -728,7 +728,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The set of ids in the list returned by {@link ConfigParsers#getSetOfIds()} for the given config key
+     * @return the set of ids in the list returned by {@link ConfigParsers#getSetOfIds()} for the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      * @throws NumberFormatException      if the values given cannot be parsed as longs
      */
@@ -796,7 +796,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @deprecated - see class javadoc for reasoning - use {@link #getListOfStringIdsOrEmpty(Enum)} or
      * {@link #getListOfStringIdsOrDefault(Enum, ImmutableList)} instead.
      *
-     * @return The same as {@link #getListOfStringIds} or an empty list if the config key isn't found
+     * @return the same as {@link #getListOfStringIds} or an empty list if the config key isn't found
      */
     @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIdsIfPresent(Enum<?> key) {
@@ -807,7 +807,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The same as {@link ConfigParsers#getListOfStringIds()} with the value linked to the given config key
+     * @return the same as {@link ConfigParsers#getListOfStringIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableList<StringId<T>> getListOfStringIds(Enum<?> key) {
@@ -826,7 +826,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @deprecated - see class javadoc for reasoning - use {@link #getSetOfStringIdsOrEmpty(Enum)} or
      * {@link #getSetOfStringIdsOrDefault(Enum, ImmutableSet)} instead.
      *
-     * @return The same as {@link #getSetOfStringIds} or an empty set if the config key isn't found
+     * @return the same as {@link #getSetOfStringIds} or an empty set if the config key isn't found
      */
     @Deprecated
     public <T> ImmutableSet<StringId<T>> getSetOfStringIdsIfPresent(Enum<?> key) {
@@ -837,7 +837,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @return The set of ids in the list returned by {@link ConfigParsers#getSetOfStringIds()} for the given config key
+     * @return the set of ids in the list returned by {@link ConfigParsers#getSetOfStringIds()} for the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <T> ImmutableSet<StringId<T>> getSetOfStringIds(Enum<?> key) {
@@ -852,6 +852,13 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return getOrDefault(key, ConfigParsers.getSetOfStringIds(), defaultValue);
     }
 
+    /**
+     * Get a value from the Config set.
+     *
+     * @param key Configuration key
+     * @return the raw {@link String} value of that key
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     */
     public String getString(Enum<?> key) {
         String val = getOrNull(key);
         if (val == null) {
@@ -860,6 +867,13 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return val.trim();
     }
 
+    /**
+     * Get a value from the Config set or return a specified default if the key does not have a defined value.
+     *
+     * @param key          Configuration key
+     * @param defaultValue The value to return if the key is not specified
+     * @return             the raw {@link String} value of that key or {@code defaultValue} if no value is found
+     */
     public String getStringOrDefault(Enum<?> key, String defaultValue) {
         return getOrDefault(key, Function.identity(), defaultValue);
     }
@@ -870,8 +884,8 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param key           Configuration key
      * @param valueFunction Function for extracting the value from the config
      * @param <V>           Result type
-     * @return The value of the key after valueFunction is applied
-     * @throws ConfigKeyNotFoundException if the key is not found
+     * @return the value of the key after valueFunction is applied
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      */
     public <V> V get(Enum<?> key, Function<String, V> valueFunction) {
         return valueFunction.apply(getString(key));
@@ -884,7 +898,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param valueExtractor Function for extracting the value from a String
      * @param defaultValue   Default value to return if the key is not present in the config
      * @param <V>            Result type
-     * @return If the Key exists in the config then the result of valueExtractor otherwise defaultValue
+     * @return if the Key exists in the config then the result of valueExtractor otherwise defaultValue
      */
     public <V> V getOrDefault(Enum<?> key, Function<String, V> valueExtractor, V defaultValue) {
         if (containsKey(key)) {
@@ -912,16 +926,48 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      *
      * @param key Config key which contains the key-value pairs as a String.
      * @return a {@code Map<String, String>} of key-value pairs parsed from the config value
-     * @throws IllegalArgumentException if duplicate keys are specified
+     * @throws IllegalArgumentException   if duplicate keys are specified
+     * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
      */
     public ImmutableMap<String, String> getStringMap(Enum<?> key) {
         return getMap(key, Function.identity(), Function.identity());
     }
 
+    /**
+     * Returns a Map for config specified as a collection of key-value pairs with keys and values as Strings.
+     * <p>
+     * Given a config value that is a (semicolon-separated) list of (equals-separated) key-value pairs:
+     * <pre>"key1=value1;key2=value2"</pre>
+     * Keys and values will be trimmed.
+     * Any pair which does not contain the character '=' will be ignored.
+     *
+     * If no value is specified for the config key, returns an empty map.
+     *
+     * @param key Config key which contains the key-value pairs as a String.
+     * @return a {@code Map<String, String>} of key-value pairs parsed from the config value, or an empty map if the
+     *          config key has no specified value
+     * @throws IllegalArgumentException   if duplicate keys are specified
+     */
     public ImmutableMap<String, String> getStringMapOrEmpty(Enum<?> key) {
         return getStringMapOrDefault(key, ImmutableMap.of());
     }
 
+    /**
+     * Returns a Map for config specified as a collection of key-value pairs with keys and values as Strings.
+     * <p>
+     * Given a config value that is a (semicolon-separated) list of (equals-separated) key-value pairs:
+     * <pre>"key1=value1;key2=value2"</pre>
+     * Keys and values will be trimmed.
+     * Any pair which does not contain the character '=' will be ignored.
+     *
+     * If no value is specified for the config key, returns the specified default value.
+     *
+     * @param key Config key which contains the key-value pairs as a String.
+     * @param defaultValue the value to return if the config key has no specified value
+     * @return a {@code Map<String, String>} of key-value pairs parsed from the config value, or {@code defaultValue} if
+     *          the config key has no specified value
+     * @throws IllegalArgumentException   if duplicate keys are specified
+     */
     public ImmutableMap<String, String> getStringMapOrDefault(Enum<?> key, ImmutableMap<String, String> defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseMap(v, Function.identity(), Function.identity()), defaultValue);
     }
@@ -941,39 +987,178 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param <K>         The type of key in resulting {@code Map}
      * @param <V>         The type of value in resulting {@code Map}
      * @return a Map of key-value pairs parsed from the config value
-     * @throws IllegalArgumentException if duplicate keys are specified
-     * @throws NullPointerException     if the keyParser or valueParser return null for any provided string.
+     * @throws IllegalArgumentException   if duplicate map keys are specified
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
      */
     public <K, V> ImmutableMap<K, V> getMap(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
         String val = getString(configKey);
         return ConfigParsers.parseMap(val, keyParser, valueParser);
     }
 
+    /**
+     * Returns a typed-Map for config specified as a collection of key-value pairs.
+     * <p>
+     * Given a config value that is a (semicolon-separated) list of (equals-separated) key-value pairs:
+     * <pre>"key1=value1;key2=value2"</pre>
+     * Keys and values will be trimmed, before being supplied to the functions that translate them to the
+     * correct types.
+     * Any pair which does not contain the character '=' will be ignored.
+     *
+     * If no value is specified for the config key, returns an empty map.
+     *
+     * @param configKey   Config key which contains the key-value pairs as a String.
+     * @param keyParser   Function to convert a String to a key in the resulting Map.
+     * @param valueParser Function to convert a String to a value in the resulting Map.
+     * @param <K>         The type of key in the resulting {@code Map}
+     * @param <V>         The type of value in the resulting {@code Map}
+     * @return a Map of key-value pairs parsed from the config value or an empty map if the config key has no value
+     * @throws IllegalArgumentException   if duplicate map keys are specified
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     */
     public <K, V> ImmutableMap<K, V> getMapOrEmpty(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
-        return getOrDefault(configKey, v -> ConfigParsers.parseMap(v, keyParser, valueParser), ImmutableMap.of());
+        return getMapOrDefault(configKey, keyParser, valueParser, ImmutableMap.of());
     }
 
-    public ImmutableSetMultimap<String, String> getStringSetMultimap(Enum<?> key) {
-        return getSetMultimap(key, Function.identity(), Function.identity());
+    /**
+     * Returns a typed-Map for config specified as a collection of key-value pairs.
+     * <p>
+     * Given a config value that is a (semicolon-separated) list of (equals-separated) key-value pairs:
+     * <pre>"key1=value1;key2=value2"</pre>
+     * Keys and values will be trimmed, before being supplied to the functions that translate them to the
+     * correct types.
+     * Any pair which does not contain the character '=' will be ignored.
+     *
+     * If no value is specified for the config key, returns the specified default value.
+     *
+     * @param configKey    Config key which contains the key-value pairs as a String.
+     * @param keyParser    Function to convert a String to a key in the resulting Map.
+     * @param valueParser  Function to convert a String to a value in the resulting Map.
+     * @param defaultValue The value to return if the config key has no specified value.
+     * @param <K>          The type of key in the resulting {@code Map}.
+     * @param <V>          The type of value in the resulting {@code Map}.
+     * @return a Map of key-value pairs parsed from the config value or {@code defaultValue} if the config key has no
+     *          value.
+     * @throws IllegalArgumentException   if duplicate map keys are specified.
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string.
+     */
+    public <K, V> ImmutableMap<K, V> getMapOrDefault(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser, ImmutableMap<K, V> defaultValue) {
+        return getOrDefault(configKey, v -> ConfigParsers.parseMap(v, keyParser, valueParser), defaultValue);
     }
 
-    public ImmutableSetMultimap<String, String> getStringSetMultimapOrEmpty(Enum<?> key) {
-        return getStringSetMultimapOrDefault(key, ImmutableSetMultimap.of());
+    /**
+     * Returns a Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * @param configKey   Config key which contains the key-value pairs as a String.
+     * @return a Multimap of key-value pairs parsed from the config value
+     * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
+     */
+    public ImmutableSetMultimap<String, String> getStringSetMultimap(Enum<?> configKey) {
+        return getSetMultimap(configKey, Function.identity(), Function.identity());
     }
 
+    /**
+     * Returns a Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * If no value is specified for the config key, returns an empty map.
+     *
+     * @param configKey   Config key which contains the key-value pairs as a String.
+     * @return a Multimap of key-value pairs parsed from the config value or an empty map if there is no value
+     */
+    public ImmutableSetMultimap<String, String> getStringSetMultimapOrEmpty(Enum<?> configKey) {
+        return getStringSetMultimapOrDefault(configKey, ImmutableSetMultimap.of());
+    }
+
+    /**
+     * Returns a Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * If no value is specified for the config key, returns the specified default value.
+     *
+     * @param configKey    Config key which contains the key-value pairs as a String.
+     * @param defaultValue The value to return if the config key has no specified value.
+     * @return a Multimap of key-value pairs parsed from the config value or {@code defaultValue} if there is no value
+     */
     public ImmutableSetMultimap<String, String> getStringSetMultimapOrDefault(
-            Enum<?> key,
+            Enum<?> configKey,
             ImmutableSetMultimap<String, String> defaultValue) {
-        return getOrDefault(key,
-                v -> ConfigParsers.parseSetMultimap(v, Function.identity(), Function.identity()), defaultValue);
+        return getSetMultimapOrDefault(configKey, Function.identity(), Function.identity(), defaultValue);
     }
 
+    /**
+     * Returns a typed-Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed, before being supplied to the functions that translate them to the
+     * correct types.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * If no value is specified for the config key, returns an empty multimap.
+     *
+     * @param configKey   Config key which contains the key-value pairs as a String.
+     * @param keyParser   Function to convert a String to a key in the resulting Map.
+     * @param valueParser Function to convert a String to a value in the resulting Map.
+     * @param <K>         The type of key in the resulting {@code Map}
+     * @param <V>         The type of value in the resulting {@code Map}
+     * @return a Multimap of key-value pairs parsed from the config value or an empty map if there is no specified value
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     */
     public <K, V> ImmutableSetMultimap<K, V> getSetMultimapOrEmpty(
             Enum<?> configKey,
             Function<String, K> keyParser,
             Function<String, V> valueParser) {
-        return getOrDefault(configKey,
-                v -> ConfigParsers.parseSetMultimap(v, keyParser, valueParser), ImmutableSetMultimap.of());
+        return getSetMultimapOrDefault(configKey, keyParser, valueParser, ImmutableSetMultimap.of());
+    }
+
+    /**
+     * Returns a typed-Multimap for config specified as a collection of key-value pairs, with repeating keys.
+     * <p>Given a config value that is a (semicolon-separated) list of (equals-separated) key-value paris:
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
+     * Keys and values will be trimmed, before being supplied to the functions that translate them to the
+     * correct types.
+     * Any pair which does not contain the character '=' will be ignored.
+     * Each additional value to a key has to come as a new key=value, and cannot be provided as a list of elements (i.e.
+     * key=value1,value2) as this would not make it possible to have values as a List type.
+     *
+     * If no value is specified for the config key, returns the specified default value.
+     *
+     * @param configKey    Config key which contains the key-value pairs as a String.
+     * @param keyParser    Function to convert a String to a key in the resulting Map.
+     * @param valueParser  Function to convert a String to a value in the resulting Map.
+     * @param defaultValue The value to return if the config key has no specified value.
+     * @param <K>          The type of key in the resulting {@code Map}
+     * @param <V>          The type of value in the resulting {@code Map}
+     * @return a Multimap of key-value pairs parsed from the config value or the default value
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     */
+    public <K, V> ImmutableSetMultimap<K, V> getSetMultimapOrDefault(
+            Enum<?> configKey,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser,
+            ImmutableSetMultimap<K, V> defaultValue) {
+        return getOrDefault(
+                configKey,
+                v -> ConfigParsers.parseSetMultimap(v, keyParser, valueParser),
+                defaultValue);
     }
 
     /**
@@ -989,18 +1174,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param configKey   Config key which contains the key-value pairs as a String.
      * @param keyParser   Function to convert a String to a key in the resulting Map.
      * @param valueParser Function to convert a String to a value in the resulting Map.
-     * @param <K>         The type of key in resulting {@code Map}
-     * @param <V>         The type of value in resulting {@code Map}
+     * @param <K>         The type of key in the resulting {@code Map}
+     * @param <V>         The type of value in the resulting {@code Map}
      * @return a Multimap of key-value pairs parsed from the config value
-     * @throws IllegalArgumentException if duplicate keys are specified
-     * @throws NullPointerException     if the keyParser or valueParser return null for any provided string.
+     * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
      */
     public <K, V> ImmutableSetMultimap<K, V> getSetMultimap(
             Enum<?> configKey,
             Function<String, K> keyParser,
-            Function<String, V> valueParser
-            ) {
-        String val = getOrNull(configKey);
+            Function<String, V> valueParser) {
+        String val = getString(configKey);
         return ConfigParsers.parseSetMultimap(val, keyParser, valueParser);
     }
 
@@ -1010,10 +1194,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param key       Key for which to lookup the enum value.
      * @param enumClass Enum class defining the set of permitted values.
      * @param <T>       Type of {@code enumClass}
-     * @return The value from the specified enum class which corresponds to the config value associated with the given
+     * @return the value from the specified enum class which corresponds to the config value associated with the given
      * key.
-     * @throws ConfigKeyNotFoundException when there is no entry for the specified key.
-     * @throws IllegalArgumentException   when the config value does not match any of the values in the specified enum.
+     * @throws IllegalArgumentException   if the config value does not match any of the values in the specified enum.
+     * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object.
      */
     public <T extends Enum<T>> T getEnum(Enum<?> key, Class<T> enumClass) {
         return Enum.valueOf(enumClass, getString(key));
@@ -1023,7 +1207,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Like {@link #getEnum(Enum, Class)} but if the key is not present return the default value instead of an exception
      *
      * @param defaultValue Value to return if the key is not present
-     * @return The value from the specified enum class which corresponds to the config value associated with the given
+     * @return the value from the specified enum class which corresponds to the config value associated with the given
      * key, or default if the key is not present
      */
     public <T extends Enum<T>> T getEnumOrDefault(Enum<?> key, Class<T> enumClass, T defaultValue) {
@@ -1038,7 +1222,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param key       Key for which to lookup the enum value.
      * @param enumClass Enum class defining the set of permitted values.
      * @param <T>       Type of {@code enumClass}
-     * @return The value from the specified enum class which corresponds to the config value associated with the given
+     * @return the value from the specified enum class which corresponds to the config value associated with the given
      * key, or {@link Optional#empty()} if no entry for that key exists.
      * @throws IllegalArgumentException when the config value does not match any of the values in the specified enum.
      */
@@ -1055,7 +1239,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - exposes secret keys.  Use {@link #getKeyValueStringMapWithoutSecrets()} instead
+     * @deprecated - exposes secret keys. Use {@link #getKeyValueStringMapWithoutSecrets()} instead
      */
     @Deprecated
     public ImmutableMap<String, String> getKeyValueStringMap() {
@@ -1085,7 +1269,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - exposes secret keys.  Use {@link #getUnqualifiedKeyValueStringMapWithoutSecrets(Class)} instead
+     * @deprecated - exposes secret keys. Use {@link #getUnqualifiedKeyValueStringMapWithoutSecrets(Class)} instead
      */
     @Deprecated
     public <T extends Enum<T>> ImmutableMap<String, String> getUnqualifiedKeyValueStringMap(Class<T> key) {
@@ -1245,7 +1429,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Perform a function on all config values in the config tree
      *
      * @param mutator function to apply
-     * @return A new config with the function applied
+     * @return a new config with the function applied
      */
     private Config<E> map(Function<ConfigValue, ConfigValue> mutator) {
         ImmutableMap<E, ConfigValue> values = this.values.entrySet().stream()
