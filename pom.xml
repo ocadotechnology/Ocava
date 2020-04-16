@@ -59,7 +59,7 @@
         <wagon-webdav-jackrabbit.version>3.3.4</wagon-webdav-jackrabbit.version>
 
         <!-- Spotbugs versions -->
-        <spotbugs.version>4.0.1</spotbugs.version>
+        <spotbugs.version>4.0.2</spotbugs.version>
         <spotbugs-maven-plugin.version>3.1.12.2</spotbugs-maven-plugin.version>
         <findbugs-annotations.version>3.0.1</findbugs-annotations.version>
 
