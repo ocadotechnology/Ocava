@@ -57,6 +57,7 @@
         <reports-plugin.version>3.0.0</reports-plugin.version>
         <maven-site-plugin.version>3.9.0</maven-site-plugin.version>
         <wagon-webdav-jackrabbit.version>3.3.4</wagon-webdav-jackrabbit.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.0.2</spotbugs.version>
@@ -138,11 +139,11 @@
                 <version>${jaxb.version}</version>
             </dependency>
             <dependency>
-	            <groupId>com.github.spotbugs</groupId>
-	            <artifactId>spotbugs-annotations</artifactId>
-	            <version>${spotbugs.version}</version>
-	            <optional>true</optional>
-        	</dependency>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-annotations</artifactId>
+                <version>${spotbugs.version}</version>
+                <optional>true</optional>
+            </dependency>
             <dependency>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>license-maven-plugin</artifactId>
@@ -274,7 +275,20 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${maven-jar-plugin.version}</version>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
