@@ -19,6 +19,7 @@ enum TestConfig {
     FOO,
     BAR,
     BAZ,
+    EMPTY,
     DUPLICATED_KEY,
     @SecretConfig SECRET_1;
 

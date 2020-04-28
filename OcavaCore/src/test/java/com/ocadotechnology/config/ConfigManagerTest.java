@@ -99,6 +99,96 @@ class ConfigManagerTest {
     }
 
     @Test
+    void builderGetConfigUnchecked_whenKeyIsTopLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigUnchecked(TestConfig.FOO)).isEqualTo("2");
+    }
+
+    @Test
+    void builderGetConfigUnchecked_whenKeyIsSubLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigUnchecked(Colours.BLUE)).isEqualTo("7");
+    }
+
+    @Test
+    void builderGetConfigUnchecked_whenKeyIsSubSubLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigUnchecked(TestConfig.FirstSubConfig.SubSubConfig.X)).isEqualTo("3");
+    }
+
+    @Test
+    void builderGetConfigUnchecked_whenKeyIsExplicitlySetToEmpty_thenReturnsEmptyString() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigUnchecked(TestConfig.EMPTY)).isEqualTo("");
+    }
+
+    @Test
+    void builderGetConfigUnchecked_whenKeyIsNotExplicitlySet_thenThrowsConfigKeyNotFoundException() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        Assertions.assertThrows(ConfigKeyNotFoundException.class, () -> builder.getConfigUnchecked(TestConfig.BAZ));
+    }
+
+    @Test
+    void builderGetConfigUnchecked_whenKeyIsFromWrongConfig_thenThrowsIllegalArgumentException() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> builder.getConfigUnchecked(TestConfigDummy.FOO));
+    }
+
+    @Test
+    void builderAreKeyAndValueDefinedUnchecked_whenValueIsNonEmpty_thenReturnsTrue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.areKeyAndValueDefinedUnchecked(TestConfig.FOO)).isTrue();
+    }
+
+    @Test
+    void builderAreKeyAndValueDefinedUnchecked_whenValueIsExplicitlySetEmpty_thenReturnsFalse() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.areKeyAndValueDefinedUnchecked(TestConfig.EMPTY)).isFalse();
+    }
+
+    @Test
+    void builderAreKeyAndValueDefinedUnchecked_whenValueIsNotExplicitlySet_thenReturnsFalse() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.areKeyAndValueDefinedUnchecked(TestConfig.BAZ)).isFalse();
+    }
+
+    @Test
+    void builderAreKeyAndValueDefinedUnchecked_whenKeyIsFromWrongConfig_thenReturnsFalse() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.areKeyAndValueDefinedUnchecked(TestConfigDummy.FOO)).isFalse();
+    }
+
+    @Test
     void getPrefixes() throws IOException, ConfigKeysNotRecognisedException {
         Builder builder = new Builder(new String[]{});
 
@@ -145,7 +235,7 @@ class ConfigManagerTest {
         // Get values for prefixed config files.
         assertThat(prefixedConfig.getInt(TestConfig.FOO)).isEqualTo(3);
         assertThat(prefixedConfig.getInt(TestConfig.BAR)).isEqualTo(4);
-        assertThat(prefixedConfig.containsKey(TestConfig.BAZ)).isFalse();
+        assertThat(prefixedConfig.areKeyAndValueDefined(TestConfig.BAZ)).isFalse();
     }
 
     @Test
@@ -467,7 +557,7 @@ class ConfigManagerTest {
     @Test
     void loadConfigFromResource_whenUsingAlternateArg() throws ConfigKeysNotRecognisedException {
         ConfigManager cm = new ConfigManager.Builder(new String[] { "-a=test-config-resource.properties" }).withConfig(TestConfig.class).build();
-        assertThat(cm.getConfig(TestConfig.class).containsKey(TestConfig.FOO)).isEqualTo(true);
+        assertThat(cm.getConfig(TestConfig.class).areKeyAndValueDefined(TestConfig.FOO)).isTrue();
     }
 
     @Test

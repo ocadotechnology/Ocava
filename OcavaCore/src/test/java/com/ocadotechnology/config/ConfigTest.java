@@ -45,6 +45,79 @@ import com.ocadotechnology.validation.Failer;
 @SuppressWarnings("InnerClassMayBeStatic") // @Nested classes cannot be static
 class ConfigTest {
 
+    @Test
+    void isValueDefined_whenKeyIsMissing_thenThrowsConfigKeyNotFoundException() {
+        Config<TestConfig> config = Config.empty(TestConfig.class);
+        assertThatThrownBy(() -> config.isValueDefined(TestConfig.FOO)).isInstanceOf(ConfigKeyNotFoundException.class);
+    }
+
+    @Test
+    void isValueDefined_whenValueIsExplicitlyDefinedEmpty_thenReturnsFalse() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+        assertThat(config.isValueDefined(TestConfig.FOO)).isFalse();
+    }
+
+    @Test
+    void isValueDefined_whenValueIsDefinedAndNonEmpty_thenReturnsTrue() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "Non empty value");
+        assertThat(config.isValueDefined(TestConfig.FOO)).isTrue();
+    }
+
+    @Test
+    void areKeyAndValueDefined_whenKeyIsNotDefined_thenReturnsFalse() {
+        Config<TestConfig> config = Config.empty(TestConfig.class);
+        assertThat(config.areKeyAndValueDefined(TestConfig.FOO)).isFalse();
+    }
+
+    @Test
+    void areKeyAndValueDefined_whenValueIsExplicitlyDefinedEmpty_thenReturnsFalse() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+        assertThat(config.areKeyAndValueDefined(TestConfig.FOO)).isFalse();
+    }
+
+    @Test
+    void areKeyAndValueDefined_whenValueIsDefined_thenReturnsTrue() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "Non empty value");
+        assertThat(config.areKeyAndValueDefined(TestConfig.FOO)).isTrue();
+    }
+
+    @Test
+    void enumTypeIncludes_whenEnumKeyIsInConfig_thenReturnsTrue() {
+        Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Non empty value")
+                .put(TestConfig.BAR, "")
+                .buildWrapped();
+
+        assertThat(config.enumTypeIncludes(TestConfig.FOO))
+                .as("Config enum type should contain this enum key").isTrue();
+        assertThat(config.enumTypeIncludes(TestConfig.BAR))
+                .as("Config enum type should contain the enum key even if its value is explicitly set to empty in the config").isTrue();
+        assertThat(config.enumTypeIncludes(TestConfig.BAZ))
+                .as("Config enum type should contain the enum key even if its value is not set in the config").isTrue();
+        assertThat(config.enumTypeIncludes(FirstSubConfig.HOO))
+                .as("Config enum type should contain sub config enum key").isTrue();
+        assertThat(config.enumTypeIncludes(FirstSubConfig.SubSubConfig.X))
+                .as("Config enum type should contain sub sub config enum key").isTrue();
+
+        Config<TestConfig.FirstSubConfig> subConfig = config.getSubConfig(TestConfig.FirstSubConfig.class);
+        assertThat(subConfig.enumTypeIncludes(FirstSubConfig.SubSubConfig.X))
+                .as("Sub config should contain sub sub config enum key").isTrue();
+        assertThat(subConfig.getSubConfig(TestConfig.FirstSubConfig.SubSubConfig.class).enumTypeIncludes(FirstSubConfig.SubSubConfig.X))
+                .as("Sub sub config should contain this enum key").isTrue();
+    }
+
+    @Test
+    void enumTypeIncludes_whenKeyCannotBeConfigured_thenReturnsFalse() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class).buildWrapped();
+
+        assertThat(config.enumTypeIncludes(TestConfigDummy.FOO))
+                .as("Config enum type should not contain enum key of wrong config").isFalse();
+        assertThat(config.getSubConfig(TestConfig.SecondSubConfig.class).enumTypeIncludes(FirstSubConfig.SubSubConfig.X))
+                .as("Sub config enum should not contain enum key of different sub config").isFalse();
+        assertThat(config.getSubConfig(TestConfig.SecondSubConfig.class).enumTypeIncludes(TestConfig.FOO))
+                .as("Sub config enum should not contain enum key from parent config").isFalse();
+    }
+
     @Nested
     @DisplayName("that is empty")
     class EmptyConfigTests {

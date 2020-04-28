@@ -58,10 +58,10 @@ public class S3FileManager implements Serializable {
         s3 = new SerializableS3Client(s3Config);
         endpoint = s3Config.getString(S3Config.S3_ENDPOINT);
         logger.info("S3 client initialised for endpoint {} with signer override {}", endpoint, SerializableS3Client.signerType);
-        bucketPrefix = s3Config.containsKey(S3Config.BUCKET_PREFIX) ? s3Config.getString(S3Config.BUCKET_PREFIX) : "";
+        bucketPrefix = s3Config.areKeyAndValueDefined(S3Config.BUCKET_PREFIX) ? s3Config.getString(S3Config.BUCKET_PREFIX) : "";
 
         if (s3Config.getBoolean(S3Config.ENABLE_S3_FILE_CACHE)) {
-            File cacheDirectory = s3Config.containsKey(S3Config.S3_FILE_CACHE_ROOT) ?
+            File cacheDirectory = s3Config.areKeyAndValueDefined(S3Config.S3_FILE_CACHE_ROOT) ?
                     new File(s3Config.getString(S3Config.S3_FILE_CACHE_ROOT)) :
                     new File(S3FileCache.DEFAULT_S3_CACHE_DIR);
             logger.info("Using S3FileCache with root directory {}", cacheDirectory.getAbsolutePath());

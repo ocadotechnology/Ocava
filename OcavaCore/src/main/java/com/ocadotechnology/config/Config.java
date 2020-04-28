@@ -92,8 +92,6 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * <p>
  * A good use for Optionals is to getOptional().orElse(), in this case it is identical to having a getOrDefault,
  * without the ability to use it for controlling logic flow based on presence of a key.
- * <p>
- * It is still possible to check for presence of a configuration key using {@link #containsKey(Enum)}
  *
  * <h2>Prefixes</h2>
  * Additionally to the configuration Object and the different data types it can handle there is also the concept of
@@ -219,8 +217,58 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return Preconditions.checkNotNull(lengthUnit, "lengthUnit not set. See ConfigManager.Builder.setLengthUnit.");
     }
 
+    /**
+     * @deprecated to discourage key presence on its own to be used for flow control
+     * (see class javadoc for reasoning). Use {@link #isValueDefined(Enum)}
+     * or {@link #areKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public boolean containsKey(Enum<?> key) {
         return getOrNull(key) != null;
+    }
+
+    /**
+     * Check if the value of key is not the empty string.
+     * @throws ConfigKeyNotFoundException if the key has not been explicitly defined
+     */
+    public boolean isValueDefined(Enum<?> key) {
+        String value = getOrNull(key);
+
+        if (value == null) {
+            throw new ConfigKeyNotFoundException(key);
+        }
+
+        return !value.isEmpty();
+    }
+
+    /**
+     * Check that the key has been explicitly defined and not to the empty string.
+     * The two checks are done simultaneously because key presence on its own should not
+     * be used for flow control (see class javadoc for reasoning).
+     */
+    public boolean areKeyAndValueDefined(Enum<?> key) {
+        String value = getOrNull(key);
+
+        return value != null && !value.equals("");
+    }
+
+    /**
+     * Check that the this config enum type contains the enum key independently from whether the key's value is set.
+     * For example, ExampleConfig.VALUE does have the same enum type of Config&lt;ExampleConfig&gt;,
+     * CounterExample.VALUE does not.
+     */
+    public boolean enumTypeIncludes(Enum<?> key) {
+        Class<?> clazz = key.getClass();
+
+        while (clazz != null) {
+            if (clazz.equals(cls)) {
+                return true;
+            }
+
+            clazz = clazz.getEnclosingClass();
+        }
+
+        return false;
     }
 
     @SuppressWarnings("unchecked")

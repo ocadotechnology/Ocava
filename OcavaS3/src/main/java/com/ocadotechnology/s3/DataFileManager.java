@@ -38,7 +38,7 @@ public class DataFileManager {
         this.rootDataDir = rootDataDir;
         this.s3Config = s3Config;
         shouldAdjustWindowsFilePath = System.getProperty("os.name").toLowerCase().contains("win") &&
-                s3Config.containsKey(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS) &&
+                s3Config.areKeyAndValueDefined(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS) &&
                 s3Config.getBoolean(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS);
     }
 
@@ -124,7 +124,7 @@ public class DataFileManager {
 
     private File getS3File(DataSourceDefinition<?> dataSource, Config<?> dataConfig, String defaultS3Bucket, boolean cacheOnly) {
         createS3FileManager();
-        String s3BucketName = dataConfig.containsKey(dataSource.s3BucketOverride) ? dataConfig.getString(dataSource.s3BucketOverride) : defaultS3Bucket;
+        String s3BucketName = dataConfig.areKeyAndValueDefined(dataSource.s3BucketOverride) ? dataConfig.getString(dataSource.s3BucketOverride) : defaultS3Bucket;
         return s3FileManager.getS3File(s3BucketName, dataConfig.getString(dataSource.s3Key), cacheOnly);
     }
 

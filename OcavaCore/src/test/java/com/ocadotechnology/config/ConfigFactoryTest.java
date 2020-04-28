@@ -42,13 +42,13 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
     @DisplayName("read() method")
     class ReadMethodTests {
 
-        protected Config<TestConfig> readConfigFromProperties(Properties props, ImmutableSet<PrefixedProperty> prefixedProperties) throws ConfigKeysNotRecognisedException {
+        protected Config<TestConfig> readConfigFromProperties(Properties props, ImmutableSet<PrefixedProperty> prefixedProperties) {
             return ConfigFactory.read(TestConfig.class, props::getProperty, prefixedProperties);
         }
 
         @Test
         @DisplayName("with all properties provided")
-        void allPropertiesProvided() throws ConfigKeysNotRecognisedException {
+        void allPropertiesProvided() {
             Properties props = fullySpecifiedProperties();
             Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of());
 
@@ -64,21 +64,22 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
 
         @Test
         @DisplayName("with prefixed properties")
-        void prefixedPropertiesProvided() throws ConfigKeysNotRecognisedException {
+        void prefixedPropertiesProvided() {
             Properties props = fullySpecifiedProperties();
             PrefixedProperty prefixedProperty = new PrefixedProperty("Prefix1@TestConfig.FOO", "7");
             Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of(prefixedProperty));
 
-            assertSoftly(softly -> {
-                softly.assertThat(config.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(7);
-            });
+            assertSoftly(softly -> softly.assertThat(config.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(7));
         }
 
         @Test
         @DisplayName("does not include config for missing properties")
-        void notAllPropertiesProvided() throws ConfigKeysNotRecognisedException {
-                Config<TestConfig> config = readConfigFromProperties(new Properties(), ImmutableSet.of());
-                assertThat(config.containsKey(TestConfig.FOO)).isFalse();
+        void notAllPropertiesProvided() {
+            Config<TestConfig> config = readConfigFromProperties(new Properties(), ImmutableSet.of());
+
+            for (TestConfig configKey : TestConfig.values()) {
+                assertThat(config.areKeyAndValueDefined(configKey)).isFalse();
+            }
         }
     }
 

@@ -286,14 +286,31 @@ public class ConfigManager {
          */
         public String getConfigUnchecked(Enum<?> key) {
             return config.values().stream()
-                    .filter(c -> c.containsKey(key))
+                    .filter(c -> c.enumTypeIncludes(key))
                     .findFirst()
                     .map(c -> c.getString(key))
-                    .orElseThrow(() -> new ConfigKeyNotFoundException(key));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            String.format("%s does not belong to any of %s", key, config.keySet()))
+                    );
         }
 
+        /**
+         * @deprecated to discourage key presence on its own to be used for flow control
+         * (see class see {@link com.ocadotechnology.config.Config} javadoc for reasoning).
+         *  Use {@link #areKeyAndValueDefinedUnchecked(Enum)} instead.
+         */
+        @Deprecated
         public boolean containsKeyUnchecked(Enum<?> key) {
             return config.values().stream().anyMatch(c -> c.containsKey(key));
+        }
+
+        /**
+         * Check that the key has been explicitly defined and not to the empty string during the construction of the config object.
+         * When true {@link #getConfigUnchecked} will not throw an exception.
+         * However, when false {@link #getConfigUnchecked} may either throw or return an empty string.
+         */
+        public boolean areKeyAndValueDefinedUnchecked(Enum<?> key) {
+            return config.values().stream().anyMatch(c -> c.areKeyAndValueDefined(key));
         }
 
         public Set<String> getUnrecognisedProperties() {
