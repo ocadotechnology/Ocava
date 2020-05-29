@@ -95,10 +95,14 @@ public abstract class NotificationBus<N> {
         for (Class<?> supertype : supertypes) {
             for (Method method : supertype.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Subscribe.class) && !method.isSynthetic()) {
-                    Class<?> notificationType = method.getParameterTypes()[0];
+                    Class<?>[] parameterTypes = method.getParameterTypes();
+                    Preconditions.checkArgument(parameterTypes.length == 1,
+                            "@Subscribe-annotated handler method %s should have a single parameter",
+                            method.getName());
+                    Class<?> notificationType = parameterTypes[0];
                     Preconditions.checkArgument(notificationClass.isAssignableFrom(notificationType),
-                            "Can not register notification %s from %s handler. Only %s notifications are allowed",
-                            notificationType.getSimpleName(), clazz.getSimpleName(), notificationClass.getSimpleName());
+                            "Can not register notification %s from %s handler %s. Only %s notifications are allowed",
+                            notificationType.getSimpleName(), clazz.getSimpleName(), method.getName(), notificationClass.getSimpleName());
 
                     newNotifications.add(notificationType);
                 }

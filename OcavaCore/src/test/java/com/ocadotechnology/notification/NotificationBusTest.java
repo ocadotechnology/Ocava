@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.notification;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -140,6 +142,43 @@ public class NotificationBusTest {
         Thread.sleep(1000);
         r.stop = true;
         handlers.forEach(h -> h.stop = true);
+    }
+
+    @Test
+    void testThrowsIllegalArgument_whenNotificationMissedFromSubscriber() {
+        NotificationBus<Notification> bus = new TestBus();
+        assertThatThrownBy(() -> bus.addHandler(new Subscriber() {
+
+            @Subscribe
+            public void invalidHandler() {
+            }
+
+            @Override
+            public EventSchedulerType getSchedulerType() {
+                return TestSchedulerType.TEST_SCHEDULER_TYPE;
+            }
+        }))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("invalidHandler");
+    }
+
+    @Test
+    void testThrowsIllegalArgument_whenSubscriberParameterNotANotification() {
+        NotificationBus<Notification> bus = new TestBus();
+        assertThatThrownBy(() -> bus.addHandler(new Subscriber() {
+
+            @Subscribe
+            public void invalidHandler(Object notANotification) {
+            }
+
+            @Override
+            public EventSchedulerType getSchedulerType() {
+                return TestSchedulerType.TEST_SCHEDULER_TYPE;
+            }
+        }))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("invalidHandler")
+        .hasMessageContaining("Object");
     }
 
     private static class TestBus extends NotificationBus<Notification> {
