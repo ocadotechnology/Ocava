@@ -224,7 +224,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      */
     @Deprecated
     public boolean containsKey(Enum<?> key) {
-        return getOrNull(key) != null;
+        return getOrNone(key).isPresent();
     }
 
     /**
@@ -232,13 +232,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws ConfigKeyNotFoundException if the key has not been explicitly defined
      */
     public boolean isValueDefined(Enum<?> key) {
-        String value = getOrNull(key);
+        Optional<String> value = getOrNone(key);
 
-        if (value == null) {
-            throw new ConfigKeyNotFoundException(key);
-        }
-
-        return !value.isEmpty();
+        return value.map(s -> !s.trim().isEmpty()).orElseThrow(() -> new ConfigKeyNotFoundException(key));
     }
 
     /**
@@ -247,9 +243,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * be used for flow control (see class javadoc for reasoning).
      */
     public boolean areKeyAndValueDefined(Enum<?> key) {
-        String value = getOrNull(key);
+        Optional<String> value = getOrNone(key);
 
-        return value != null && !value.equals("");
+        return value.map(s -> !s.trim().isEmpty()).orElse(false);
     }
 
     /**
@@ -277,13 +273,52 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
+     * Create a {@link StrictValueParser} object to parse the value associated with the given key.
+     *
+     * @param key the key to look up in this config object.
+     * @return a {@link StrictValueParser} object built from the value associated with the specified key.
+     * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
+     */
+    public StrictValueParser getValue(Enum<?> key) {
+        return new StrictValueParser(getString(key));
+    }
+
+    /**
+     * Create an {@link OptionalValueParser} object to parse the value associated with the given key.  This will return
+     * {@link Optional#empty()} if the value is defined as an empty string.
+     *
+     * @param key the key to look up in this config object.
+     * @return an {@link OptionalValueParser} object built from the value associated with the specified key.
+     * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
+     */
+    public OptionalValueParser getIfValueDefined(Enum<?> key) {
+        return new OptionalValueParser(getString(key));
+    }
+
+    /**
+     * Create an {@link OptionalValueParser} object to parse the value associated with the given key.  This will return
+     * {@link Optional#empty()} if the key is not defined in this config object or if the associated value is an empty
+     * string.
+     *
+     * @param key the key to look up in this config object.
+     * @return an {@link OptionalValueParser} object built from the value associated with the specified key.
+     */
+    public OptionalValueParser getIfKeyAndValueDefined(Enum<?> key) {
+        String value = getOrNone(key).map(String::trim).orElse("");
+
+        return new OptionalValueParser(value);
+    }
+
+    /**
      * Interprets a config value as an integer. If it is the String "max" or "min" (case insensitive) returns
      * {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively.
      *
      * @throws NumberFormatException if the value is not equal to either the string "max" or "min", ignoring case and is
      *          not a valid base-10 integer.
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object.
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public int getInt(Enum<?> key) {
         return ConfigParsers.parseInt(getString(key));
     }
@@ -297,13 +332,15 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      *
      * @throws NumberFormatException if the value is not equal to either the string "max" or "min", ignoring case and is
      *          not a valid base-10 integer.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public int getIntOrDefault(Enum<?> key, int defaultValue) {
         return getOrDefault(key, ConfigParsers::parseInt, defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getIntOrDefault(Enum, int)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public OptionalInt getIntIfPresent(Enum<?> key) {
@@ -314,7 +351,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getDoubleOrDefault(Enum, double)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public Optional<Double> getDoubleIfPresent(Enum<?> key) {
@@ -325,10 +362,18 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return Optional.of(getDouble(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getValue(Enum)} instead.
+     */
+    @Deprecated
     public double getDouble(Enum<?> key) {
         return ConfigParsers.parseDouble(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public double getDoubleOrDefault(Enum<?> key, double defaultValue) {
         return getOrDefault(key, ConfigParsers::parseDouble, defaultValue);
     }
@@ -337,25 +382,39 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Interprets a config value as a boolean.
      *
      * @throws IllegalStateException if the value is not equal to either the string "true" or "false", ignoring case.
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public boolean getBoolean(Enum<?> key) {
         return ConfigParsers.parseBoolean(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public boolean getBooleanOrDefault(Enum<?> key, boolean defaultValue) {
         return getOrDefault(key, ConfigParsers::parseBoolean, defaultValue);
     }
 
+    /**
+     * @deprecated use {@link Config#getValue(Enum)} instead.
+     */
+    @Deprecated
     public long getLong(Enum<?> key) {
         return ConfigParsers.parseLong(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public long getLongOrDefault(Enum<?> key, long defaultValue) {
         return getOrDefault(key, ConfigParsers::parseLong, defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getLongOrDefault(Enum, long)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public OptionalLong getLongIfPresent(Enum<?> key) {
@@ -906,13 +965,13 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param key Configuration key
      * @return the raw {@link String} value of that key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public String getString(Enum<?> key) {
-        String val = getOrNull(key);
-        if (val == null) {
-            throw new ConfigKeyNotFoundException(key);
-        }
-        return val.trim();
+        Optional<String> value = getOrNone(key);
+
+        return value.map(String::trim).orElseThrow(() -> new ConfigKeyNotFoundException(key));
     }
 
     /**
@@ -921,7 +980,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param key          Configuration key
      * @param defaultValue The value to return if the key is not specified
      * @return             the raw {@link String} value of that key or {@code defaultValue} if no value is found
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public String getStringOrDefault(Enum<?> key, String defaultValue) {
         return getOrDefault(key, Function.identity(), defaultValue);
     }
@@ -934,7 +995,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param <V>           Result type
      * @return the value of the key after valueFunction is applied
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <V> V get(Enum<?> key, Function<String, V> valueFunction) {
         return valueFunction.apply(getString(key));
     }
@@ -947,7 +1010,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param defaultValue   Default value to return if the key is not present in the config
      * @param <V>            Result type
      * @return if the Key exists in the config then the result of valueExtractor otherwise defaultValue
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <V> V getOrDefault(Enum<?> key, Function<String, V> valueExtractor, V defaultValue) {
         if (containsKey(key)) {
             return get(key, valueExtractor);
@@ -957,11 +1022,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getStringOrDefault(Enum, String)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public Optional<String> getStringIfPresent(Enum<?> key) {
-        return Optional.ofNullable(getOrNull(key)).map(String::trim);
+        return getOrNone(key).map(String::trim);
     }
 
     /**
@@ -1459,18 +1524,18 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         void accept(String key, String value, Boolean isSecret);
     }
 
-    private String getOrNull(Enum<?> key) {
+    private Optional<String> getOrNone(Enum<?> key) {
         if (key.getClass().equals(cls) && values.containsKey(cls.cast(key))) {
-            return values.get(cls.cast(key)).currentValue;
+            return Optional.ofNullable(values.get(cls.cast(key)).currentValue);
         }
         Class<?> declaringClass = key.getDeclaringClass();
         while (declaringClass != null) {
             if (subConfig.containsKey(declaringClass)) {
-                return subConfig.get(declaringClass).getOrNull(key);
+                return subConfig.get(declaringClass).getOrNone(key);
             }
             declaringClass = declaringClass.getDeclaringClass();
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -1484,6 +1549,6 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
                 .collect(Maps.toImmutableEnumMap(Entry::getKey, e -> mutator.apply(e.getValue())));
         ImmutableMap<?, Config<?>> subConfig = this.subConfig.entrySet().stream()
                 .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().map(mutator)));
-        return new Config<E>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
+        return new Config<>(this.cls, values, subConfig, this.qualifier, this.timeUnit, this.lengthUnit);
     }
 }

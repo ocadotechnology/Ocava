@@ -58,6 +58,12 @@ class ConfigTest {
     }
 
     @Test
+    void isValueDefined_whenValueIsExplicitlyDefinedBlank_thenReturnsFalse() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "  ");
+        assertThat(config.isValueDefined(TestConfig.FOO)).isFalse();
+    }
+
+    @Test
     void isValueDefined_whenValueIsDefinedAndNonEmpty_thenReturnsTrue() {
         Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "Non empty value");
         assertThat(config.isValueDefined(TestConfig.FOO)).isTrue();
@@ -72,6 +78,12 @@ class ConfigTest {
     @Test
     void areKeyAndValueDefined_whenValueIsExplicitlyDefinedEmpty_thenReturnsFalse() {
         Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "");
+        assertThat(config.areKeyAndValueDefined(TestConfig.FOO)).isFalse();
+    }
+
+    @Test
+    void areKeyAndValueDefined_whenValueIsExplicitlyDefinedBlank_thenReturnsFalse() {
+        Config<TestConfig> config = generateConfigWithEntry(TestConfig.FOO, "  ");
         assertThat(config.areKeyAndValueDefined(TestConfig.FOO)).isFalse();
     }
 
@@ -116,6 +128,114 @@ class ConfigTest {
                 .as("Sub config enum should not contain enum key of different sub config").isFalse();
         assertThat(config.getSubConfig(TestConfig.SecondSubConfig.class).enumTypeIncludes(TestConfig.FOO))
                 .as("Sub config enum should not contain enum key from parent config").isFalse();
+    }
+
+    @Test
+    void getValue_whenKeyHasValue_thenReturnsParserWithValue() {
+        String testValue = "TEST_VALUE";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo(testValue);
+    }
+
+    @Test
+    void getValue_whenKeyHasPaddedValue_thenReturnsParserWithTrimmedValue() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, " TEST_VALUE ")
+                .buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("TEST_VALUE");
+    }
+
+    @Test
+    void getValue_whenKeyHasEmptyStringValue_thenReturnsParserWithValue() {
+        String testValue = "";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo(testValue);
+    }
+
+    @Test
+    void getValue_whenKeyNotDefined_thenThrowsException() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class).buildWrapped();
+
+        assertThatThrownBy(() -> config.getValue(TestConfig.FOO)).isInstanceOf(ConfigKeyNotFoundException.class);
+    }
+
+    @Test
+    void getIfValueDefined_whenKeyHasValue_thenReturnsParserWithValue() {
+        String testValue = "TEST_VALUE";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getIfValueDefined(TestConfig.FOO).asString().get()).isEqualTo(testValue);
+    }
+
+    @Test
+    void getIfValueDefined_whenKeyHasPaddedValue_thenReturnsParserTrimmedWithValue() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, " TEST_VALUE ")
+                .buildWrapped();
+
+        assertThat(config.getIfValueDefined(TestConfig.FOO).asString().get()).isEqualTo("TEST_VALUE");
+    }
+
+    @Test
+    void getIfValueDefined_whenKeyHasEmptyStringValue_thenReturnsParserWithoutValue() {
+        String testValue = "";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getIfValueDefined(TestConfig.FOO).asString().isPresent()).isFalse();
+    }
+
+    @Test
+    void getIfValueDefined_whenKeyNotDefined_thenThrowsException() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class).buildWrapped();
+
+        assertThatThrownBy(() -> config.getIfValueDefined(TestConfig.FOO)).isInstanceOf(ConfigKeyNotFoundException.class);
+    }
+
+    @Test
+    void getIfKeyAndValueDefined_whenKeyHasValue_thenReturnsParserWithValue() {
+        String testValue = "TEST_VALUE";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getIfKeyAndValueDefined(TestConfig.FOO).asString().get()).isEqualTo(testValue);
+    }
+
+    @Test
+    void getIfKeyAndValueDefined_whenKeyHasPaddedValue_thenReturnsParserWithTrimmedValue() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, " TEST_VALUE ")
+                .buildWrapped();
+
+        assertThat(config.getIfKeyAndValueDefined(TestConfig.FOO).asString().get()).isEqualTo("TEST_VALUE");
+    }
+
+    @Test
+    void getIfKeyAndValueDefined_whenKeyHasEmptyStringValue_thenReturnsParserWithoutValue() {
+        String testValue = "";
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, testValue)
+                .buildWrapped();
+
+        assertThat(config.getIfKeyAndValueDefined(TestConfig.FOO).asString().isPresent()).isFalse();
+    }
+
+    @Test
+    void getIfKeyAndValueDefined_whenKeyNotDefined_thenThrowsException() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class).buildWrapped();
+
+        assertThat(config.getIfKeyAndValueDefined(TestConfig.FOO).asString().isPresent()).isFalse();
     }
 
     @Nested

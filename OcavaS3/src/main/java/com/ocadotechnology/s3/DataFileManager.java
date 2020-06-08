@@ -37,9 +37,8 @@ public class DataFileManager {
     public DataFileManager(File rootDataDir, Config<S3Config> s3Config) {
         this.rootDataDir = rootDataDir;
         this.s3Config = s3Config;
-        shouldAdjustWindowsFilePath = System.getProperty("os.name").toLowerCase().contains("win") &&
-                s3Config.areKeyAndValueDefined(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS) &&
-                s3Config.getBoolean(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS);
+        shouldAdjustWindowsFilePath = System.getProperty("os.name").toLowerCase().contains("win")
+                && s3Config.getIfKeyAndValueDefined(S3Config.PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS).asBoolean().orElse(false);
     }
 
     /**
