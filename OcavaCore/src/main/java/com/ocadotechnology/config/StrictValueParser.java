@@ -15,18 +15,33 @@
  */
 package com.ocadotechnology.config;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 
 /**
  * Parser class to convert a config value into a typed result.
  */
 public class StrictValueParser {
     private final String value;
+    @CheckForNull
+    private final TimeUnit timeUnit;
 
+    @VisibleForTesting
     StrictValueParser(String value) {
+        this(value, null);
+    }
+
+    StrictValueParser(String value, @Nullable TimeUnit timeUnit) {
         this.value = value;
+        this.timeUnit = timeUnit;
     }
 
     /**
@@ -73,6 +88,54 @@ public class StrictValueParser {
     }
 
     /**
+     * @return the string config value parsed as a time using the declared application time unit.
+     * <p>
+     * Time config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in seconds
+     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     *
+     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public double asFractionalTime() {
+        return ConfigParsers.parseFractionalTime(value, getTimeUnit());
+    }
+
+    /**
+     * @return the string config value parsed as a time using the declared application time unit, rounded to the nearest
+     *          whole number of units.
+     * <p>
+     * Time config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in seconds
+     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     *
+     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public long asTime() {
+        return Math.round(asFractionalTime());
+    }
+
+    /**
+     * @return the string config value parsed as a {@link Duration} rounded to the nearest nanosecond.
+     * <p>
+     * Duration config values can be given either:
+     * - As a double on its own, in which case it will be assumed that the value is being specified in seconds
+     * - In the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     *
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public Duration asDuration() {
+        return ConfigParsers.parseDuration(value);
+    }
+
+    /**
      * @return the String config value parsed using the provided custom parser.
      */
     public <T> T withCustomParser(Function<String, T> parser) {
@@ -88,5 +151,9 @@ public class StrictValueParser {
         return MoreObjects.toStringHelper(this)
                 .add("value", value)
                 .toString();
+    }
+
+    private TimeUnit getTimeUnit() {
+        return Preconditions.checkNotNull(timeUnit, "timeUnit not set. See ConfigManager.Builder.setTimeUnit.");
     }
 }

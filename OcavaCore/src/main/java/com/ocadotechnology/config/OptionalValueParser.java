@@ -15,13 +15,22 @@
  */
 package com.ocadotechnology.config;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToLongFunction;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 
 /**
  * Parser class to convert a config value into a typed optional result. All parsing methods will return {@link
@@ -29,9 +38,17 @@ import com.google.common.base.MoreObjects;
  */
 public class OptionalValueParser {
     private final String value;
+    @CheckForNull
+    private final TimeUnit timeUnit;
 
+    @VisibleForTesting
     OptionalValueParser(String value) {
+        this(value, null);
+    }
+
+    OptionalValueParser(String value, @Nullable TimeUnit timeUnit) {
         this.value = value;
+        this.timeUnit = timeUnit;
     }
 
     /**
@@ -73,10 +90,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a long.
      */
     public OptionalLong asLong() {
-        if (value.isEmpty()) {
-            return OptionalLong.empty();
-        }
-        return OptionalLong.of(ConfigParsers.parseLong(value));
+        return asCustomLong(ConfigParsers::parseLong);
     }
 
     /**
@@ -86,10 +100,58 @@ public class OptionalValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */
     public OptionalDouble asDouble() {
-        if (value.isEmpty()) {
-            return OptionalDouble.empty();
-        }
-        return OptionalDouble.of(ConfigParsers.parseDouble(value));
+        return asCustomDouble(ConfigParsers::parseDouble);
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a time using the declared application time unit.
+     * <p>
+     * Time config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in s
+     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time unit has not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public OptionalDouble asFractionalTime() {
+        return asCustomDouble(s -> ConfigParsers.parseFractionalTime(s, getTimeUnit()));
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a time using the declared application time unit, rounded
+     *          to the nearest whole number of units.
+     * <p>
+     * Time config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in seconds
+     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     *
+     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public OptionalLong asTime() {
+        return asCustomLong(s -> Math.round(ConfigParsers.parseFractionalTime(s, getTimeUnit())));
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a {@link Duration} rounded to the nearest nanosecond.
+     * <p>
+     * Duration config values can be given either:
+     * - As a double on its own, in which case it will be assumed that the value is being specified in seconds
+     * - In the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     *
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public Optional<Duration> asDuration() {
+        return withCustomParser(ConfigParsers::parseDuration);
     }
 
     /**
@@ -103,6 +165,20 @@ public class OptionalValueParser {
         return Optional.of(parser.apply(value));
     }
 
+    private OptionalDouble asCustomDouble(ToDoubleFunction<String> parser) {
+        if (value.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+        return OptionalDouble.of(parser.applyAsDouble(value));
+    }
+
+    private OptionalLong asCustomLong(ToLongFunction<String> parser) {
+        if (value.isEmpty()) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(parser.applyAsLong(value));
+    }
+
     /**
      * @deprecated to help avoid calling this when {@link OptionalValueParser#asString()} is desired
      */
@@ -112,5 +188,9 @@ public class OptionalValueParser {
         return MoreObjects.toStringHelper(this)
                 .add("value", value)
                 .toString();
+    }
+
+    private TimeUnit getTimeUnit() {
+        return Preconditions.checkNotNull(timeUnit, "timeUnit not set. See ConfigManager.Builder.setTimeUnit.");
     }
 }

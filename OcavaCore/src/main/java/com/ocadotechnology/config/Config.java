@@ -280,7 +280,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
      */
     public StrictValueParser getValue(Enum<?> key) {
-        return new StrictValueParser(getString(key));
+        return new StrictValueParser(getString(key), timeUnit);
     }
 
     /**
@@ -292,7 +292,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
      */
     public OptionalValueParser getIfValueDefined(Enum<?> key) {
-        return new OptionalValueParser(getString(key));
+        return new OptionalValueParser(getString(key), timeUnit);
     }
 
     /**
@@ -306,7 +306,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public OptionalValueParser getIfKeyAndValueDefined(Enum<?> key) {
         String value = getOrNone(key).map(String::trim).orElse("");
 
-        return new OptionalValueParser(value);
+        return new OptionalValueParser(value, timeUnit);
     }
 
     /**
@@ -458,17 +458,23 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public double getFractionalTime(Enum<?> key) {
         return ConfigParsers.parseFractionalTime(getString(key), getTimeUnit());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public double getFractionalTimeOrDefault(Enum<?> key, double defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseFractionalTime(v, getTimeUnit()), defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getFractionalTimeOrDefault(Enum, double)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      *
      * @return the result of {@link Config#getFractionalTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalDouble as OptionalDouble is missing some features.
@@ -493,17 +499,23 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public long getTime(Enum<?> key) {
         return Math.round(getFractionalTime(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public long getTimeOrDefault(Enum<?> key, long defaultValue) {
         return getOrDefault(key, v -> Math.round(ConfigParsers.parseFractionalTime(v, getTimeUnit())), defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getTimeOrDefault(Enum, long)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      *
      * @return the result of {@link Config#getTime} if the config key has a defined value, else {@link Optional#empty()}
      * Optional is used in place of OptionalLong as OptionalLong is missing some features.
@@ -527,17 +539,23 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public Duration getDuration(Enum<?> key) {
         return ConfigParsers.parseDuration(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public Duration getDurationOrDefault(Enum<?> key, Duration defaultValue) {
         return getOrDefault(key, ConfigParsers::parseDuration, defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getDurationOrDefault(Enum, Duration)} instead.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      *
      * @return the result of {@link Config#getDuration} if the config key has a defined value, else {@link Optional#empty()}
      */

@@ -18,8 +18,10 @@ package com.ocadotechnology.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.DisplayName;
@@ -245,6 +247,150 @@ public class StrictValueParserTest {
         void throwsExceptionForInvalidNumberFormat(String value) {
             StrictValueParser parser = new StrictValueParser(value);
             assertThatThrownBy(parser::asDouble).isInstanceOf(NumberFormatException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Time values")
+    class TimeConfigTests {
+
+        @Test
+        @DisplayName("returns the long value")
+        void returnTimeValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, SECONDS", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(2);
+            assertThat(parser.asFractionalTime()).isEqualTo(2.3);
+        }
+
+        @Test
+        @DisplayName("returns the long value when units are not specified")
+        void returnTimeValueWithNoSpecifiedUnits() {
+            StrictValueParser parser = new StrictValueParser("2.3", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(2);
+            assertThat(parser.asFractionalTime()).isEqualTo(2.3);
+        }
+
+        @Test
+        @DisplayName("returns the scaled value")
+        void returnScaledTimeValue() {
+            StrictValueParser parser = new StrictValueParser("2.11, MINUTES", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(127);
+            assertThat(parser.asFractionalTime()).isEqualTo(126.6);
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            StrictValueParser parser = new StrictValueParser("-2.3, SECONDS", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(-2);
+            assertThat(parser.asFractionalTime()).isEqualTo(-2.3);
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            StrictValueParser parser = new StrictValueParser("FAIL, SECONDS", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            StrictValueParser parser = new StrictValueParser("2, SECONDS, SECONDS", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            StrictValueParser parser = new StrictValueParser("2, ORANGES", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if time unit not set")
+        void throwsExceptionWhenUnitNotSet() {
+            StrictValueParser parser = new StrictValueParser("2, SECONDS", null);
+            assertThatThrownBy(parser::asTime).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Duration values")
+    class DurationConfigTests {
+
+        @Test
+        @DisplayName("returns a Duration for an integer value")
+        void returnDurationForInt() {
+            StrictValueParser parser = new StrictValueParser("2, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofMillis(2));
+        }
+
+        @Test
+        @DisplayName("returns a Duration for a fractional value")
+        void returnDurationForFraction() {
+            StrictValueParser parser = new StrictValueParser("2.3, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofNanos(2_300_000));
+        }
+
+        @Test
+        @DisplayName("returns a Duration with units of seconds when units are not specified")
+        void returnDurationInSecondsWhenNoSpecifiedUnits() {
+            StrictValueParser parser = new StrictValueParser("2.3");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofMillis(2_300));
+        }
+
+        @Test
+        @DisplayName("handles a 0 value")
+        void zeroValue() {
+            StrictValueParser parser = new StrictValueParser("0");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofSeconds(0));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - below")
+        void roundToNanoBelow() {
+            StrictValueParser parser = new StrictValueParser("0.1,NANOSECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofNanos(0));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - above")
+        void roundToNanoAbove() {
+            StrictValueParser parser = new StrictValueParser("0.6,NANOSECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofNanos(1));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            StrictValueParser parser = new StrictValueParser("-2, SECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofSeconds(-2));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            StrictValueParser parser = new StrictValueParser("FAIL, SECONDS");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            StrictValueParser parser = new StrictValueParser("2, SECONDS, SECONDS");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            StrictValueParser parser = new StrictValueParser("2, ORANGES");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
         }
     }
 

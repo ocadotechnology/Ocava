@@ -18,12 +18,14 @@ package com.ocadotechnology.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.DisplayName;
@@ -227,7 +229,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("throws an exception for an overly-large number")
         void throwsExceptionForLargeNumber() {
-            StrictValueParser parser = new StrictValueParser(Long.MAX_VALUE + "00");
+            OptionalValueParser parser = new OptionalValueParser(Long.MAX_VALUE + "00");
             assertThatThrownBy(parser::asLong).isInstanceOf(NumberFormatException.class);
         }
     }
@@ -281,6 +283,165 @@ public class OptionalValueParserTest {
         }
     }
 
+    @Nested
+    @DisplayName("for Time values")
+    class TimeConfigTests {
+        @DisplayName("returns empty for empty value")
+        @Test
+        void returnsEmptyValue() {
+            String testValue = "";
+            OptionalValueParser parser = new OptionalValueParser(testValue);
+            assertThat(parser.asTime().isPresent()).isFalse();
+            assertThat(parser.asFractionalTime().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns the long value")
+        void returnTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, SECONDS", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the long value when units are not specified")
+        void returnTimeValueWithNoSpecifiedUnits() {
+            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value")
+        void returnScaledTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.11, MINUTES", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(127));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(126.6));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            OptionalValueParser parser = new OptionalValueParser("-2.3, SECONDS", TimeUnit.SECONDS);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(-2));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TimeUnit.SECONDS);
+            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if time unit not set")
+        void throwsExceptionWhenUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS", null);
+            assertThatThrownBy(parser::asTime).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Duration values")
+    class DurationConfigTests {
+        @DisplayName("returns empty for empty value")
+        @Test
+        void returnsEmptyValue() {
+            String testValue = "";
+            OptionalValueParser parser = new OptionalValueParser(testValue);
+            assertThat(parser.asDuration().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns a Duration for an integer value")
+        void returnDurationForInt() {
+            OptionalValueParser parser = new OptionalValueParser("2, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+        }
+
+        @Test
+        @DisplayName("returns a Duration for a fractional value")
+        void returnDurationForFraction() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(2_300_000)));
+        }
+
+        @Test
+        @DisplayName("returns a Duration with units of seconds when units are not specified")
+        void returnDurationInSecondsWhenNoSpecifiedUnits() {
+            OptionalValueParser parser = new OptionalValueParser("2.3");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2_300)));
+        }
+
+        @Test
+        @DisplayName("handles a 0 value")
+        void zeroValue() {
+            OptionalValueParser parser = new OptionalValueParser("0");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofSeconds(0)));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - below")
+        void roundToNanoBelow() {
+            OptionalValueParser parser = new OptionalValueParser("0.1,NANOSECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(0)));
+        }
+
+        @Test
+        @DisplayName("rounds to the nearest nanosecond - above")
+        void roundToNanoAbove() {
+            OptionalValueParser parser = new OptionalValueParser("0.6,NANOSECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(1)));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            OptionalValueParser parser = new OptionalValueParser("-2, SECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofSeconds(-2)));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES");
+            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+    
     @Nested
     @DisplayName("for custom Object values")
     class CustomParserTests {
