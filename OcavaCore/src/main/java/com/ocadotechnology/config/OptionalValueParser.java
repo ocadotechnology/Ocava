@@ -105,6 +105,15 @@ public class OptionalValueParser {
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed to an enum value via {@link Enum#valueOf(Class, String)}.
+     * @throws IllegalArgumentException if the string config value does not match a defined enum value.
+     */
+    public <T extends Enum<T>> Optional<T> asEnum(Class<T> enumClass) {
+        return withCustomParser(s -> Enum.valueOf(enumClass, s));
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
      *          containing the string config value parsed as a time using the declared application time unit.
      * <p>
      * Time config values can be given either

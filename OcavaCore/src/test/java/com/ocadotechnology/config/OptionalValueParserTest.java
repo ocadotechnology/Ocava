@@ -39,16 +39,16 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for String values")
     class StringParserTests {
-        @DisplayName("returns non-empty value")
         @Test
+        @DisplayName("returns non-empty value")
         void returnsValue() {
             String testValue = "A TEST VALUE";
             OptionalValueParser parser = new OptionalValueParser(testValue);
             assertThat(parser.asString()).isEqualTo(Optional.of(testValue));
         }
 
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -59,8 +59,8 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for Boolean values")
     class BooleanParserTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -95,8 +95,8 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for Integer values")
     class IntegerParserTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -166,8 +166,8 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for Long values")
     class LongParserTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -237,8 +237,8 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for Double values")
     class DoubleParserTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -284,10 +284,38 @@ public class OptionalValueParserTest {
     }
 
     @Nested
+    @DisplayName("for Enum values")
+    class EnumConfigTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            String testValue = "";
+            OptionalValueParser parser = new OptionalValueParser(testValue);
+            assertThat(parser.asEnum(TestConfig.Colours.class).isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("parses correct config")
+        void parseCorrectConfig() {
+            OptionalValueParser parser = new OptionalValueParser("RED");
+            assertThat(parser.asEnum(TestConfig.Colours.class)).isEqualTo(Optional.of(TestConfig.Colours.RED));
+        }
+
+        @Test
+        @DisplayName("throws IllegalArgumentException for incorrect value")
+        void throwsException() {
+            OptionalValueParser parser = new OptionalValueParser("REDDER");
+            assertThatThrownBy(() -> parser.asEnum(TestConfig.Colours.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("No enum constant");
+        }
+    }
+
+    @Nested
     @DisplayName("for Time values")
     class TimeConfigTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -363,8 +391,8 @@ public class OptionalValueParserTest {
     @Nested
     @DisplayName("for Duration values")
     class DurationConfigTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);
@@ -441,12 +469,12 @@ public class OptionalValueParserTest {
             assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
         }
     }
-    
+
     @Nested
     @DisplayName("for custom Object values")
     class CustomParserTests {
-        @DisplayName("returns empty for empty value")
         @Test
+        @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(testValue);

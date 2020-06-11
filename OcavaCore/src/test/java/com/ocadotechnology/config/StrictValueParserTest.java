@@ -251,6 +251,27 @@ public class StrictValueParserTest {
     }
 
     @Nested
+    @DisplayName("for Enum values")
+    class EnumConfigTests {
+
+        @Test
+        @DisplayName("parses correct config")
+        void parseCorrectConfig() {
+            StrictValueParser parser = new StrictValueParser("RED");
+            assertThat(parser.asEnum(TestConfig.Colours.class)).isEqualTo(TestConfig.Colours.RED);
+        }
+
+        @Test
+        @DisplayName("throws IllegalArgumentException for incorrect value")
+        void throwsException() {
+            StrictValueParser parser = new StrictValueParser("REDDER");
+            assertThatThrownBy(() -> parser.asEnum(TestConfig.Colours.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("No enum constant");
+        }
+    }
+
+    @Nested
     @DisplayName("for Time values")
     class TimeConfigTests {
 

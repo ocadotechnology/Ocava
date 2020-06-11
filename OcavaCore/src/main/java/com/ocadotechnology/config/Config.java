@@ -1329,7 +1329,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * key.
      * @throws IllegalArgumentException   if the config value does not match any of the values in the specified enum.
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object.
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <T extends Enum<T>> T getEnum(Enum<?> key, Class<T> enumClass) {
         return Enum.valueOf(enumClass, getString(key));
     }
@@ -1340,14 +1342,14 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param defaultValue Value to return if the key is not present
      * @return the value from the specified enum class which corresponds to the config value associated with the given
      * key, or default if the key is not present
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <T extends Enum<T>> T getEnumOrDefault(Enum<?> key, Class<T> enumClass, T defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseEnum(v, enumClass), defaultValue);
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getEnumOrDefault(Enum, Class, Enum)} instead.
-     *
      * Returns the enum value to which the specified key is mapped, if present.
      *
      * @param key       Key for which to lookup the enum value.
@@ -1356,6 +1358,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return the value from the specified enum class which corresponds to the config value associated with the given
      * key, or {@link Optional#empty()} if no entry for that key exists.
      * @throws IllegalArgumentException when the config value does not match any of the values in the specified enum.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public <T extends Enum<T>> Optional<T> getEnumIfPresent(Enum<?> key, Class<T> enumClass) {
