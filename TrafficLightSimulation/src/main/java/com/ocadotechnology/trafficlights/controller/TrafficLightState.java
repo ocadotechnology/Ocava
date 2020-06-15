@@ -78,9 +78,13 @@ public class TrafficLightState {
         return pedestrianCrossingRequested;
     }
 
-    public LightType nextTypeToTurnRed() {
+    /**
+     * Since at least one light is always red, there will always be at least one light that can turn green (at some point).
+     * In the case of both lights being red (at startup) the iteration order of the {@link ImmutableMap} will be used.
+     */
+    public LightType nextTypeToTurnGreen() {
         return lightTypeLightColourMap.entrySet().stream()
-                .filter(e -> e.getValue().equals(LightColour.GREEN))
+                .filter(e -> e.getValue().equals(LightColour.RED))
                 .findFirst()
                 .map(Map.Entry::getKey)
                 .orElseThrow(Failer::valueExpected);

@@ -94,8 +94,8 @@ public class TrafficLightController implements RestHandler{
     }
 
     private void cycleLights() {
-        TrafficLightState.LightType nextToTurnRed = currentState.nextTypeToTurnRed();
-        TrafficLightState.LightType nextToTurnGreen = TrafficLightState.LightType.getInverse(nextToTurnRed);
+        TrafficLightState.LightType nextToTurnGreen = currentState.nextTypeToTurnGreen();
+        TrafficLightState.LightType nextToTurnRed = TrafficLightState.LightType.getInverse(nextToTurnGreen);
 
         updateTrafficLights(builder -> builder.setColourForType(nextToTurnRed, LightColour.RED));
 
