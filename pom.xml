@@ -39,7 +39,7 @@
         <assertj.version>3.16.1</assertj.version>
         <jfreechart.version>1.5.0</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
-        <aws-java-sdk-s3.version>1.11.805</aws-java-sdk-s3.version>
+        <aws-java-sdk-s3.version>1.11.806</aws-java-sdk-s3.version>
         <disruptor.version>3.4.2</disruptor.version>
         <logback-classic.version>1.2.3</logback-classic.version>
         <!-- EE dependency required for s3 to work -->
