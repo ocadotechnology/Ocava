@@ -107,7 +107,7 @@ public class InstancedRepeatableRandom {
      * The form of nextDouble used by DoubleStream Spliterators.
      *
      * @param origin the least value, unless greater than bound
-     * @param bound the upper bound (inclusive), must not equal origin
+     * @param bound the upper bound (inclusive)
      * @return a pseudorandom value
      * @throws IllegalStateException if {@code origin} is greater than {@code bound}
      */
