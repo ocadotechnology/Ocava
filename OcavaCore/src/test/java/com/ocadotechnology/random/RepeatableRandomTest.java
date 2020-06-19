@@ -120,6 +120,13 @@ public class RepeatableRandomTest {
     }
 
     @Test
+    public void seededRandom_getDoubleInRange() {
+        RepeatableRandom.initialiseWithSeed(FIXED_SEED);
+        double origin = 1, bound = 1;
+        Assertions.assertEquals(origin, RepeatableRandom.nextDouble(origin, bound));
+    }
+
+    @Test
     void testUuid_withRandomSeed() {
         Assertions.assertTrue(verifyUuidUniqueness(System.currentTimeMillis()));
     }

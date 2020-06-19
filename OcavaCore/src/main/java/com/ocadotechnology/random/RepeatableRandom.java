@@ -62,12 +62,12 @@ public class RepeatableRandom {
 
     /**
      * Returns a pseudorandom {@code double} value between the specified
-     * origin (inclusive) and bound (exclusive).
+     * origin (inclusive) and bound (inclusive).
      *
      * @param origin the least value returned
-     * @param bound the upper bound (exclusive)
+     * @param bound the upper bound (inclusive)
      * @return a pseudorandom {@code double} value between the origin
-     *        (inclusive) and the bound (exclusive)
+     *        (inclusive) and the bound (inclusive)
      */
     public static double nextDouble(double origin, double bound) {
         return instancedRepeatableRandom.nextDouble(origin, bound);
