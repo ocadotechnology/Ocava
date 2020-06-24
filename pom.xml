@@ -61,7 +61,7 @@
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.0.4</spotbugs.version>
-        <spotbugs-maven-plugin.version>4.0.0</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.0.4</spotbugs-maven-plugin.version>
         <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
 
         <!-- parent dir for spotbugs DO NOT REMOVE-->
