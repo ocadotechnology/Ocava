@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
+import com.ocadotechnology.physics.units.LengthUnit;
 
 public class OptionalValueParserTest {
 
@@ -331,7 +332,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the long value")
         void returnTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, SECONDS", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, SECONDS", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
         }
@@ -339,7 +340,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the long value when units are not specified")
         void returnTimeValueWithNoSpecifiedUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
         }
@@ -347,7 +348,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the scaled value")
         void returnScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.11, MINUTES", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("2.11, MINUTES", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(127));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(126.6));
         }
@@ -355,7 +356,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, SECONDS", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, SECONDS", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(-2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(-2.3));
         }
@@ -363,7 +364,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TimeUnit.SECONDS, null);
             assertThatThrownBy(parser::asTime).isInstanceOf(NumberFormatException.class);
             assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NumberFormatException.class);
         }
@@ -371,7 +372,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TimeUnit.SECONDS, null);
             assertThatThrownBy(parser::asTime).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalStateException.class);
         }
@@ -379,7 +380,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TimeUnit.SECONDS);
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TimeUnit.SECONDS, null);
             assertThatThrownBy(parser::asTime).isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalArgumentException.class);
         }
@@ -387,7 +388,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("Throws an exception if time unit not set")
         void throwsExceptionWhenUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2, SECONDS", null);
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS", null, null);
             assertThatThrownBy(parser::asTime).isInstanceOf(NullPointerException.class);
             assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NullPointerException.class);
         }
@@ -472,6 +473,270 @@ public class OptionalValueParserTest {
         void throwsExceptionForInvalidEnumValue() {
             OptionalValueParser parser = new OptionalValueParser("2, ORANGES");
             assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Length values")
+    class LengthConfigTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            OptionalValueParser parser = new OptionalValueParser("");
+            assertThat(parser.asLength().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns the double value")
+        void returnValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the double value when units are not specified")
+        void returnValueWithNoSpecifiedUnits() {
+            OptionalValueParser parser = new OptionalValueParser("2.3", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value km -> m")
+        void returnInputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2300));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value m -> km")
+        void returnOutputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", null, LengthUnit.KILOMETERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(0.0023));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asLength).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, METERS", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asLength).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asLength).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if length unit not set")
+        void throwsExceptionWhenUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", null, null);
+            assertThatThrownBy(parser::asLength).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Speed values")
+    class SpeedConfigTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            OptionalValueParser parser = new OptionalValueParser("");
+            assertThat(parser.asSpeed().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns the double value when units are specified")
+        void returnValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the double value when units are not specified")
+        void returnValueWithDefaultUnits() {
+            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value ms -> s")
+        void returnTimeInputScaledTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value s -> ms")
+        void returnTimeOutputScaledTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(0.0023));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value km -> m")
+        void returnLengthInputScaledTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value m -> km")
+        void returnLengthOutputScaledTimeValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(0.0023));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asSpeed).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            OptionalValueParser parser = new OptionalValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asSpeed).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asSpeed).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if length unit not set")
+        void throwsExceptionWhenLengthUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
+            assertThatThrownBy(parser::asSpeed).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if time unit not set")
+        void throwsExceptionWhenTimeUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asSpeed).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Acceleration values")
+    class AccelerationConfigTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            OptionalValueParser parser = new OptionalValueParser("");
+            assertThat(parser.asAcceleration().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns the double value with units specified")
+        void returnValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the double value with no units specified")
+        void returnValueWithDefaultUnits() {
+            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value ms -> s")
+        void returnTimeInputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300_000));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value s -> ms")
+        void returnTimeOutputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(0.0000023));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value km -> m")
+        void returnLengthInputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300));
+        }
+
+        @Test
+        @DisplayName("returns the scaled value m -> km")
+        void returnLengthOutputScaledValue() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(0.0023));
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            OptionalValueParser parser = new OptionalValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asAcceleration).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asAcceleration).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if length unit not set")
+        void throwsExceptionWhenLengthUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
+            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if time unit not set")
+        void throwsExceptionWhenTimeUnitNotSet() {
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NullPointerException.class);
         }
     }
 

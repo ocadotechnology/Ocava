@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.ocadotechnology.physics.units.LengthUnit;
 
 /**
  * Parser class to convert a config value into a typed result.
@@ -33,15 +34,18 @@ public class StrictValueParser {
     private final String value;
     @CheckForNull
     private final TimeUnit timeUnit;
+    @CheckForNull
+    private final LengthUnit lengthUnit;
 
     @VisibleForTesting
     StrictValueParser(String value) {
-        this(value, null);
+        this(value, null, null);
     }
 
-    StrictValueParser(String value, @Nullable TimeUnit timeUnit) {
+    StrictValueParser(String value, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
         this.value = value;
         this.timeUnit = timeUnit;
+        this.lengthUnit = lengthUnit;
     }
 
     /**
@@ -144,6 +148,54 @@ public class StrictValueParser {
     }
 
     /**
+     * @return the string config value parsed as a length using the declared application length unit.
+     * <p>
+     * Length config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters.
+     * - in the form {@code <value>,<length unit>} or {@code <value>:<length unit>}.
+     *
+     * @throws NullPointerException       if the application length unit has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the length unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public double asLength() {
+        return ConfigParsers.parseLength(value, getLengthUnit());
+    }
+
+    /**
+     * @return the string config value parsed as a speed using the declared application time and length units.
+     * <p>
+     * Speed config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public double asSpeed() {
+        return ConfigParsers.parseSpeed(value, getLengthUnit(), getTimeUnit());
+    }
+
+    /**
+     * @return the string config value parsed as an acceleration using the declared application time and length units.
+     * <p>
+     * Acceleration config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second squared
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public double asAcceleration() {
+        return ConfigParsers.parseAcceleration(value, getLengthUnit(), getTimeUnit());
+    }
+
+    /**
      * @return a {@link ListValueParser} operating on the String config value.
      */
     public ListValueParser asList() {
@@ -170,5 +222,9 @@ public class StrictValueParser {
 
     private TimeUnit getTimeUnit() {
         return Preconditions.checkNotNull(timeUnit, "timeUnit not set. See ConfigManager.Builder.setTimeUnit.");
+    }
+
+    private LengthUnit getLengthUnit() {
+        return Preconditions.checkNotNull(lengthUnit, "lengthUnit not set. See ConfigManager.Builder.setLengthUnit.");
     }
 }

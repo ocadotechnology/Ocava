@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.ocadotechnology.physics.units.LengthUnit;
 
 /**
  * Parser class to convert a config value into a typed optional result. All parsing methods will return {@link
@@ -37,14 +38,14 @@ public class OptionalValueParser {
 
     @VisibleForTesting
     OptionalValueParser(String value) {
-        this(value, null);
+        this(value, null, null);
     }
 
-    OptionalValueParser(String value, @Nullable TimeUnit timeUnit) {
+    OptionalValueParser(String value, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
         if (value.isEmpty()) {
             parser = Optional.empty();
         } else {
-            parser = Optional.of(new StrictValueParser(value, timeUnit));
+            parser = Optional.of(new StrictValueParser(value, timeUnit, lengthUnit));
         }
     }
 
@@ -155,6 +156,57 @@ public class OptionalValueParser {
      */
     public Optional<Duration> asDuration() {
         return parser.map(StrictValueParser::asDuration);
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a length using the declared application length unit.
+     * <p>
+     * Length config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters.
+     * - in the form {@code <value>,<length unit>} or {@code <value>:<length unit>}.
+     *
+     * @throws NullPointerException       if the application length unit has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the length unit in the config value does not match an enum value.
+     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     */
+    public OptionalDouble asLength() {
+        return parser.map(p -> OptionalDouble.of(p.asLength())).orElse(OptionalDouble.empty());
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a speed using the declared application time and length units.
+     * <p>
+     * Speed config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public OptionalDouble asSpeed() {
+        return parser.map(p -> OptionalDouble.of(p.asSpeed())).orElse(OptionalDouble.empty());
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as an acceleration using the declared application time and length units.
+     * <p>
+     * Acceleration config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second squared
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public OptionalDouble asAcceleration() {
+        return parser.map(p -> OptionalDouble.of(p.asAcceleration())).orElse(OptionalDouble.empty());
     }
 
     /**

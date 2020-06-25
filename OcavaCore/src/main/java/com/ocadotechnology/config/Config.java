@@ -280,7 +280,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
      */
     public StrictValueParser getValue(Enum<?> key) {
-        return new StrictValueParser(getString(key), timeUnit);
+        return new StrictValueParser(getString(key), timeUnit, lengthUnit);
     }
 
     /**
@@ -292,7 +292,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws ConfigKeyNotFoundException if the key is not defined in this Config object.
      */
     public OptionalValueParser getIfValueDefined(Enum<?> key) {
-        return new OptionalValueParser(getString(key), timeUnit);
+        return new OptionalValueParser(getString(key), timeUnit, lengthUnit);
     }
 
     /**
@@ -306,7 +306,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public OptionalValueParser getIfKeyAndValueDefined(Enum<?> key) {
         String value = getOrNone(key).map(String::trim).orElse("");
 
-        return new OptionalValueParser(value, timeUnit);
+        return new OptionalValueParser(value, timeUnit, lengthUnit);
     }
 
     /**
