@@ -168,16 +168,17 @@ public abstract class NotificationBus<N> {
     }
 
     protected void checkThatThisBusHasOnlyBeenUsedByOneThread(N notification) {
-        Thread t = Thread.currentThread();
-        if (thread.get() != t) {
-            setCurrentThread(t, notification);
+        Thread current = Thread.currentThread();
+        if (current == thread.get()) {
+            return;  // expected path (always true, except first time and errors).  Having this short-cut saves approx 5ns per call
         }
-    }
 
-    private void setCurrentThread(Thread newThread, N notification) {
-        if (thread.get() != null || (!thread.compareAndSet(null, newThread) && thread.get() != newThread)) {
-            throw Failer.fail("first Thread: %s [%s] current Thread: %s [%s] %s", thread.get(), thread.get().getId(), newThread, newThread.getId(), notification);
+        Thread permitted = thread.updateAndGet(t -> (t == null) ? current : t);
+        if (current == permitted) {
+            return;
         }
+
+        throw Failer.fail("first Thread: %s [%s] current Thread: %s [%s] %s", permitted, permitted.getId(), current, current.getId(), notification);
     }
 
     protected boolean isNotificationRegistered(Class<?> notification) {

@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -57,7 +58,6 @@ public class NotificationBusTest {
     @Test
     public void testDelayedAddHandler() {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        router.clearAllHandlers();
         NotificationBus<Notification> bus = new TestBus();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
         NotificationHandler handler = new NotificationHandler();
@@ -73,7 +73,6 @@ public class NotificationBusTest {
     @Test
     public void testComplexDelayedAddHandler() {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        router.clearAllHandlers();
         NotificationBus<Notification> bus = new TestBus();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
         NotificationHandler handler = new NotificationHandler();
@@ -92,56 +91,162 @@ public class NotificationBusTest {
     }
 
     @Test
-    public void testCallingBroadcastFromTwoThreadsFails() throws InterruptedException {
+    public void testCallingBroadcastFromAtLeastTwoThreadsFails() throws InterruptedException {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        router.clearAllHandlers();
         NotificationBus<Notification> bus = new TestBus();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
 
         OuterNotificationHandler outerHandler = new OuterNotificationHandler();
         router.addHandler(outerHandler);
 
+        int numberOfBogusThreads = 10;  // should be at least 1
         List<LocalBroadcastRunnable> notifications = new ArrayList<>();
         try {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < numberOfBogusThreads + 1; i++) {
                 LocalBroadcastRunnable r = new LocalBroadcastRunnable(router);
                 notifications.add(r);
                 new Thread(r).start();
             }
 
-            Thread.sleep(1000);
-        } finally {
-            boolean foundException = false;
+            for (LocalBroadcastRunnable r : notifications) {
+                r.waitForRunning();
+            }
+            Thread.sleep(50);
+
             for (LocalBroadcastRunnable r : notifications) {
                 r.stop = true;
-                if (r.exception != null) {
-                    Assertions.assertTrue(!foundException);
-                    foundException = true;
-                    Assertions.assertTrue(r.exception instanceof IllegalStateException);
+            }
+        } finally {
+            boolean success = false;
+            int exceptionCount = 0;
+            for (LocalBroadcastRunnable r : notifications) {
+                Throwable t = r.waitForCompletion();
+                if (t != null) {
+                    ++exceptionCount;
+                    Assertions.assertTrue(t instanceof IllegalStateException);
+                } else {
+                    Assertions.assertFalse(success, "At most one thread should succeed");
+                    success = true;
                 }
             }
+            Assertions.assertTrue(success, "At least one thread should succeed");
+            Assertions.assertEquals(numberOfBogusThreads, exceptionCount, "All bogus threads should have failed");
         }
     }
 
     @Test
-    public void testThreaded() throws InterruptedException {
+    public void testWhenTwoThreadsBroadcast_thenTheSecondFails() throws InterruptedException {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
         NotificationBus<Notification> bus = new TestBus();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
 
-        List<LocalHandlerRunnable> handlers = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            LocalHandlerRunnable r = new LocalHandlerRunnable(router);
-            handlers.add(r);
-            new Thread(r).start();
+        OuterNotificationHandler outerHandler = new OuterNotificationHandler();
+        router.addHandler(outerHandler);
+
+        AtomicReference<Throwable> threadThrowable = new AtomicReference<>();
+        Thread t1 = new Thread(() -> {
+            try {
+                router.broadcast(new TestOneNotification());
+            } catch (Throwable t) {
+                threadThrowable.set(t);
+            }
+        });
+        t1.start();
+        t1.join();
+
+        Assertions.assertNull(threadThrowable.get(), "First broadcast should be fine");
+
+        Thread t2 = new Thread(() -> {
+            try {
+                router.broadcast(new TestTwoNotification());
+            } catch (Throwable t) {
+                threadThrowable.set(t);
+            }
+        });
+        t2.start();
+        t2.join();
+
+        Assertions.assertNotNull(threadThrowable.get(), "Second broadcast should fail");
+        Assertions.assertTrue(threadThrowable.get() instanceof IllegalStateException);
+    }
+
+    @Test
+    public void testWhenTwoThreadsBroadcast_thenTheFirstAlwaysSucceedsAndTheSecondAlwaysFails() throws InterruptedException {
+        WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
+        NotificationBus<Notification> bus = new TestBus();
+        router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
+
+        OuterNotificationHandler outerHandler = new OuterNotificationHandler();
+        router.addHandler(outerHandler);
+
+        TwoThreadTestBroadcaster firstBroadcaster = new TwoThreadTestBroadcaster(router);
+        new Thread(firstBroadcaster::runExpectingSuccess).start();
+
+        firstBroadcaster.waitForCount(10);  // Ensure that thread 1 calls broadcast at least once *before* starting thread 2
+
+        TwoThreadTestBroadcaster secondBroadcaster = new TwoThreadTestBroadcaster(router);
+        new Thread(secondBroadcaster::runExpectingFailure).start();;
+
+        secondBroadcaster.waitForCount(100);  // Ensure thread 2 has called broadcast at least once
+        firstBroadcaster.waitForCount(firstBroadcaster.broadcastCount + 100);  // Make sure we're still running thread 1
+
+        firstBroadcaster.waitToStop();
+        secondBroadcaster.waitToStop();
+        Assertions.assertFalse(firstBroadcaster.failed, "Should never throw as first caller");
+        Assertions.assertFalse(secondBroadcaster.failed, "Should never succeed as second caller");
+    }
+
+    private static class TwoThreadTestBroadcaster {
+        private final NotificationRouter router;
+
+        public volatile boolean failed;
+        public volatile int broadcastCount;
+
+        private volatile boolean mustStop;
+        private volatile boolean hasCompleted;
+
+        private TwoThreadTestBroadcaster(NotificationRouter router) {
+            this.router = router;
         }
 
-        LocalBroadcastRunnable r = new LocalBroadcastRunnable(router);
-        new Thread(r).start();
+        public void runExpectingSuccess() {
+            try {
+                while (!mustStop) {
+                    ++broadcastCount;  // ++ ok as only writer
+                    router.broadcast(new TestOneNotification());
+                }
+            } catch (Throwable t) {
+                failed = true;
+            }
+            hasCompleted = true;
+        }
 
-        Thread.sleep(1000);
-        r.stop = true;
-        handlers.forEach(h -> h.stop = true);
+        public void runExpectingFailure() {
+            while (!mustStop) {
+                try {
+                    ++broadcastCount;  // ++ ok as only writer
+                    router.broadcast(new TestTwoNotification());
+                    failed = true;
+
+                } catch (Throwable t) {
+                    ;  // expected
+                }
+            }
+            hasCompleted = true;
+        }
+
+        public void waitForCount(int count) throws InterruptedException {
+            while (broadcastCount  < count) {
+                Thread.sleep(1);
+            }
+        }
+
+        public void waitToStop() throws InterruptedException {
+            mustStop = true;
+            while (!hasCompleted) {
+                Thread.sleep(1);
+            }
+        }
     }
 
     @Test
@@ -255,29 +360,11 @@ public class NotificationBusTest {
 
     public interface OuterNotification extends Notification {}
 
-    private static class LocalHandlerRunnable implements Runnable {
-        private final WithinAppNotificationRouter router;
-        public volatile boolean stop = false;
-
-        public LocalHandlerRunnable(WithinAppNotificationRouter router) {
-            this.router = router;
-        }
-
-        public void run() {
-            while (!stop) {
-                router.addHandler(new OuterNotificationHandler());
-                try {
-                    Thread.sleep(17);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     private static class LocalBroadcastRunnable implements Runnable {
         private final WithinAppNotificationRouter router;
         public volatile boolean stop = false;
+        public volatile boolean started = false;
+        public volatile boolean stopped = false;
         public volatile Throwable exception = null;
 
         public LocalBroadcastRunnable(WithinAppNotificationRouter router) {
@@ -285,20 +372,35 @@ public class NotificationBusTest {
         }
 
         public void run() {
-            while (!stop) {
+            started = true;
+            do {
+                try {
+                    Thread.sleep(13);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 try {
                     router.broadcast(new TestOneNotification());
                 } catch (Throwable t) {
                     exception = t;
                     break;
                 }
-                try {
-                    Thread.sleep(13);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            } while (!stop);  // must have at least 1 iteration
+            stopped = true;
+        }
 
+        public void waitForRunning() throws InterruptedException {
+            while (!started) {
+                Thread.sleep(1);
+            }
+        }
+
+        public Throwable waitForCompletion() throws InterruptedException {
+            stop = true;
+            while (!stopped) {
+                Thread.sleep(4);
+            }
+            return exception;
         }
     }
 }
