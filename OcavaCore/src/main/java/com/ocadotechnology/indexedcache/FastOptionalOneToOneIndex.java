@@ -15,7 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.id.Identified;
 
-/** Alternative implementation of OptionalOneToOneIndex, using a simple HashMap to provide a faster update
+/** Alternative implementation of OptionalOneToOneIndex, using a simple (linked)HashMap to provide a faster update
  *  at the expense of being unable to detect duplicate values.
  *  <br>
  *  This implementation is fine if used with IndexedImmutableObjectCache
@@ -37,8 +37,8 @@ public final class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends
 
     private final Function<? super C, Optional<R>> indexingFunction;
 
-    // does not need to be Linked (ordered) as the interface makes no stream ordering guarantees
-    private final Map<R, C> indexValues = new HashMap<>();
+    // Use linked hashmap to ensure stream order is deterministic between runs
+    private final Map<R, C> indexValues = new LinkedHashMap<>();
 
     private transient ImmutableMap<R, C> snapshot; //Null if the previous snapshot has been invalidated by an update
 
