@@ -18,109 +18,109 @@ package com.ocadotechnology.config;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 
 /**
- * Class to convert string config values into {@link ImmutableList} by parsing the config value as a comma (",") or
- * colon (":") separated list. If both separators are present, elements will be separated on commas only.
+ * Class to convert string config values into {@link ImmutableSet} by parsing the config value as a comma (",") or
+ * colon (":") separated set. If both separators are present, elements will be separated on commas only.
  */
-public class OptionalListValueParser {
-    private final Optional<ListValueParser> parser;
+public class OptionalSetValueParser {
+    private final Optional<SetValueParser> parser;
 
-    public OptionalListValueParser(Optional<ListValueParser> parser) {
+    public OptionalSetValueParser(Optional<SetValueParser> parser) {
         this.parser = parser;
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or
-     *          colon (":") separated list. If both separators are present, elements will be separated on commas only.
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or
+     *          colon (":") separated set. If both separators are present, elements will be separated on commas only.
      */
-    public Optional<ImmutableList<String>> ofStrings() {
-        return parser.map(ListValueParser::ofStrings);
+    public Optional<ImmutableSet<String>> ofStrings() {
+        return parser.map(SetValueParser::ofStrings);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element converted to an integer. If any element is the String "max" or
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element converted to an integer. If any element is the String "max" or
      *          "min" (case insensitive), parses the element {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE}
      *          respectively, otherwise defers to {@link Integer#parseInt(String)}. If both separators are present,
      *          elements will be separated on commas only, probably triggering a NumberFormatException.
      * @throws NumberFormatException if any elements cannot be parsed to integers.
      */
-    public Optional<ImmutableList<Integer>> ofIntegers() {
-        return parser.map(ListValueParser::ofIntegers);
+    public Optional<ImmutableSet<Integer>> ofIntegers() {
+        return parser.map(SetValueParser::ofIntegers);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element converted to a long. If any element is the String "max" or "min"
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element converted to a long. If any element is the String "max" or "min"
      *          (case insensitive), parses the element {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE}
      *          respectively, otherwise defers to {@link Long#parseLong(String)}. If both separators are present,
      *          elements will be separated on commas only, probably triggering a NumberFormatException.
      * @throws NumberFormatException if any elements cannot be parsed to longs.
      */
-    public Optional<ImmutableList<Long>> ofLongs() {
-        return parser.map(ListValueParser::ofLongs);
+    public Optional<ImmutableSet<Long>> ofLongs() {
+        return parser.map(SetValueParser::ofLongs);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element converted to a double via {@link Double#parseDouble(String)}. If
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element converted to a double via {@link Double#parseDouble(String)}. If
      *          both separators are present, elements will be separated on commas only, probably triggering a
      *          NumberFormatException.
      * @throws NumberFormatException if any elements cannot be parsed to doubles.
      */
-    public Optional<ImmutableList<Double>> ofDoubles() {
-        return parser.map(ListValueParser::ofDoubles);
+    public Optional<ImmutableSet<Double>> ofDoubles() {
+        return parser.map(SetValueParser::ofDoubles);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element  parsed to an enum value via
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element  parsed to an enum value via
      *          {@link Enum#valueOf(Class, String)}. If both separators are present, elements will be separated on
      *          commas only, probably triggering an IllegalArgumentException.
      * @throws IllegalArgumentException if any element does not match a defined enum value.
      */
-    public <T extends Enum<T>> Optional<ImmutableList<T>> ofEnums(Class<T> enumClass) {
+    public <T extends Enum<T>> Optional<ImmutableSet<T>> ofEnums(Class<T> enumClass) {
         return parser.map(p -> p.ofEnums(enumClass));
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element converted to a long then wrapped in an {@link Id}. If both
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element converted to a long then wrapped in an {@link Id}. If both
      *          separators are present, elements will be separated on commas only, probably triggering a
      *          NumberFormatException.
      * @throws NumberFormatException if any elements cannot be parsed to longs.
      */
-    public <T> Optional<ImmutableList<Id<T>>> ofIds() {
-        return parser.map(ListValueParser::ofIds);
+    public <T> Optional<ImmutableSet<Id<T>>> ofIds() {
+        return parser.map(SetValueParser::ofIds);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element wrapped in a {@link StringId}. If both separators are present,
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element wrapped in a {@link StringId}. If both separators are present,
      *          elements will be separated on commas only.
      */
-    public <T> Optional<ImmutableList<StringId<T>>> ofStringIds() {
-        return parser.map(ListValueParser::ofStringIds);
+    public <T> Optional<ImmutableSet<StringId<T>>> ofStringIds() {
+        return parser.map(SetValueParser::ofStringIds);
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableList} containing the String config value parsed as a comma (",") or colon
-     *          (":") separated list, with each element converted using the supplied function. If both separators are
+     *          containing an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon
+     *          (":") separated set, with each element converted using the supplied function. If both separators are
      *          present, elements will be separated on commas only.
      */
-    public <T> Optional<ImmutableList<T>> withElementParser(Function<String, T> elementParser) {
+    public <T> Optional<ImmutableSet<T>> withElementParser(Function<String, T> elementParser) {
         return parser.map(p -> p.withElementParser(elementParser));
     }
 }

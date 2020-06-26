@@ -203,6 +203,13 @@ public class StrictValueParser {
     }
 
     /**
+     * @return a {@link SetValueParser} operating on the String config value.
+     */
+    public SetValueParser asSet() {
+        return new SetValueParser(value);
+    }
+
+    /**
      * @return the String config value parsed using the provided custom parser.
      */
     public <T> T withCustomParser(Function<String, T> parser) {

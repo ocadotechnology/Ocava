@@ -217,6 +217,13 @@ public class OptionalValueParser {
     }
 
     /**
+     * @return a {@link OptionalSetValueParser} operating on the String config value.
+     */
+    public OptionalSetValueParser asSet() {
+        return new OptionalSetValueParser(parser.map(StrictValueParser::asSet));
+    }
+
+    /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
      *          containing the the result of the the provided custom parser applied to the config value.
      */

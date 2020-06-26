@@ -35,6 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
@@ -742,7 +743,7 @@ public class OptionalValueParserTest {
 
     @Nested
     @DisplayName("test Lists")
-    class ListOfStringsTests {
+    class ListTests {
 
         @Test
         @DisplayName("Empty string case returns optional empty")
@@ -841,6 +842,112 @@ public class OptionalValueParserTest {
                 return testClass;
             };
             assertThat(parser.asList().withElementParser(parserFunction)).isEqualTo(Optional.of(ImmutableList.of(testClass)));
+            assertThat(arguments.size()).isEqualTo(1);
+            assertThat(arguments.get(0)).isEqualTo(testValue);
+        }
+    }
+
+    @Nested
+    @DisplayName("test Sets")
+    class SetTests {
+
+        @Test
+        @DisplayName("Empty string case returns optional empty")
+        void testEmptyString() {
+            OptionalValueParser parser = new OptionalValueParser("");
+            assertThat(parser.asSet().ofStrings().isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton set")
+        void testSingleElement() {
+            OptionalValueParser parser = new OptionalValueParser("RED");
+            assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED")));
+        }
+
+        @DisplayName("separates valid strings")
+        @ParameterizedTest(name = "for config value \"{0}\"")
+        @ValueSource(strings = {"RED:YELLOW:APPLE", "RED,YELLOW,APPLE"})
+        void testColonSeparated(String value) {
+            OptionalValueParser parser = new OptionalValueParser(value);
+            assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED", "YELLOW", "APPLE")));
+        }
+
+        @Test
+        @DisplayName("Set of strings with space is trimmed")
+        void testSpaceIsTrimmed() {
+            OptionalValueParser parser = new OptionalValueParser("RED,YELLOW, APPLE");
+            assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED", "YELLOW", "APPLE")));
+        }
+
+        @Test
+        @DisplayName("Comma-separated string can contain colons")
+        void testCommaSeparatedStringsWithColons() {
+            OptionalValueParser parser = new OptionalValueParser("key1:value1,key2:value2");
+            assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("key1:value1", "key2:value2")));
+        }
+
+        @Test
+        @DisplayName("numerical methods with numbers")
+        void testNumericalSets() {
+            OptionalValueParser parser = new OptionalValueParser("1,5,10,3");
+            assertThat(parser.asSet().ofIntegers()).isEqualTo(Optional.of(ImmutableSet.of(1, 5, 10, 3)));
+            assertThat(parser.asSet().ofLongs()).isEqualTo(Optional.of(ImmutableSet.of(1L, 5L, 10L, 3L)));
+            assertThat(parser.asSet().ofDoubles()).isEqualTo(Optional.of(ImmutableSet.of(1D, 5D, 10D, 3D)));
+            assertThat(parser.asSet().ofIds()).isEqualTo(Optional.of(ImmutableSet.of(Id.create(1), Id.create(5), Id.create(10), Id.create(3))));
+        }
+
+        @Test
+        @DisplayName("numerical methods with non-numbers throw exceptions")
+        void testNumericalSetsThrow() {
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
+            assertThatThrownBy(() -> parser.asSet().ofIntegers()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asSet().ofLongs()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asSet().ofDoubles()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asSet().ofIds()).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("enum values are parsed")
+        void testEnumSets() {
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,BLUE,RED");
+            ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
+            assertThat(parser.asSet().ofEnums(TestConfig.Colours.class)).isEqualTo(Optional.of(expected));
+        }
+
+        @Test
+        @DisplayName("incorrect enum values throw exception")
+        void testEnumSetsThrow() {
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
+            assertThatThrownBy(() -> parser.asSet().ofEnums(TestConfig.Colours.class)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("string Ids are conveted")
+        void testStringIdSets() {
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
+            ImmutableSet<StringId<Object>> expected = ImmutableSet.of(
+                    StringId.create("RED"),
+                    StringId.create("BLUE"),
+                    StringId.create("APPLE"),
+                    StringId.create("PEAR")
+            );
+            assertThat(parser.asSet().ofStringIds()).isEqualTo(Optional.of(expected));
+        }
+
+        @Test
+        @DisplayName("custom parser is used as expected")
+        void callsParser() {
+            String testValue = "ANOTHER TEST VALUE";
+            OptionalValueParser parser = new OptionalValueParser(testValue);
+
+            List<String> arguments = new ArrayList<>();
+            TestClass testClass = new TestClass();
+            Function<String, TestClass> parserFunction = value -> {
+                arguments.add(value);
+                return testClass;
+            };
+            assertThat(parser.asSet().withElementParser(parserFunction)).isEqualTo(Optional.of(ImmutableSet.of(testClass)));
             assertThat(arguments.size()).isEqualTo(1);
             assertThat(arguments.get(0)).isEqualTo(testValue);
         }
