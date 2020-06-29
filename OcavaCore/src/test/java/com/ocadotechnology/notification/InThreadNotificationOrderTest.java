@@ -19,8 +19,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -38,7 +40,7 @@ class InThreadNotificationOrderTest {
         T1, T2;
     }
 
-    private SourceSchedulerTracker tracker = new SourceSchedulerTracker();
+    private final SourceSchedulerTracker tracker = new SourceSchedulerTracker();
     private final SimpleDiscreteEventScheduler backingScheduler = new SimpleDiscreteEventScheduler(new EventExecutor(), Runnables.doNothing(), TestSchedulerType.T1, new AdjustableTimeProvider(0), true);
     private final SourceTrackingEventScheduler t1Scheduler = new SourceTrackingEventScheduler(tracker, TestSchedulerType.T1, backingScheduler);
     private final SourceTrackingEventScheduler t2Scheduler = new SourceTrackingEventScheduler(tracker, TestSchedulerType.T2, backingScheduler);
@@ -84,6 +86,17 @@ class InThreadNotificationOrderTest {
         }
     }
 
+    @BeforeEach
+    void setUp() {
+        NotificationRouter.get().clearAllHandlers();
+        setup();
+    }
+
+    @AfterEach
+    void tearDown() {
+        NotificationRouter.get().clearAllHandlers();
+    }
+
     private void setup() {
         NotificationRouter.get().registerExecutionLayer(t1Scheduler, new TestBus(Notification.class));
         NotificationRouter.get().registerExecutionLayer(t2Scheduler, new TestBus(Notification.class));
@@ -94,8 +107,6 @@ class InThreadNotificationOrderTest {
 
     @Test
     void whenSubscriberBroadcastsNotification_thenSubscribersOnOtherDiscreteEventSchedulersReceiveNotificationsInOrder() {
-        setup();
-
         ConcreteMessageNotification notification1 = new ConcreteMessageNotification("Notification 1");
         ConcreteMessageNotification notification2 = new ConcreteMessageNotification("Notification 2");
 
