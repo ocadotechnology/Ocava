@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -283,15 +284,28 @@ public class ConfigManager {
          * thrown by the validation.
          *
          * @throws ConfigKeyNotFoundException if a value for the given key has not yet been loaded.
+         * @throws IllegalArgumentException if no config object has been created matching the enum key.
          */
         public String getConfigUnchecked(Enum<?> key) {
+            return getConfigForKey(key).getValue(key).asString();
+        }
+
+        /**
+         * Allows access to config values during the construction of the config object.  Useful when the location of
+         * some config files is itself defined in config, or when logging should be configured before handling any error
+         * thrown by the validation.
+         *
+         * @throws IllegalArgumentException if no config object has been created matching the enum key.
+         */
+        public Optional<String> getConfigIfKeyAndValueDefinedUnchecked(Enum<?> key) {
+            return getConfigForKey(key).getIfKeyAndValueDefined(key).asString();
+        }
+
+        public Config<?> getConfigForKey(Enum<?> key) {
             return config.values().stream()
                     .filter(c -> c.enumTypeIncludes(key))
                     .findFirst()
-                    .map(c -> c.getString(key))
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            String.format("%s does not belong to any of %s", key, config.keySet()))
-                    );
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("%s does not belong to any of %s", key, config.keySet())));
         }
 
         /**
@@ -305,9 +319,11 @@ public class ConfigManager {
         }
 
         /**
-         * Check that the key has been explicitly defined and not to the empty string during the construction of the config object.
-         * When true {@link #getConfigUnchecked} will not throw an exception.
-         * However, when false {@link #getConfigUnchecked} may either throw or return an empty string.
+         * Check that the key has been explicitly defined and not to the empty string during the construction of the
+         * config object. When true {@link #getConfigUnchecked(Enum)} will not throw an exception and
+         * {@link #getConfigIfKeyAndValueDefinedUnchecked(Enum)} will return a populated Optional.
+         * When false {@link #getConfigIfKeyAndValueDefinedUnchecked(Enum)} will return {@link Optional#empty()} but
+         * {@link #getConfigUnchecked(Enum)} may either throw or return an empty string.
          */
         public boolean areKeyAndValueDefinedUnchecked(Enum<?> key) {
             return config.values().stream().anyMatch(c -> c.areKeyAndValueDefined(key));

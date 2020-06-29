@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -145,6 +146,60 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsFromWrongConfig_thenThrowsIllegalArgumentException() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> builder.getConfigUnchecked(TestConfigDummy.FOO));
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsTopLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigIfKeyAndValueDefinedUnchecked(TestConfig.FOO)).isEqualTo(Optional.of("2"));
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsSubLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigIfKeyAndValueDefinedUnchecked(Colours.BLUE)).isEqualTo(Optional.of("7"));
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsSubSubLevel_thenReturnsValue() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigIfKeyAndValueDefinedUnchecked(TestConfig.FirstSubConfig.SubSubConfig.X)).isEqualTo(Optional.of("3"));
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsExplicitlySetToEmpty_thenReturnsOptionalEmpty() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigIfKeyAndValueDefinedUnchecked(TestConfig.EMPTY)).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsNotExplicitlySet_thenReturnsOptionalEmpty() throws IOException {
+        Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
+                ImmutableList.of("src/test/test-config-file.properties"),
+                ImmutableSet.of(TestConfig.class));
+
+        assertThat(builder.getConfigIfKeyAndValueDefinedUnchecked(TestConfig.EMPTY)).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsFromWrongConfig_thenThrowsIllegalArgumentException() throws IOException {
         Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
