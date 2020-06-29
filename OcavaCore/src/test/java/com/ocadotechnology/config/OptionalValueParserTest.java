@@ -35,11 +35,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 import com.ocadotechnology.physics.units.LengthUnit;
+import com.ocadotechnology.validation.Failer;
 
 public class OptionalValueParserTest {
 
@@ -950,6 +952,154 @@ public class OptionalValueParserTest {
             assertThat(parser.asSet().withElementParser(parserFunction)).isEqualTo(Optional.of(ImmutableSet.of(testClass)));
             assertThat(arguments.size()).isEqualTo(1);
             assertThat(arguments.get(0)).isEqualTo(testValue);
+        }
+    }
+
+    abstract static class CommonMapTests<K, V> {
+
+        static final String SIMPLE_CONFIG_VALUE = "1=True;2=False;3=False;4=False";
+
+        abstract Optional<ImmutableMap<K, V>> readMap(String configValue);
+
+        abstract ImmutableMap<K, V> getDefaultMap();
+
+        @Test
+        @DisplayName("works with valid config")
+        void withValidConfig() {
+            Optional<ImmutableMap<K, V>> map = readMap(SIMPLE_CONFIG_VALUE);
+            assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+        }
+
+        @Test
+        @DisplayName("returns an Optional empty for an empty value")
+        void configReturnsEmptyMap() {
+            Optional<ImmutableMap<K, V>> map = readMap((""));
+            assertThat(map.isPresent()).isFalse();
+        }
+
+        @Test
+        @DisplayName("works with a trailing semicolon")
+        void trailingSemiColonIsAllowed() {
+            Optional<ImmutableMap<K, V>> map = readMap("1=True;2=False;3=False;4=False;");
+            assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+        }
+
+        @Test
+        @DisplayName("ignores empty entries")
+        void emptyEntries() {
+            Optional<ImmutableMap<K, V>> map = readMap("1=True;;2=False;3=False;4=False");
+            assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+        }
+
+        @Test
+        @DisplayName("trims whitespace")
+        void trimsWhitespace() {
+            Optional<ImmutableMap<K, V>> map = readMap(" 1 = True ; 2 = False ; 3 = False ; 4 = False ");
+            assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+        }
+
+        @Test
+        @DisplayName("entries with missing keys are ignored")
+        void ignoresMissingKeys() {
+            Optional<ImmutableMap<K, V>> map = readMap("=False;1=True;2=False;3=False;4=False");
+            assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+        }
+
+        @Test
+        @DisplayName("throws exception for duplicate keys")
+        void duplicateKeysThrows() {
+            assertThatThrownBy(() -> readMap("1=False;1=True")).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("read as a String map")
+    class StringMapTests extends CommonMapTests<String, String> {
+        @Override
+        Optional<ImmutableMap<String, String>> readMap(String configValue) {
+            OptionalValueParser parser = new OptionalValueParser(configValue);
+            return parser.asMap().ofStrings();
+        }
+
+        @Override
+        ImmutableMap<String, String> getDefaultMap() {
+            return ImmutableMap.of(
+                    "1", "True",
+                    "2", "False",
+                    "3", "False",
+                    "4", "False"
+            );
+        }
+
+        @Test
+        @DisplayName("ignores missing values")
+        void handlesMissingValues() {
+            Optional<ImmutableMap<String, String>> map = readMap("1;2=");
+            assertThat(map.get()).isEqualTo(ImmutableMap.of("2", ""));
+        }
+    }
+
+    @Nested
+    @DisplayName("read as a custom typed map")
+    class TypedMapTests extends CommonMapTests<Integer, Boolean> {
+
+        @Override
+        Optional<ImmutableMap<Integer, Boolean>> readMap(String configValue) {
+            OptionalValueParser parser = new OptionalValueParser(configValue);
+            return parser.asMap().withKeyAndValueParsers(ConfigParsers::parseInt, ConfigParsers::parseBoolean);
+        }
+
+        @Override
+        ImmutableMap<Integer, Boolean> getDefaultMap() {
+            return ImmutableMap.of(
+                    1, true,
+                    2, false,
+                    3, false,
+                    4, false
+            );
+        }
+
+        @Test
+        @DisplayName("uses listParser as valueParser")
+        void mapOfLists() {
+            OptionalValueParser parser = new OptionalValueParser("1=4,5;2=6,7");
+            Optional<ImmutableMap<Object, ImmutableList<Integer>>> mapOptional = parser.asMap().withKeyAndValueParsers(Integer::parseInt, ConfigParsers.getListOfIntegers());
+            assertThat(mapOptional).isPresent();
+            ImmutableMap<Object, ImmutableList<Integer>> map = mapOptional.get();
+            assertThat(map).containsOnlyKeys(1, 2);
+            assertThat(map).containsEntry(1, ImmutableList.of(4, 5));
+            assertThat(map).containsEntry(2, ImmutableList.of(6, 7));
+        }
+
+        @Test
+        @DisplayName("applies valueParser to empty string for missing values")
+        void handlesMissingValues() {
+            OptionalValueParser parser = new OptionalValueParser("1;2=");
+
+            Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
+                assertThat(v).isEmpty();
+                return v;
+            };
+            Optional<ImmutableMap<Object, String>> map = parser.asMap().withKeyAndValueParsers(Integer::valueOf, identityFunctionWithAssertionStringIsEmpty);
+            assertThat(map.get()).isEqualTo(ImmutableMap.of(2, ""));
+        }
+
+        @Test
+        @DisplayName("throws exceptions generated by key parser function")
+        void throwsKeyParserExceptions() {
+            OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+
+            assertThatThrownBy(() -> parser.asMap().withKeyAndValueParsers(s -> Failer.fail("Boom"), Boolean::parseBoolean))
+                    .hasMessageContaining("Boom");
+        }
+
+        @Test
+        @DisplayName("throws exceptions generated by value parser function")
+        void throwsValueParserExceptions() {
+            OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+
+            assertThatThrownBy(() -> parser.asMap().withKeyAndValueParsers(Integer::valueOf, s -> Failer.fail("Boom")))
+                    .hasMessageContaining("Boom");
         }
     }
 

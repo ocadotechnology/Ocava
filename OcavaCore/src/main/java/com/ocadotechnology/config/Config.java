@@ -1208,7 +1208,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return a {@code Map<String, String>} of key-value pairs parsed from the config value
      * @throws IllegalArgumentException   if duplicate keys are specified
      * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public ImmutableMap<String, String> getStringMap(Enum<?> key) {
         return getMap(key, Function.identity(), Function.identity());
     }
@@ -1227,7 +1229,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return a {@code Map<String, String>} of key-value pairs parsed from the config value, or an empty map if the
      *          config key has no specified value
      * @throws IllegalArgumentException   if duplicate keys are specified
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableMap<String, String> getStringMapOrEmpty(Enum<?> key) {
         return getStringMapOrDefault(key, ImmutableMap.of());
     }
@@ -1247,7 +1251,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return a {@code Map<String, String>} of key-value pairs parsed from the config value, or {@code defaultValue} if
      *          the config key has no specified value
      * @throws IllegalArgumentException   if duplicate keys are specified
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableMap<String, String> getStringMapOrDefault(Enum<?> key, ImmutableMap<String, String> defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseMap(v, Function.identity(), Function.identity()), defaultValue);
     }
@@ -1270,7 +1276,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalArgumentException   if duplicate map keys are specified
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
      * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableMap<K, V> getMap(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
         String val = getString(configKey);
         return ConfigParsers.parseMap(val, keyParser, valueParser);
@@ -1295,7 +1303,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return a Map of key-value pairs parsed from the config value or an empty map if the config key has no value
      * @throws IllegalArgumentException   if duplicate map keys are specified
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableMap<K, V> getMapOrEmpty(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser) {
         return getMapOrDefault(configKey, keyParser, valueParser, ImmutableMap.of());
     }
@@ -1321,7 +1331,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      *          value.
      * @throws IllegalArgumentException   if duplicate map keys are specified.
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string.
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableMap<K, V> getMapOrDefault(Enum<?> configKey, Function<String, K> keyParser, Function<String, V> valueParser, ImmutableMap<K, V> defaultValue) {
         return getOrDefault(configKey, v -> ConfigParsers.parseMap(v, keyParser, valueParser), defaultValue);
     }

@@ -210,6 +210,13 @@ public class StrictValueParser {
     }
 
     /**
+     * @return a {@link MapValueParser} operating on the String config value.
+     */
+    public MapValueParser asMap() {
+        return new MapValueParser(value);
+    }
+
+    /**
      * @return the String config value parsed using the provided custom parser.
      */
     public <T> T withCustomParser(Function<String, T> parser) {
