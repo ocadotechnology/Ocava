@@ -231,6 +231,13 @@ public class OptionalValueParser {
     }
 
     /**
+     * @return a {@link OptionalMapValueParser} operating on the String config value.
+     */
+    public OptionalSetMultimapValueParser asSetMultimap() {
+        return new OptionalSetMultimapValueParser(parser.map(StrictValueParser::asSetMultimap));
+    }
+
+    /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
      *          containing the the result of the the provided custom parser applied to the config value.
      */

@@ -1350,7 +1350,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param configKey   Config key which contains the key-value pairs as a String.
      * @return a Multimap of key-value pairs parsed from the config value
      * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public ImmutableSetMultimap<String, String> getStringSetMultimap(Enum<?> configKey) {
         return getSetMultimap(configKey, Function.identity(), Function.identity());
     }
@@ -1368,7 +1370,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      *
      * @param configKey   Config key which contains the key-value pairs as a String.
      * @return a Multimap of key-value pairs parsed from the config value or an empty map if there is no value
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableSetMultimap<String, String> getStringSetMultimapOrEmpty(Enum<?> configKey) {
         return getStringSetMultimapOrDefault(configKey, ImmutableSetMultimap.of());
     }
@@ -1387,7 +1391,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param configKey    Config key which contains the key-value pairs as a String.
      * @param defaultValue The value to return if the config key has no specified value.
      * @return a Multimap of key-value pairs parsed from the config value or {@code defaultValue} if there is no value
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableSetMultimap<String, String> getStringSetMultimapOrDefault(
             Enum<?> configKey,
             ImmutableSetMultimap<String, String> defaultValue) {
@@ -1413,7 +1419,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param <V>         The type of value in the resulting {@code Map}
      * @return a Multimap of key-value pairs parsed from the config value or an empty map if there is no specified value
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableSetMultimap<K, V> getSetMultimapOrEmpty(
             Enum<?> configKey,
             Function<String, K> keyParser,
@@ -1441,7 +1449,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @param <V>          The type of value in the resulting {@code Map}
      * @return a Multimap of key-value pairs parsed from the config value or the default value
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableSetMultimap<K, V> getSetMultimapOrDefault(
             Enum<?> configKey,
             Function<String, K> keyParser,
@@ -1471,7 +1481,9 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return a Multimap of key-value pairs parsed from the config value
      * @throws NullPointerException       if the keyParser or valueParser return null for any provided string
      * @throws ConfigKeyNotFoundException if the config key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <K, V> ImmutableSetMultimap<K, V> getSetMultimap(
             Enum<?> configKey,
             Function<String, K> keyParser,

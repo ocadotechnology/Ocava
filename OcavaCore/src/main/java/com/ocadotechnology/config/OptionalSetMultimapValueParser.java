@@ -18,51 +18,49 @@ package com.ocadotechnology.config;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 
 /**
- * Class to convert String config values into {@link ImmutableMap} by parsing the config value as a semicolon (";")
- * separated list of equals ("=") separated key-value pairs.
+ * Class to convert String config values into {@link ImmutableSetMultimap} by parsing the config value as a semicolon
+ * (";") separated list of equals ("=") separated key-value pairs.
  */
-public class OptionalMapValueParser {
-    private final Optional<MapValueParser> parser;
+public class OptionalSetMultimapValueParser {
+    private final Optional<SetMultimapValueParser> parser;
 
-    public OptionalMapValueParser(Optional<MapValueParser> parser) {
+    public OptionalSetMultimapValueParser(Optional<SetMultimapValueParser> parser) {
         this.parser = parser;
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableMap} containing the String config value parsed as a semicolon (";")
-     *          separated list of equals ("=") separated key-value pairs.  For example:
+     *          containing an {@link ImmutableSetMultimap} containing the String config value parsed as a semicolon
+     *          (";") separated list of equals ("=") separated key-value pairs.  For example:
      *
-     * <pre>"key1=value1;key2=value2"</pre>
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
      *
      * Keys and values will have leading and trailing whitespace trimmed.
      * Any pair which does not contain the character '=' or which starts with '=' will be ignored.
-     *
-     * @throws IllegalArgumentException   if duplicate keys are specified
      */
-    public Optional<ImmutableMap<String, String>> ofStrings() {
-        return parser.map(MapValueParser::ofStrings);
+    public Optional<ImmutableSetMultimap<String, String>> ofStrings() {
+        return withKeyAndValueParsers(Function.identity(), Function.identity());
     }
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing an {@link ImmutableMap} containing the String config value parsed as a semicolon (";")
-     *          separated list of  equals ("=") separated key-value pairs, with each key and value converted using the
-     *          supplied function.
+     *          containing an {@link ImmutableSetMultimap} containing the String config value parsed as a semicolon
+     *          (";") separated list of equals ("=") separated key-value pairs, with each key and value converted using
+     *          the supplied function.
      *
      * For example:
      *
-     * <pre>"key1=value1;key2=value2"</pre>
+     * <pre>"key1=value1;key1=value2;key2=value3"</pre>
      *
      * Keys and values will have leading and trailing whitespace trimmed.
      * Any pair which does not contain the character '=' or which starts with '=' will be ignored.
      *
      * @throws IllegalArgumentException   if duplicate keys are specified
      */
-    public <K, V> Optional<ImmutableMap<K, V>> withKeyAndValueParsers(Function<String, K> keyParser, Function<String, V> valueParser) {
+    public <K, V> Optional<ImmutableSetMultimap<K, V>> withKeyAndValueParsers(Function<String, K> keyParser, Function<String, V> valueParser) {
         return parser.map(p -> p.withKeyAndValueParsers(keyParser, valueParser));
     }
 }
