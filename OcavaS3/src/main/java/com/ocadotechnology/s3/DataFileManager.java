@@ -71,7 +71,7 @@ public class DataFileManager {
     }
 
     private File getFileFromConfig(DataSourceDefinition<?> dataSource, Config<?> dataConfig, String defaultS3Bucket, boolean required) {
-        Mode mode = Mode.valueOf(dataConfig.getString(dataSource.mode));
+        Mode mode = Mode.valueOf(dataConfig.getValue(dataSource.mode).asString());
         File file;
         switch (mode) {
             case LOCAL:
@@ -109,12 +109,12 @@ public class DataFileManager {
     }
 
     private File getLocalFile(DataSourceDefinition<?> dataSource, Config<?> dataConfig) {
-        File absoluteFile = new File(dataConfig.getString(dataSource.localFile));
+        File absoluteFile = new File(dataConfig.getValue(dataSource.localFile).asString());
         if (rootDataDir == null) {
             return absoluteFile;
         }
 
-        File relativeFile = new File(rootDataDir, dataConfig.getString(dataSource.localFile));
+        File relativeFile = new File(rootDataDir, dataConfig.getValue(dataSource.localFile).asString());
         if (!relativeFile.exists() && absoluteFile.exists()) {
             return absoluteFile;
         }
@@ -123,8 +123,8 @@ public class DataFileManager {
 
     private File getS3File(DataSourceDefinition<?> dataSource, Config<?> dataConfig, String defaultS3Bucket, boolean cacheOnly) {
         createS3FileManager();
-        String s3BucketName = dataConfig.areKeyAndValueDefined(dataSource.s3BucketOverride) ? dataConfig.getString(dataSource.s3BucketOverride) : defaultS3Bucket;
-        return s3FileManager.getS3File(s3BucketName, dataConfig.getString(dataSource.s3Key), cacheOnly);
+        String s3BucketName = dataConfig.getIfKeyAndValueDefined(dataSource.s3BucketOverride).asString().orElse(defaultS3Bucket);
+        return s3FileManager.getS3File(s3BucketName, dataConfig.getValue(dataSource.s3Key).asString(), cacheOnly);
     }
 
     private void createS3FileManager() {

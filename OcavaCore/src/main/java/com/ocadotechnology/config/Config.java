@@ -66,32 +66,35 @@ import com.ocadotechnology.physics.units.LengthUnit;
  *     MyConfig.MyChildConfig.SECOND_KEY=false
  * </pre>
  * <h3>Data Types</h3>
- * The configuration object also has support for several data types (some can be seen in the example) some of these
- * data types are (For the full list inspect the different get methods):
+ * The configuration object has support for many data types (some can be seen in the example) some of these
+ * data types are (For the full list inspect the value parsers {@link StrictValueParser} and {@link OptionalValueParser}):
  * <ul>
  *     <li><strong>String</strong></li>
  *     <li><strong>Numeric</strong> - Integer, Long, Double</li>
  *     <li><strong>Boolean</strong></li>
- *     <li><strong>Time</strong> - Either as a Long, or as a {@link Duration}</li>
- *     <li><strong>Speed</strong> - See {@link #getSpeed(Enum)}</li>
- *     <li><strong>Acceleration</strong> - See {@link #getAcceleration(Enum)}</li>
- *     <li><strong>Lists</strong></li>
- *     <li><strong>Enum</strong> - See {@link #getEnum(Enum, Class)}</li>
- *     <li><strong>Sub Config</strong> - See {@link #getSubConfig(Class)}</li>
- *     <li><strong>Map</strong> - See {@link #getMap(Enum, Function, Function)}</li>
- *     <li><strong>Integer</strong></li>
+ *     <li><strong>Time</strong> - Either as Long, Double or {@link Duration}</li>
+ *     <li><strong>Speed</strong> - See {@link StrictValueParser#asSpeed()}</li>
+ *     <li><strong>Acceleration</strong> - See {@link StrictValueParser#asAcceleration()}</li>
+ *     <li><strong>Enum</strong> - See {@link StrictValueParser#asEnum(Class)}</li>
+ *     <li><strong>List</strong> - See {@link StrictValueParser#asList()} and {@link ListValueParser}</li>
+ *     <li><strong>Set</strong> - See {@link StrictValueParser#asSet()} and {@link SetValueParser}</li>
+ *     <li><strong>Map</strong> - See {@link StrictValueParser#asMap()} and {@link MapValueParser}</li>
+ *     <li><strong>Multimap</strong> - See {@link StrictValueParser#asSetMultimap()} and {@link SetMultimapValueParser}</li>
  * </ul>
  *
- * <h3>GetOrDefault and not Optional</h3>
- * Because of the way the configuration library works by layering multiple configuration on top of each other, the
- * idea of using optional may seem nice but can lead to complications.
+ * <h3>{@link #getValue} vs {@link #getIfValueDefined} and {@link #getIfKeyAndValueDefined}</h3>
+ * {@link #getValue} requires that the config key is present in the object, and will throw an exception if it is not. In
+ * some use-cases, the idea of querying the presence of a config key may seem useful, but can lead to complications due
+ * to the way the configuration library works by layering multiple configuration on top of each other.
  * <p>
- * If for instance the presence of a config value is used to change the flow of logic (i.e. a config flag) it might be
- * that you wish to override it's presence by command line or specific additional config file, however once a config
- * key is present it cannot be removed.
+ * If the presence of a config value is used to change the flow of logic (i.e. a config flag) it might be that you wish
+ * to override it's presence by command line or specific additional config file. However once a config key is present it
+ * cannot be removed.
  * <p>
- * A good use for Optionals is to getOptional().orElse(), in this case it is identical to having a getOrDefault,
- * without the ability to use it for controlling logic flow based on presence of a key.
+ * To overcome this limitation, the method {@link #getIfKeyAndValueDefined} treats a key which maps to an empty string
+ * the same as a key which is entirely absent, returning {@link Optional#empty()} from all parsers in that case. {@link
+ * #getIfValueDefined} works similarly for an empty string, but requires that the key be present in the object, for
+ * those users who which to ensure that a config value was deliberately removed.
  *
  * <h2>Prefixes</h2>
  * Additionally to the configuration Object and the different data types it can handle there is also the concept of

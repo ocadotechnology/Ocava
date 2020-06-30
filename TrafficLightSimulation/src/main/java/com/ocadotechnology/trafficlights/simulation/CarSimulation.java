@@ -54,7 +54,7 @@ public class CarSimulation implements Subscriber {
         this.simulatedCarCache = simulatedCarCache;
         this.simulatedTrafficLight = simulatedTrafficLight;
 
-        this.timeToLeaveJunction = trafficConfig.getTime(TrafficConfig.Vehicles.TIME_TO_LEAVE_JUNCTION);
+        this.timeToLeaveJunction = trafficConfig.getValue(TrafficConfig.Vehicles.TIME_TO_LEAVE_JUNCTION).asTime();
     }
 
     public static CarSimulation createAndSubscribe(

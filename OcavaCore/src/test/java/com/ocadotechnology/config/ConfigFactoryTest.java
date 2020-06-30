@@ -53,12 +53,12 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
             Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of());
 
             assertSoftly(softly -> {
-                softly.assertThat(config.getInt(TestConfig.FOO)).isEqualTo(1);
-                softly.assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
-                softly.assertThat(config.getInt(FirstSubConfig.WOO)).isEqualTo(3);
-                softly.assertThat(config.getInt(FirstSubConfig.HOO)).isEqualTo(4);
-                softly.assertThat(config.getInt(FirstSubConfig.SubSubConfig.X)).isEqualTo(5);
-                softly.assertThat(config.getInt(FirstSubConfig.SubSubConfig.Y)).isEqualTo(6);
+                softly.assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+                softly.assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+                softly.assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(3);
+                softly.assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(4);
+                softly.assertThat(config.getValue(FirstSubConfig.SubSubConfig.X).asInt()).isEqualTo(5);
+                softly.assertThat(config.getValue(FirstSubConfig.SubSubConfig.Y).asInt()).isEqualTo(6);
             });
         }
 
@@ -69,7 +69,7 @@ class ConfigFactoryTest implements UtilityClassTest, InternalClassTest {
             PrefixedProperty prefixedProperty = new PrefixedProperty("Prefix1@TestConfig.FOO", "7");
             Config<TestConfig> config = readConfigFromProperties(props, ImmutableSet.of(prefixedProperty));
 
-            assertSoftly(softly -> softly.assertThat(config.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(7));
+            assertSoftly(softly -> softly.assertThat(config.getPrefixedConfigItems("Prefix1").getValue(TestConfig.FOO).asInt()).isEqualTo(7));
         }
 
         @Test

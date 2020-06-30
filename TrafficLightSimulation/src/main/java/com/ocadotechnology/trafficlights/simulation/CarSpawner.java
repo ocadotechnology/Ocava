@@ -50,9 +50,9 @@ public class CarSpawner {
         this.simulatedCarCache = simulatedCarCache;
         this.carSimulation = carSimulation;
 
-        int initialVehicles = trafficConfig.getInt(TrafficConfig.Vehicles.INITIAL_VEHICLES);
-        this.minTimeBetweenArrivals = (int) trafficConfig.getTime(TrafficConfig.Vehicles.MIN_TIME_BETWEEN_ARRIVALS);
-        this.maxTimeBetweenArrivals = (int) trafficConfig.getTime(TrafficConfig.Vehicles.MAX_TIME_BETWEEN_ARRIVALS);
+        int initialVehicles = trafficConfig.getValue(TrafficConfig.Vehicles.INITIAL_VEHICLES).asInt();
+        this.minTimeBetweenArrivals = (int) trafficConfig.getValue(TrafficConfig.Vehicles.MIN_TIME_BETWEEN_ARRIVALS).asTime();
+        this.maxTimeBetweenArrivals = (int) trafficConfig.getValue(TrafficConfig.Vehicles.MAX_TIME_BETWEEN_ARRIVALS).asTime();
 
         IntStream.range(0, initialVehicles)
                 .forEach(i -> {
@@ -60,7 +60,7 @@ public class CarSpawner {
                     simulatedCarCache.add(simulatedCar); //Insertion order is still preserved (id tie-braker)
                 });
 
-        if (trafficConfig.getBoolean(TrafficConfig.Vehicles.ENABLE_RANDOM_ARRIVAL)) {
+        if (trafficConfig.getValue(TrafficConfig.Vehicles.ENABLE_RANDOM_ARRIVAL).asBoolean()) {
             scheduleNextRandomArrival();
         }
     }

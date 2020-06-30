@@ -115,11 +115,10 @@ public class TrafficSimulation {
     }
 
     private void start(EventScheduler scheduler) {
-        LightColour startingTrafficLightColour = trafficConfig.getEnum(TrafficConfig.TrafficLight.INITIAL_TRAFFIC_STATE, LightColour.class);
-        LightColour startingPedestrianLightColour = trafficConfig.getEnumOrDefault(
-                TrafficConfig.TrafficLight.INITIAL_PEDESTRIAN_STATE,
-                LightColour.class,
-                LightColour.getInverse(startingTrafficLightColour));
+        LightColour startingTrafficLightColour = trafficConfig.getValue(TrafficConfig.TrafficLight.INITIAL_TRAFFIC_STATE).asEnum(LightColour.class);
+        LightColour startingPedestrianLightColour = trafficConfig.getIfKeyAndValueDefined(TrafficConfig.TrafficLight.INITIAL_PEDESTRIAN_STATE)
+                .asEnum(LightColour.class)
+                .orElse(LightColour.getInverse(startingTrafficLightColour));
 
         this.trafficLightController = new TrafficLightController(new SimulatedRestSender(), scheduler, trafficConfig, startingTrafficLightColour, startingPedestrianLightColour);
         this.simulatedTrafficLight = SimulatedTrafficLight.createAndSubscribe(startingTrafficLightColour, startingPedestrianLightColour);
@@ -135,7 +134,7 @@ public class TrafficSimulation {
         SimulatedRestForwarder.createAndSubscribe(trafficLightController);
 
         String terminationReason = "Max sim time reached";
-        long maxSimTime = trafficConfig.getTime(TrafficConfig.MAX_SIM_TIME);
+        long maxSimTime = trafficConfig.getValue(TrafficConfig.MAX_SIM_TIME).asTime();
         scheduler.doInDaemon(maxSimTime + EventScheduler.ONE_CLOCK_CYCLE, () -> shutdown(scheduler, terminationReason), terminationReason);
     }
 
@@ -146,7 +145,7 @@ public class TrafficSimulation {
     }
 
     private static EventScheduler createScheduler(Config<TrafficConfig> config) {
-        SchedulerType schedulerType = config.getEnum(TrafficConfig.SCHEDULER_TYPE, SchedulerType.class);
+        SchedulerType schedulerType = config.getValue(TrafficConfig.SCHEDULER_TYPE).asEnum(SchedulerType.class);
         switch (schedulerType) {
             case SIMULATION:
                 SimpleDiscreteEventScheduler simpleDiscreteEventScheduler = new SimpleDiscreteEventScheduler(

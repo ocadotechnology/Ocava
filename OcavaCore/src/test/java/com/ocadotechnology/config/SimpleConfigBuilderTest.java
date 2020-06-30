@@ -55,10 +55,10 @@ class SimpleConfigBuilderTest {
                 .put("TestConfig.FirstSubConfig.HOO", "Third")
                 .buildWrapped();
 
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(42);
-        assertThat(config.getString(TestConfig.BAR)).isEqualTo("First");
-        assertThat(config.getString(FirstSubConfig.WOO)).isEqualTo("Second");
-        assertThat(config.getString(FirstSubConfig.HOO)).isEqualTo("Third");
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(42);
+        assertThat(config.getValue(TestConfig.BAR).asString()).isEqualTo("First");
+        assertThat(config.getValue(FirstSubConfig.WOO).asString()).isEqualTo("Second");
+        assertThat(config.getValue(FirstSubConfig.HOO).asString()).isEqualTo("Third");
     }
 
     @Test
@@ -79,7 +79,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, "42")
                 .buildWrapped();
 
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(42);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(42);
     }
 
     @Test
@@ -88,7 +88,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, Id.create(42))
                 .buildWrapped();
 
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(42);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(42);
     }
 
     @Test
@@ -97,7 +97,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, ImmutableList.of(Id.create(42), Id.create(43), Id.create(44)))
                 .buildWrapped();
 
-        assertThat(config.getString(TestConfig.FOO)).isEqualTo("42,43,44");
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("42,43,44");
     }
 
     @Test
@@ -106,7 +106,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, 2.3, TimeUnit.SECONDS)
                 .buildWrapped();
 
-        assertThat(config.getString(TestConfig.FOO)).isEqualTo("2.3,SECONDS");
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("2.3,SECONDS");
     }
 
     @Test
@@ -115,7 +115,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, 2.3, LengthUnit.METERS)
                 .buildWrapped();
 
-        assertThat(config.getString(TestConfig.FOO)).isEqualTo("2.3,METERS");
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("2.3,METERS");
     }
 
     @Test
@@ -124,7 +124,7 @@ class SimpleConfigBuilderTest {
         Config<TestConfig> config = configBuilder.put(TestConfig.FOO, 2.3, LengthUnit.METERS, TimeUnit.SECONDS)
                 .buildWrapped();
 
-        assertThat(config.getString(TestConfig.FOO)).isEqualTo("2.3,METERS,SECONDS");
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("2.3,METERS,SECONDS");
     }
 
     @Test
@@ -135,7 +135,7 @@ class SimpleConfigBuilderTest {
                 .put("TestConfig.BAR", "Final")
                 .buildWrapped();
 
-        assertThat(config.getString(TestConfig.BAR)).isEqualTo("Final");
+        assertThat(config.getValue(TestConfig.BAR).asString()).isEqualTo("Final");
     }
 
     @Test

@@ -55,6 +55,6 @@ public class S3ConfigTest {
     }
 
     private void testConfig(Config<S3Config> config, S3Config testKey, String expectedValue) {
-        assertThat(config.getString(testKey)).as("Incorrect: %s", testKey).isEqualTo(expectedValue);
+        assertThat(config.getValue(testKey).asString()).as("Incorrect: %s", testKey).isEqualTo(expectedValue);
     }
 }

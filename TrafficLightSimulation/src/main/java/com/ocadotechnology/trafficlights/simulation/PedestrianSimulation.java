@@ -56,7 +56,7 @@ public class PedestrianSimulation implements Subscriber {
         this.simulatedPedestrianCache = simulatedPedestrianCache;
         this.simulatedTrafficLight = simulatedTrafficLight;
 
-        this.timeToLeaveJunction = trafficConfig.getTime(TrafficConfig.Pedestrians.TIME_TO_LEAVE_JUNCTION);
+        this.timeToLeaveJunction = trafficConfig.getValue(TrafficConfig.Pedestrians.TIME_TO_LEAVE_JUNCTION).asTime();
     }
 
     public static PedestrianSimulation createAndSubscribe(

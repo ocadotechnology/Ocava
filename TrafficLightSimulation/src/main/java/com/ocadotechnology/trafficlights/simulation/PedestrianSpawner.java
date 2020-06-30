@@ -48,10 +48,10 @@ public class PedestrianSpawner {
         this.simulatedPedestrianCache = simulatedPedestrianCache;
         this.pedestrianSimulation = pedestrianSimulation;
 
-        this.minTimeBetweenArrivals = (int) trafficConfig.getTime(TrafficConfig.Pedestrians.MIN_TIME_BETWEEN_ARRIVALS);
-        this.maxTimeBetweenArrivals = (int) trafficConfig.getTime(TrafficConfig.Pedestrians.MAX_TIME_BETWEEN_ARRIVALS);
+        this.minTimeBetweenArrivals = (int) trafficConfig.getValue(TrafficConfig.Pedestrians.MIN_TIME_BETWEEN_ARRIVALS).asTime();
+        this.maxTimeBetweenArrivals = (int) trafficConfig.getValue(TrafficConfig.Pedestrians.MAX_TIME_BETWEEN_ARRIVALS).asTime();
 
-        if (trafficConfig.getBoolean(TrafficConfig.Pedestrians.ENABLE_RANDOM_ARRIVAL)) {
+        if (trafficConfig.getValue(TrafficConfig.Pedestrians.ENABLE_RANDOM_ARRIVAL).asBoolean()) {
             scheduleNextRandomArrival();
         }
     }

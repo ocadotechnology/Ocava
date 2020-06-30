@@ -54,7 +54,7 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(FirstSubConfig.WOO);
+        ImmutableList<Id<Double>> listOfIds = config.getValue(FirstSubConfig.WOO).asList().ofIds();
 
         assertThat(listOfIds.get(0)).isEqualTo(Id.create(1));
         assertThat(listOfIds.get(1)).isEqualTo(Id.create(2));
@@ -70,7 +70,7 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        ImmutableList<Id<Double>> listOfIds = config.getListOfIds(FirstSubConfig.HOO);
+        ImmutableList<Id<Double>> listOfIds = config.getValue(FirstSubConfig.HOO).asList().ofIds();
 
         assertThat(listOfIds).isEmpty();
     }
@@ -83,8 +83,8 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -95,8 +95,8 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(2);
-        assertThat(config.getInt(TestConfig.BAR)).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(1);
     }
 
     @Test
@@ -276,8 +276,8 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
 
         Config<TestConfig> prefixedConfig = testConfig.getPrefixedConfigItems("Prefix1");
 
@@ -288,8 +288,8 @@ class ConfigManagerTest {
                 TestConfig.BAZ));
 
         // Get values for prefixed config files.
-        assertThat(prefixedConfig.getInt(TestConfig.FOO)).isEqualTo(3);
-        assertThat(prefixedConfig.getInt(TestConfig.BAR)).isEqualTo(4);
+        assertThat(prefixedConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(3);
+        assertThat(prefixedConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(4);
         assertThat(prefixedConfig.areKeyAndValueDefined(TestConfig.BAZ)).isFalse();
     }
 
@@ -307,8 +307,8 @@ class ConfigManagerTest {
         Config<TestConfig> prefixedConfig = testConfig.getPrefixedConfigItems("Prefix6");
 
         // Get values for prefixed config files.
-        assertThat(prefixedConfig.getInt(FirstSubConfig.WOO)).isEqualTo(1);
-        assertThat(prefixedConfig.getInt(SecondSubConfig.WOO)).isEqualTo(2);
+        assertThat(prefixedConfig.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(1);
+        assertThat(prefixedConfig.getValue(SecondSubConfig.WOO).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -322,7 +322,7 @@ class ConfigManagerTest {
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
-        assertThat(testConfig.getPrefixedConfigItems("Prefix5").getInt(TestConfig.BAZ)).isEqualTo(13);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix5").getValue(TestConfig.BAZ).asInt()).isEqualTo(13);
     }
 
     @Test
@@ -337,12 +337,12 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
 
         // Assertions with the default values
-        assertThat(testConfig.getPrefixedConfigItems("InvalidPrefix").getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getPrefixedConfigItems("InvalidPrefix").getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getPrefixedConfigItems("InvalidPrefix").getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getPrefixedConfigItems("InvalidPrefix").getValue(TestConfig.BAR).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -355,8 +355,8 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
 
         assertThat(testConfig.getPrefixedConfigItems("Prefix2").getValues().values().stream()
                 .allMatch(configValue -> configValue.currentValue == null)).isFalse();
@@ -374,8 +374,8 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
 
         assertThat(testConfig.getPrefixedConfigItems("Prefix3").getValues().values().stream()
                 .allMatch(configValue -> configValue.currentValue == null)).isFalse();
@@ -393,11 +393,11 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(testConfig.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(testConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
 
-        assertThat(testConfig.getPrefixedConfigItems("Prefix2").getPrefixedConfigItems("Prefix3").getInt(TestConfig.BAR)).isEqualTo(5);
-        assertThat(testConfig.getPrefixedConfigItems("Prefix2").getPrefixedConfigItems("Prefix3").getInt(TestConfig.FOO)).isEqualTo(6);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix2").getPrefixedConfigItems("Prefix3").getValue(TestConfig.BAR).asInt()).isEqualTo(5);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix2").getPrefixedConfigItems("Prefix3").getValue(TestConfig.FOO).asInt()).isEqualTo(6);
     }
 
     @Test
@@ -427,11 +427,11 @@ class ConfigManagerTest {
         Config<TestConfigDummy> testConfig = configManager.getConfig(TestConfigDummy.class);
 
         // Default (initial) config values.
-        assertThat(testConfig.getInt(TestConfigDummy.BAR)).isEqualTo(10);
-        assertThat(testConfig.getInt(TestConfigDummy.FOO)).isEqualTo(12);
+        assertThat(testConfig.getValue(TestConfigDummy.BAR).asInt()).isEqualTo(10);
+        assertThat(testConfig.getValue(TestConfigDummy.FOO).asInt()).isEqualTo(12);
 
-        assertThat(testConfig.getPrefixedConfigItems("Prefix4").getInt(TestConfigDummy.BAR)).isEqualTo(11);
-        assertThat(testConfig.getPrefixedConfigItems("Prefix4").getInt(TestConfigDummy.FOO)).isEqualTo(12);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix4").getValue(TestConfigDummy.BAR).asInt()).isEqualTo(11);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix4").getValue(TestConfigDummy.FOO).asInt()).isEqualTo(12);
     }
 
     @Test
@@ -443,10 +443,10 @@ class ConfigManagerTest {
 
         Config<TestConfig.Colours> subTestConfig = configManager.getConfig(TestConfig.class).getSubConfig(TestConfig.Colours.class);
 
-        assertThat(subTestConfig.getInt(Colours.BLUE)).isEqualTo(7);
+        assertThat(subTestConfig.getValue(Colours.BLUE).asInt()).isEqualTo(7);
 
-        assertThat(subTestConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.Colours.RED)).isEqualTo(8);
-        assertThat(subTestConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.Colours.GREEN)).isEqualTo(9);
+        assertThat(subTestConfig.getPrefixedConfigItems("Prefix1").getValue(TestConfig.Colours.RED).asInt()).isEqualTo(8);
+        assertThat(subTestConfig.getPrefixedConfigItems("Prefix1").getValue(TestConfig.Colours.GREEN).asInt()).isEqualTo(9);
     }
 
     @Test
@@ -459,12 +459,12 @@ class ConfigManagerTest {
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
 
         // Default values
-        assertThat(testConfig.getInt(Colours.RED)).isEqualTo(80);
-        assertThat(testConfig.getInt(Colours.GREEN)).isEqualTo(90);
+        assertThat(testConfig.getValue(Colours.RED).asInt()).isEqualTo(80);
+        assertThat(testConfig.getValue(Colours.GREEN).asInt()).isEqualTo(90);
 
         // Prefixed values
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(Colours.RED)).isEqualTo(8);
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(Colours.GREEN)).isEqualTo(9);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getValue(Colours.RED).asInt()).isEqualTo(8);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getValue(Colours.GREEN).asInt()).isEqualTo(9);
     }
 
     @Test
@@ -475,8 +475,8 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
-        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getInt(TestConfig.FOO)).isEqualTo(100);
-        assertThat(testConfig.getInt(TestConfig.FOO)).isEqualTo(1);
+        assertThat(testConfig.getPrefixedConfigItems("Prefix1").getValue(TestConfig.FOO).asInt()).isEqualTo(100);
+        assertThat(testConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
     }
 
     @Test
@@ -499,8 +499,8 @@ class ConfigManagerTest {
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -519,8 +519,8 @@ class ConfigManagerTest {
         ).build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(1);
-        assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -532,8 +532,8 @@ class ConfigManagerTest {
                 ImmutableSet.of(TestConfigTwo.class, TestConfigThree.class)
         ).build();
 
-        assertThat(configManager.getConfig(TestConfigTwo.class).getInt(TestConfigTwo.MOO)).isEqualTo(5);
-        assertThat(configManager.getConfig(TestConfigThree.class).getInt(TestConfigThree.QUACK)).isEqualTo(4);
+        assertThat(configManager.getConfig(TestConfigTwo.class).getValue(TestConfigTwo.MOO).asInt()).isEqualTo(5);
+        assertThat(configManager.getConfig(TestConfigThree.class).getValue(TestConfigThree.QUACK).asInt()).isEqualTo(4);
     }
 
     @Test
@@ -545,8 +545,8 @@ class ConfigManagerTest {
                 ImmutableSet.of(TestConfig.class, TestConfigTwo.class)
         ).build();
 
-        assertThat(configManager.getConfig(TestConfig.class).getInt(TestConfig.BAR)).isEqualTo(4);
-        assertThat(configManager.getConfig(TestConfigTwo.class).getInt(TestConfigTwo.MOO)).isEqualTo(5);
+        assertThat(configManager.getConfig(TestConfig.class).getValue(TestConfig.BAR).asInt()).isEqualTo(4);
+        assertThat(configManager.getConfig(TestConfigTwo.class).getValue(TestConfigTwo.MOO).asInt()).isEqualTo(5);
     }
 
     @Test
@@ -567,8 +567,8 @@ class ConfigManagerTest {
         ).build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(TestConfig.FOO)).isEqualTo(20);
-        assertThat(config.getInt(TestConfig.BAR)).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(20);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
     }
 
     @Test
@@ -579,7 +579,7 @@ class ConfigManagerTest {
         ).build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
-        assertThat(config.getInt(FirstSubConfig.HOO)).isEqualTo(1);
+        assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(1);
     }
 
     @Test
@@ -619,11 +619,11 @@ class ConfigManagerTest {
     void loadConfigFromResource_whenUsingAlternateArgThenActualCommandLineTakesPriority() throws ConfigKeysNotRecognisedException {
         {
             ConfigManager cm1 = new ConfigManager.Builder(new String[]{"-a:test-config-resource.properties"}).withConfig(TestConfig.class).build();
-            assertThat(cm1.getConfig(TestConfig.class).getInt(TestConfig.FOO)).isEqualTo(1);
+            assertThat(cm1.getConfig(TestConfig.class).getValue(TestConfig.FOO).asInt()).isEqualTo(1);
         }
         {
             ConfigManager cm2 = new ConfigManager.Builder(new String[]{"-a:test-config-resource.properties", "-OTestConfig.FOO=2"}).withConfig(TestConfig.class).build();
-            assertThat(cm2.getConfig(TestConfig.class).getInt(TestConfig.FOO)).isEqualTo(2);
+            assertThat(cm2.getConfig(TestConfig.class).getValue(TestConfig.FOO).asInt()).isEqualTo(2);
         }
     }
 

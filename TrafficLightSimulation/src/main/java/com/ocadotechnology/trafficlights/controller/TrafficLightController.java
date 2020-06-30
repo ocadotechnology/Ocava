@@ -28,7 +28,7 @@ import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficConfig.TrafficLight;
 
-public class TrafficLightController implements RestHandler{
+public class TrafficLightController implements RestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(TrafficLightController.class);
     private static final int CYCLE_CHANGE_DELAY = 100;
@@ -53,12 +53,12 @@ public class TrafficLightController implements RestHandler{
         this.restSender = restSender;
         this.scheduler = scheduler;
         this.lightDurationsForTraffic = ImmutableMap.<LightColour, Long>builder()
-                .put(LightColour.RED, trafficConfig.getTime(TrafficLight.RED_LIGHT_INTERVAL))
-                .put(LightColour.GREEN, trafficConfig.getTime(TrafficLight.GREEN_LIGHT_INTERVAL))
+                .put(LightColour.RED, trafficConfig.getValue(TrafficLight.RED_LIGHT_INTERVAL).asTime())
+                .put(LightColour.GREEN, trafficConfig.getValue(TrafficLight.GREEN_LIGHT_INTERVAL).asTime())
                 .build();
 
-        this.pedestrianButtonPressLightChangeDelay = trafficConfig.getTime(TrafficLight.PEDESTRIAN_CROSSING_CHANGE_DELAY);
-        this.automaticTrafficLightChangeEnabled = trafficConfig.getBoolean(TrafficLight.ENABLE_AUTOMATIC_CHANGE);
+        this.pedestrianButtonPressLightChangeDelay = trafficConfig.getValue(TrafficLight.PEDESTRIAN_CROSSING_CHANGE_DELAY).asTime();
+        this.automaticTrafficLightChangeEnabled = trafficConfig.getValue(TrafficLight.ENABLE_AUTOMATIC_CHANGE).asBoolean();
 
         scheduler.doNow(() -> initialiseTrafficLight(startingTrafficLightColour, startingPedestrianLightColour));
     }
