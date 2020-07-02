@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.event.scheduling.EventScheduler;
@@ -37,7 +38,8 @@ class WithinAppNotificationRouter implements NotificationRouter {
      */
     private static final String CROSS_THREAD_BROADCAST_TYPE = "CROSS_THREAD_FIRST";
     private static final String CONFIGURED_BROADCAST_TYPE = System.getProperties().getProperty("com.ocadotechnology.notificationrouter.broadcast");
-    private static final boolean SCHEDULE_CROSS_THREAD_BROADCAST_FIRST = CROSS_THREAD_BROADCAST_TYPE.equalsIgnoreCase(CONFIGURED_BROADCAST_TYPE);
+
+    private static boolean scheduleCrossThreadBroadcastFirst = CROSS_THREAD_BROADCAST_TYPE.equalsIgnoreCase(CONFIGURED_BROADCAST_TYPE);
 
     private static class SingletonHolder {
         private static final WithinAppNotificationRouter instance = new WithinAppNotificationRouter();
@@ -73,7 +75,7 @@ class WithinAppNotificationRouter implements NotificationRouter {
             logger.trace("Broadcasting {}", messageSupplier.get());
         }
 
-        if (SCHEDULE_CROSS_THREAD_BROADCAST_FIRST) {
+        if (scheduleCrossThreadBroadcastFirst) {
             passToBroadcastersCrossThreadFirst(messageSupplier, notificationClass, shouldHandToBroadcaster);
             return;
         }
@@ -146,7 +148,7 @@ class WithinAppNotificationRouter implements NotificationRouter {
     // Can be retried multiple times -- must be side-effect free.
     private static <T> ImmutableList<Broadcaster<?>> registerExecutionLayer(ImmutableList<Broadcaster<?>> broadcasters, Broadcaster<T> newBroadcaster) {
         if (broadcasters.isEmpty()) {
-            String broadcasterOrder = SCHEDULE_CROSS_THREAD_BROADCAST_FIRST ? "CROSS_THREAD_FIRST" : "BROADCASTER_REGISTRATION_ORDER";
+            String broadcasterOrder = scheduleCrossThreadBroadcastFirst ? "CROSS_THREAD_FIRST" : "BROADCASTER_REGISTRATION_ORDER";
             logger.info("The configured broadcast order is: {}", broadcasterOrder);
         }
 
@@ -166,4 +168,10 @@ class WithinAppNotificationRouter implements NotificationRouter {
     public void clearAllHandlers() {
         broadcasters.getAndSet(ImmutableList.of()).forEach(Broadcaster::clearAllHandlers);
     }
+
+    @VisibleForTesting
+    static void setScheduleCrossThreadBroadcastFirst(boolean scheduleCrossThreadBroadcastFirst) {
+        WithinAppNotificationRouter.scheduleCrossThreadBroadcastFirst = scheduleCrossThreadBroadcastFirst;
+    }
+
 }

@@ -15,13 +15,8 @@
  */
 package com.ocadotechnology.notification;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,56 +43,20 @@ class InThreadNotificationOrderTest {
     private final NotificationRememberingService notificationRememberingServiceOnT1 = new NotificationRememberingService(TestSchedulerType.T1);
     private final NotificationRememberingService notificationRememberingServiceOnT2 = new NotificationRememberingService(TestSchedulerType.T2);
 
-    /**
-     * Configures the broadcast order in WithinAppNotificationRouter to 'CROSS_THREAD_FIRST' by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to true.
-     */
-    @BeforeAll
-    static void setBroadcastImplementation() {
-        try {
-            Field privateField = WithinAppNotificationRouter.class.getDeclaredField("SCHEDULE_CROSS_THREAD_BROADCAST_FIRST");
-            privateField.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(privateField, privateField.getModifiers() & ~Modifier.FINAL);
-
-            privateField.set(null, true);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to setup test state.");
-        }
-    }
-
-    /**
-     * Reverts the broadcast order in WithinAppNotificationRouter to the default (BROADCASTER_REGISTRATION_ORDER) by setting 'SCHEDULE_CROSS_THREAD_BROADCAST_FIRST' to false.
-     */
-    @AfterAll
-    static void revertBroadcastImplementation() {
-        try {
-            Field privateField = WithinAppNotificationRouter.class.getDeclaredField("SCHEDULE_CROSS_THREAD_BROADCAST_FIRST");
-            privateField.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(privateField, privateField.getModifiers() & Modifier.FINAL);
-
-            privateField.set(null, false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IllegalStateException("Failed to cleanup test state.");
-        }
-    }
-
     @BeforeEach
     void setUp() {
         NotificationRouter.get().clearAllHandlers();
-        setup();
+        WithinAppNotificationRouter.setScheduleCrossThreadBroadcastFirst(true);
+        setupSubscribers();
     }
 
     @AfterEach
     void tearDown() {
         NotificationRouter.get().clearAllHandlers();
+        WithinAppNotificationRouter.setScheduleCrossThreadBroadcastFirst(false);
     }
 
-    private void setup() {
+    private void setupSubscribers() {
         NotificationRouter.get().registerExecutionLayer(t1Scheduler, new TestBus(Notification.class));
         NotificationRouter.get().registerExecutionLayer(t2Scheduler, new TestBus(Notification.class));
 
