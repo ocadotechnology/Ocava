@@ -15,7 +15,7 @@
  */
 package com.ocadotechnology.fileaccess.serviceloader;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -66,7 +66,7 @@ public class DataAccessManager {
      * @throws IllegalStateException if ServiceProvider for the mode requested in the dataConfig is not available
      *                               or if the Service (DataAccessor) for the requested mode is not initialised
      */
-    public File getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket) {
+    public Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket) {
         String mode = dataConfig.getValue(dataSourceDefinition.mode).asString();
         DataAccessor accessor = accessorMap.computeIfAbsent(mode, this::createAccessor);
         return accessor.getFileFromConfig(dataSourceDefinition, dataConfig, defaultBucket);

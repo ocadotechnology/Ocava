@@ -24,7 +24,7 @@ public class S3AccessProvider implements DataAccessServiceProvider {
 
     @Override
     public DataAccessor createAccessor(Config<?> initialConfig) {
-        return new S3FileFetcher(initialConfig);
+        return new S3FileFetcher(initialConfig, false);
     }
 
     @Override

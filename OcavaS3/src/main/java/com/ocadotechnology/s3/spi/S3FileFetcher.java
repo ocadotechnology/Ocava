@@ -15,7 +15,7 @@
  */
 package com.ocadotechnology.s3.spi;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.config.Config;
@@ -27,17 +27,19 @@ import com.ocadotechnology.s3.S3FileManager;
 public class S3FileFetcher implements DataAccessor {
     private final Config<S3Config> s3Config;
     private S3FileManager s3FileManager = null;
+    private final boolean cacheOnly;
 
-    public S3FileFetcher(Config<?> config) {
+    public S3FileFetcher(Config<?> config, boolean cacheOnly) {
         Preconditions.checkArgument((config != null && config.enumTypeIncludes(S3Config.S3_ENDPOINT)), "Invalid S3Config");
         s3Config = (Config<S3Config>) config;
+        this.cacheOnly = cacheOnly;
     }
 
     @Override
-    public File getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket) {
+    public Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket) {
         createS3FileManager();
         String s3BucketName = dataConfig.getIfKeyAndValueDefined(dataSourceDefinition.bucket).asString().orElse(defaultBucket);
-        return s3FileManager.getS3File(s3BucketName, dataConfig.getValue(dataSourceDefinition.key).asString(), false);
+        return s3FileManager.getS3File(s3BucketName, dataConfig.getValue(dataSourceDefinition.key).asString(), this.cacheOnly).toPath();
     }
 
     private void createS3FileManager() {

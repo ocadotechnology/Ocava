@@ -13,14 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.fileaccess.service;
-
-import java.nio.file.Path;
+package com.ocadotechnology.fileaccess.local;
 
 import com.ocadotechnology.config.Config;
-import com.ocadotechnology.fileaccess.DataSourceDefinition;
+import com.ocadotechnology.fileaccess.service.DataAccessor;
+import com.ocadotechnology.fileaccess.serviceprovider.DataAccessServiceProvider;
 
-public interface DataAccessor {
-    Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket);
+/**
+ * ServiceProvider to access files in the local filesystem
+ */
+public class LocalDataAccessServiceProvider implements DataAccessServiceProvider {
+    private static final String MODE = "LOCAL";
 
+    @Override
+    public DataAccessor createAccessor(Config<?> initialConfig) {
+        return new LocalFileFetcher(initialConfig);
+    }
+
+    @Override
+    public String getMode() {
+        return MODE;
+    }
 }

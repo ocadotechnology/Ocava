@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.fileaccess.service;
+package com.ocadotechnology.fileaccess.local;
 
-import java.nio.file.Path;
-
-import com.ocadotechnology.config.Config;
-import com.ocadotechnology.fileaccess.DataSourceDefinition;
-
-public interface DataAccessor {
-    Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket);
-
+public enum LocalFileConfig {
+    ROOT_DATA_DIR
 }

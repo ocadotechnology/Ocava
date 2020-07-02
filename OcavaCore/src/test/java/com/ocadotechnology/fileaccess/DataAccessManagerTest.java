@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
@@ -72,8 +72,8 @@ public class DataAccessManagerTest {
     public void testFileAccessOnInitialisation () {
         ImmutableMap<String, Config<?>> initialConfigMap = ImmutableMap.of(TEST_MODE, Config.empty(TestAccessorConfig.class));
         DataAccessManager manager = new DataAccessManager(initialConfigMap);
-        File file = manager.getFileFromConfig(TestFileType.getLocalDataSourceDefinition(), createDataConfigForMode(TEST_MODE), DEFAULT_BUCKET);
-        assertNotNull(file);
+        Path path = manager.getFileFromConfig(TestFileType.getLocalDataSourceDefinition(), createDataConfigForMode(TEST_MODE), DEFAULT_BUCKET);
+        assertNotNull(path.toFile());
     }
 
     private Config<?> createDataConfigForMode(String mode) {

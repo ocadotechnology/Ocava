@@ -15,20 +15,26 @@
  */
 package com.ocadotechnology.fileaccess;
 
-import java.io.File;
-
-import org.assertj.core.util.Files;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.fileaccess.service.DataAccessor;
+import com.ocadotechnology.validation.Failer;
 
 public class TestDataAccessor implements DataAccessor {
-    public static final String FILE = "testS3File";
+    private static final String PREFIX = "testSpiFile";
+    private static final String SUFFIX = "db";
 
     @Override
-    public File getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket) {
-        File file = Files.newTemporaryFile();
-        file.deleteOnExit();
-        return file;
+    public Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket)  {
+        try {
+            Path filePath = Files.createTempFile(PREFIX, SUFFIX);
+            filePath.toFile().deleteOnExit();
+            return filePath;
+        } catch (IOException e) {
+            throw Failer.fail("failed to create a temporary file for testing");
+        }
     }
 }

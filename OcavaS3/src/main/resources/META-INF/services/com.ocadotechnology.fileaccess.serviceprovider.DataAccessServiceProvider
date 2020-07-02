@@ -1,1 +1,2 @@
 com.ocadotechnology.s3.spi.S3AccessProvider
+com.ocadotechnology.s3.spi.S3CacheOnlyAccessProvider
