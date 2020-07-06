@@ -440,11 +440,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the length unit in the config value does not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public double getLength(Enum<?> key) {
         return ConfigParsers.parseLength(getString(key), getLengthUnit());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public double getLengthOrDefault(Enum<?> key, double defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseLength(v, getLengthUnit()), defaultValue);
     }
@@ -582,11 +588,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public double getSpeed(Enum<?> key) {
         return ConfigParsers.parseSpeed(getString(key), getLengthUnit(), getTimeUnit());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public double getSpeedOrDefault(Enum<?> key, double defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseSpeed(v, getLengthUnit(), getTimeUnit()), defaultValue);
     }
@@ -603,11 +615,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
      * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
      * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public double getAcceleration(Enum<?> key) {
         return ConfigParsers.parseAcceleration(getString(key), getLengthUnit(), getTimeUnit());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public double getAccelerationOrDefault(Enum<?> key, double defaultValue) {
         return getOrDefault(key, v -> ConfigParsers.parseAcceleration(v, getLengthUnit(), getTimeUnit()), defaultValue);
     }
