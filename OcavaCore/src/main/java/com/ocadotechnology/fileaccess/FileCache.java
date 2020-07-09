@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.s3;
+package com.ocadotechnology.fileaccess;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,15 +28,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
-class S3FileCache implements Serializable {
+public class FileCache implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    static final String DEFAULT_S3_CACHE_DIR = System.getProperty("user.home") + File.separatorChar + ".s3cache";
-    private static final Logger logger = LoggerFactory.getLogger(S3FileCache.DEFAULT_S3_CACHE_DIR);
+    private static final Logger logger = LoggerFactory.getLogger(FileCache.class);
+    protected final File rootCacheDirectory;
 
-    private final File rootCacheDirectory;
-
-    S3FileCache(File rootCacheDirectory) {
+    public FileCache(File rootCacheDirectory) {
         this.rootCacheDirectory = rootCacheDirectory;
     }
 
