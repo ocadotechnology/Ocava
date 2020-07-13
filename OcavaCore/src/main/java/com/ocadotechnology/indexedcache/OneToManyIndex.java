@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -29,9 +28,8 @@ public final class OneToManyIndex<R, C extends Identified<?>> extends AbstractIn
 
     private final OptionalOneToManyIndex<R, C> optionalOneToManyIndex;
 
-    public OneToManyIndex(Function<? super C, R> function) {
-        Function<? super C, Optional<R>> optionalFunction = function.andThen(Preconditions::checkNotNull).andThen(Optional::of);
-        optionalOneToManyIndex = new OptionalOneToManyIndex<>(optionalFunction);
+    public OneToManyIndex(Function<? super C, Optional<R>> function) {
+        optionalOneToManyIndex = new OptionalOneToManyIndex<>(function);
     }
 
     public ImmutableList<C> getCopy(R r) {

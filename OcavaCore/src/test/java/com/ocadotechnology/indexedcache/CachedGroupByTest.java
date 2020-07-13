@@ -30,7 +30,7 @@ import com.ocadotechnology.indexedcache.OneToManyIndexTest.LocationState;
 class CachedGroupByTest {
 
     private IndexedImmutableObjectCache<TestState, TestState> cache;
-    private CachedGroupBy<TestState, Coordinate, Integer> groupByAggregation;
+    private CachedGroupBy<TestState, CoordinateLikeTestObject, Integer> groupByAggregation;
 
     @BeforeEach
     void init() {
@@ -41,70 +41,70 @@ class CachedGroupByTest {
     @Test
     void get_whenMultipleValuesForGroup_thenReturnCorrectAggregation() {
         ImmutableSet<TestState> states = ImmutableSet.of(
-                new TestState(Id.create(1), Coordinate.ORIGIN, 1),
-                new TestState(Id.create(2), Coordinate.ORIGIN, 3),
-                new TestState(Id.create(3), Coordinate.ORIGIN, 5));
+                new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 1),
+                new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN, 3),
+                new TestState(Id.create(3), CoordinateLikeTestObject.ORIGIN, 5));
 
         cache.addAll(states);
-        assertThat(groupByAggregation.get(Coordinate.ORIGIN)).isEqualTo(9);
+        assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(9);
     }
 
     @Test
     void get_whenNoElementsForGroup_thenReturnEmptyAggregation() {
-        assertThat(groupByAggregation.get(Coordinate.ORIGIN)).isEqualTo(0);
+        assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(0);
     }
 
     @Test
     void get_whenElementRemoved_thenElementRemovedFromAggregation() {
-        TestState stateOne = new TestState(Id.create(1), Coordinate.ORIGIN, 1);
-        TestState stateTwo = new TestState(Id.create(2), Coordinate.ORIGIN, 3);
+        TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 1);
+        TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN, 3);
 
         cache.addAll(ImmutableSet.of(stateOne, stateTwo));
         cache.delete(stateTwo.getId());
 
-        assertThat(groupByAggregation.get(Coordinate.ORIGIN)).isEqualTo(1);
+        assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(1);
     }
 
     @Test
     void get_whenElementGroupValueChanges_thenElementRemovedFromAggregation() {
-        TestState stateOne = new TestState(Id.create(1), Coordinate.ORIGIN, 1);
-        TestState stateTwo = new TestState(Id.create(2), Coordinate.ORIGIN, 3);
+        TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 1);
+        TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN, 3);
 
         cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-        TestState updatedStateTwo = new TestState(Id.create(2), Coordinate.create(10, 10), 3);
+        TestState updatedStateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(10, 10), 3);
         cache.update(stateTwo, updatedStateTwo);
 
-        assertThat(groupByAggregation.get(Coordinate.ORIGIN)).isEqualTo(1);
+        assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(1);
     }
 
     @Test
     void get_whenMultipleGroups_thenEachGroupHasCorrectAggregation() {
 
-        Coordinate otherCoordinate = Coordinate.create(1, 2);
+        CoordinateLikeTestObject otherCoordinate = CoordinateLikeTestObject.create(1, 2);
 
         ImmutableSet<TestState> states = ImmutableSet.of(
-                new TestState(Id.create(1), Coordinate.ORIGIN, 1),
-                new TestState(Id.create(2), Coordinate.ORIGIN, 3),
+                new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 1),
+                new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN, 3),
                 new TestState(Id.create(3), otherCoordinate, 5));
 
         cache.addAll(states);
-        assertThat(groupByAggregation.get(Coordinate.ORIGIN)).isEqualTo(4);
+        assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(4);
         assertThat(groupByAggregation.get(otherCoordinate)).isEqualTo(5);
     }
 
     private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Coordinate location;
+        private final CoordinateLikeTestObject location;
         private final int value;
 
-        private TestState(Id<TestState> id, Coordinate location, int value) {
+        private TestState(Id<TestState> id, CoordinateLikeTestObject location, int value) {
             super(id);
             this.location = location;
             this.value = value;
         }
 
         @Override
-        public Coordinate getLocation() {
+        public CoordinateLikeTestObject getLocation() {
             return location;
         }
     }

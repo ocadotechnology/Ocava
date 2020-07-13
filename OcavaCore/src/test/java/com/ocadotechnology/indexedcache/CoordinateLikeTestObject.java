@@ -16,17 +16,17 @@
 package com.ocadotechnology.indexedcache;
 
 // Used for testing the indexed cache
-class Coordinate {
-    static final Coordinate ORIGIN = new Coordinate(0, 0);
+class CoordinateLikeTestObject {
+    static final CoordinateLikeTestObject ORIGIN = new CoordinateLikeTestObject(0, 0);
 
     final int x;
     final int y;
 
-    static Coordinate create(int x, int y) {
-        return new Coordinate(x, y);
+    static CoordinateLikeTestObject create(int x, int y) {
+        return new CoordinateLikeTestObject(x, y);
     }
 
-    private Coordinate(int x, int y) {
+    private CoordinateLikeTestObject(int x, int y) {
         this.x = x;
         this.y = y;
     }
@@ -36,7 +36,7 @@ class Coordinate {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Coordinate that = (Coordinate) o;
+        CoordinateLikeTestObject that = (CoordinateLikeTestObject) o;
         return this.x == that.x && this.y == that.y;
 
     }
@@ -46,5 +46,10 @@ class Coordinate {
         int result = x;
         result = 31 * result + y;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + x + "," + y + ")";  // debugging
     }
 }

@@ -15,18 +15,9 @@
  */
 package com.ocadotechnology.indexedcache;
 
-import java.util.stream.Stream;
-
 import com.ocadotechnology.id.Identified;
 
-public interface PredicateIndex<C extends Identified<?>> {
-    Stream<C> stream();
-
-    int count();
-
-    Stream<C> streamWhereNot();
-
-    int countWhereNot();
-
-    boolean isEmpty();
+abstract class AbstractOptionalOneToOneIndex<R, C extends Identified<?>>
+        extends AbstractIndex<C>
+        implements OptionalOneToOneIndex<R, C> {
 }

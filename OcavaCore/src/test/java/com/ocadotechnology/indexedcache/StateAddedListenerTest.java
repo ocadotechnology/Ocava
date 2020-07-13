@@ -60,38 +60,38 @@ class StateAddedListenerTest {
         private TestListener<? super TestState> stateAddedListener;
 
         abstract TestListener<? super TestState> addListener(IndexedImmutableObjectCache<TestState, TestState> cache);
-        
+
         @BeforeEach
         void init() {
             cache = IndexedImmutableObjectCache.createHashMapBackedCache();
             stateAddedListener = addListener(cache);
         }
-        
+
         @Test
         void stateAdded_nullState_listenerNotCalled() {
             addToCache((TestState)null);
             assertThat(stateAddedListener.statesAdded).isEmpty();
         }
-        
+
         @Test
         void stateAdded_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             assertThat(stateAddedListener.hasReceived(state)).isTrue();
         }
-        
+
         @Test
         void stateAdded_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state, state);
             assertThat(stateAddedListener.hasReceived(state)).isTrue();
         }
-        
+
         @Test
         void stateAdded_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCache(state1, state2, state3);
             assertThat(stateAddedListener.hasReceived(state1, state2, state3)).isTrue();
         }
@@ -104,23 +104,23 @@ class StateAddedListenerTest {
 
         @Test
         void stateUpdated_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state);
             assertThat(stateAddedListener.hasReceived(state)).isTrue();
         }
 
         @Test
         void stateUpdated_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state, state);
             assertThat(stateAddedListener.hasReceived(state)).isTrue();
         }
 
         @Test
         void stateUpdated_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state1, state2, state3);
             assertThat(stateAddedListener.hasReceived(state1, state2, state3)).isTrue();
         }
@@ -151,26 +151,26 @@ class StateAddedListenerTest {
         public void stateAdded(T addedState) {
             statesAdded.add(addedState);
         }
-        
+
         boolean hasReceived(T... states) {
             return statesAdded.equals(Arrays.asList(states));
         }
     }
-    
+
     private interface LocationState {
-        Coordinate getLocation();
+        CoordinateLikeTestObject getLocation();
     }
 
     private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Coordinate location;
+        private final CoordinateLikeTestObject location;
 
-        private TestState(Id<TestState> id, Coordinate location) {
+        private TestState(Id<TestState> id, CoordinateLikeTestObject location) {
             super(id);
             this.location = location;
         }
 
         @Override
-        public Coordinate getLocation() {
+        public CoordinateLikeTestObject getLocation() {
             return location;
         }
     }

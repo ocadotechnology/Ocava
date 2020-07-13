@@ -22,7 +22,7 @@ import com.ocadotechnology.id.Identified;
 public abstract class AbstractIndex<C extends Identified<?>> extends Index<C> {
 
     @Override
-    protected final void update(C newObject, C oldObject) {
+    protected void update(C newObject, C oldObject) {
         removeIfNotNull(oldObject);
         addIfNotNull(newObject);
         afterUpdate();
@@ -55,5 +55,4 @@ public abstract class AbstractIndex<C extends Identified<?>> extends Index<C> {
 
     protected void afterUpdate() {
     }
-
 }

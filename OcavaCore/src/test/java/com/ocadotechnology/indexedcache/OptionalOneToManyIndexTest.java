@@ -36,7 +36,7 @@ class OptionalOneToManyIndexTest {
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             return cache.addOptionalOneToManyIndex(TestState::getLocation);
         }
     }
@@ -44,12 +44,12 @@ class OptionalOneToManyIndexTest {
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addOptionalOneToManyIndex() require a type
             // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
             // to automatic type coercion of the lambda.
-            Function<LocationState, Optional<Coordinate>> indexFunction = LocationState::getLocation;
+            Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
             return cache.addOptionalOneToManyIndex(indexFunction);
         }
     }
@@ -57,9 +57,9 @@ class OptionalOneToManyIndexTest {
     private abstract static class IndexTests {
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OptionalOneToManyIndex<Coordinate, TestState> index;
+        private OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> index;
 
-        abstract OptionalOneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+        abstract OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
 
         @BeforeEach
         void init() {
@@ -80,10 +80,10 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void add_whenOptionalIsPresent_thenStateIndexed() {
-                TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
-                assertThat(index.stream(Coordinate.ORIGIN)).first().isEqualTo(testState);
+                assertThat(index.stream(CoordinateLikeTestObject.ORIGIN)).first().isEqualTo(testState);
             }
 
             @Test
@@ -93,7 +93,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenOptionalIsPresent_returnsSnapshotWithSingleElement() {
-                TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 assertThat(index.snapshot().values()).containsOnly(testState);
@@ -102,7 +102,7 @@ class OptionalOneToManyIndexTest {
             @Test
             void snapshot_whenOptionalIsNotPresent_returnsSnapshotWithoutElement() {
                 TestState stateOne = new TestState(Id.create(1), Optional.empty());
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(Coordinate.ORIGIN));
+                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
                 assertThat(index.snapshot().values()).containsOnly(stateTwo);
@@ -110,8 +110,8 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-                TestState stateOne = new TestState(Id.create(1), Optional.of(Coordinate.create(0, 1)));
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(Coordinate.create(1, 0)));
+                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.create(1, 0)));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
                 index.snapshot();  // So call below is not first call
 
@@ -138,7 +138,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -151,7 +151,7 @@ class OptionalOneToManyIndexTest {
             void snapshot_whenIndexAddedTo_newObjectReturned() {
                 Object firstSnapshot = index.snapshot();
 
-                TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
                 Object secondSnapshot = index.snapshot();
 
@@ -160,7 +160,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -174,7 +174,7 @@ class OptionalOneToManyIndexTest {
             @Test
             void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 TestState testState2 = new TestState(Id.create(2), Optional.empty());
                 cache.add(testState1);
 
@@ -189,7 +189,7 @@ class OptionalOneToManyIndexTest {
             @Test
             void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(Coordinate.ORIGIN));
+                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 TestState testState2 = new TestState(Id.create(2), Optional.empty());
                 cache.add(testState1);
                 cache.add(testState2);
@@ -205,19 +205,19 @@ class OptionalOneToManyIndexTest {
     }
 
     interface LocationState {
-        Optional<Coordinate> getLocation();
+        Optional<CoordinateLikeTestObject> getLocation();
     }
 
     private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Optional<Coordinate> location;
+        private final Optional<CoordinateLikeTestObject> location;
 
-        private TestState(Id<TestState> id, Optional<Coordinate> location) {
+        private TestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
             super(id);
             this.location = location;
         }
 
         @Override
-        public Optional<Coordinate> getLocation() {
+        public Optional<CoordinateLikeTestObject> getLocation() {
             return location;
         }
     }

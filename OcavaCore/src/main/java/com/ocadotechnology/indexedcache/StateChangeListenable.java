@@ -26,7 +26,7 @@ public interface StateChangeListenable<C extends Identified<?>> {
      * Register an index which will be notified whenever the contents of the cache changes. That is, when an object is
      * added, removed or updated. Indexes should not make any attempt to modify objects passed to them.
      */
-    void registerCustomIndex(Index<? super C> index);
+    <T extends Index<? super C>> T registerCustomIndex(T index);
 
     @Deprecated
     void registerStateAddedOrRemovedListener(Consumer<? super C> consumer);

@@ -79,22 +79,17 @@ public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identi
     }
 
     private Pair<A, B> aWasAdded(A a) {
-        Optional<B> optionalB = zAOneToOneIndex.indexingFunction.apply(a)
-                .flatMap(zBOneToOneIndex::get);
-        if (optionalB.isPresent()) {
-            return add(a, optionalB.get());
-        }
-        return null;
+        return zAOneToOneIndex.getKeyFor(a)
+                .flatMap(zBOneToOneIndex::get)
+                .map(b -> add(a, b))
+                .orElse(null);
     }
 
     private Pair<A, B> bWasAdded(B b) {
-        Optional<A> optionalA = zBOneToOneIndex.indexingFunction.apply(b)
-                .flatMap(zAOneToOneIndex::get);
-
-        if (optionalA.isPresent()) {
-            return add(optionalA.get(), b);
-        }
-        return null;
+        return zBOneToOneIndex.getKeyFor(b)
+                .flatMap(zAOneToOneIndex::get)
+                .map(a -> add(a, b))
+                .orElse(null);
     }
 
     private Pair<A, B> add(A a, B b) {

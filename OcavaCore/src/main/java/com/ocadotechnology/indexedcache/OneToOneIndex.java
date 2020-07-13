@@ -24,17 +24,19 @@ import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.id.Identified;
 
 public final class OneToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
-    private final OptionalOneToOneIndex<R, C> optionalOneToOneIndex;
-    public final Function<? super C, R> indexingFunction;
+    private final AbstractOptionalOneToOneIndex<R, C> optionalOneToOneIndex;
 
     /**
      *
-     * @param indexingFunction mapping C -> R where nulls are not permitted
+     * @param indexingFunction mapping C -&gt; R where nulls are not permitted
      */
-    OneToOneIndex(Function<? super C, R> indexingFunction) {
-        this.indexingFunction = indexingFunction;
+    public OneToOneIndex(Function<? super C, R> indexingFunction) {
         Function<? super C, Optional<R>> optionalIndexingFunction = indexingFunction.andThen(Preconditions::checkNotNull).andThen(Optional::of);
-        this.optionalOneToOneIndex = new OptionalOneToOneIndex<>(optionalIndexingFunction);
+        this.optionalOneToOneIndex = new DefaultOptionalOneToOneIndex<>(optionalIndexingFunction);
+    }
+
+    OneToOneIndex(AbstractOptionalOneToOneIndex<R, C> backingIndex) {
+        this.optionalOneToOneIndex = backingIndex;
     }
 
     public C get(R r) {

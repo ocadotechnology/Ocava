@@ -16,68 +16,35 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.id.Identified;
 
-public final class OptionalOneToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
+public interface OptionalOneToOneIndex<R, C extends Identified<?>> {
+    C getOrNull(R r);
 
-    private final BiMap<R, C> indexValues = HashBiMap.create();
-    public final Function<? super C, Optional<R>> indexingFunction;
-
-    private ImmutableMap<R, C> snapshot; //Null if the previous snapshot has been invalidated by an update
-
-    public OptionalOneToOneIndex(Function<? super C, Optional<R>> indexingFunction) {
-        this.indexingFunction = indexingFunction;
+    /** @return value associated with key 'r' (if any) */
+    default Optional<C> get(R r) {
+        return Optional.ofNullable(getOrNull(r));
     }
 
-    public C getOrNull(R r) {
-        return indexValues.get(r);
-    }
+    /** @return key associated with value 'c' (if any) */
+    Optional<R> getKeyFor(C c);
 
-    public Optional<C> get(R r) {
-        return Optional.ofNullable(indexValues.get(r));
-    }
+    boolean containsKey(R r);
 
-    public boolean containsKey(R r) {
-        return indexValues.containsKey(r);
-    }
+    /** @return unordered stream of all currently-mapped keys.
+     *  <br><em>There is no consistency guarantee between calls.</em>
+     */
+    Stream<R> streamKeys();
 
-    public Stream<R> streamKeys() {
-        return indexValues.keySet().stream();
-    }
+    /** @return unordered stream of all currently-mapped values.
+     *  <br><em>There is no consistency guarantee between calls.</em>
+     */
+    Stream<C> streamValues();
 
-    public Stream<C> streamValues() {
-        return indexValues.values().stream();
-    }
+    boolean isEmpty();
 
-    @Override
-    protected void remove(C object) {
-        indexingFunction.apply(object).ifPresent(val -> {
-            indexValues.remove(val);
-            snapshot = null;
-        });
-    }
-
-    @Override
-    protected void add(C object) {
-        Optional<R> optionalR = indexingFunction.apply(object);
-        optionalR.ifPresent(r -> {
-            C oldValue = indexValues.put(r, object);
-            Preconditions.checkState(oldValue == null, "Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]", object, oldValue, r);
-            snapshot = null;
-        });
-    }
-
-    public ImmutableMap<R, C> snapshot() {
-        if (snapshot == null) {
-            snapshot = ImmutableMap.copyOf(indexValues);
-        }
-        return snapshot;
-    }
+    ImmutableMap<R, C> snapshot();
 }

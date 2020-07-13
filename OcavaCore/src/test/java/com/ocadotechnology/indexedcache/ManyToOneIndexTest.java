@@ -37,7 +37,7 @@ class ManyToOneIndexTest {
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        ManyToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        ManyToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             return cache.addManyToOneIndex(TestState::getLocations);
         }
     }
@@ -45,23 +45,23 @@ class ManyToOneIndexTest {
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        ManyToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        ManyToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addManyToOneIndex() require a type of
             // Function<TestState, Collection<Coordinate>> instead of Function<? super TestState, Collection<Coordinate>>,
             // due to automatic type coercion of the lambda.
-            Function<LocationState, Collection<Coordinate>> indexFunction = LocationState::getLocations;
+            Function<LocationState, Collection<CoordinateLikeTestObject>> indexFunction = LocationState::getLocations;
             return cache.addManyToOneIndex(indexFunction);
         }
     }
 
     private abstract static class IndexTests {
-        
-        private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private ManyToOneIndex<Coordinate, TestState> index;
 
-        abstract ManyToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
-        
+        private IndexedImmutableObjectCache<TestState, TestState> cache;
+        private ManyToOneIndex<CoordinateLikeTestObject, TestState> index;
+
+        abstract ManyToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+
         @BeforeEach
         void init() {
             cache = IndexedImmutableObjectCache.createHashMapBackedCache();
@@ -78,8 +78,8 @@ class ManyToOneIndexTest {
 
         @Test
         void putOrUpdate_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(0, 0)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(0, 0)));
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
@@ -87,8 +87,8 @@ class ManyToOneIndexTest {
 
         @Test
         void putOrUpdateAll_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(0, 0)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(0, 0)));
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
                     .isInstanceOf(IllegalStateException.class);
@@ -96,9 +96,9 @@ class ManyToOneIndexTest {
 
         @Test
         void putOrUpdateAll_whenTestStateMapsToCoordinateMappedToBySomeThingElse_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(0, 0)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(0, 1)));
-            TestState stateThree = new TestState(Id.create(3), ImmutableSet.of(Coordinate.create(0, 0)));
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1)));
+            TestState stateThree = new TestState(Id.create(3), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
@@ -107,50 +107,50 @@ class ManyToOneIndexTest {
 
         @Test
         void putOrUpdateAll_whenLocationsAreSwappedTheyAreSwappedInIndex() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(0, 1)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(1, 0)));
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1)));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(1, 0)));
 
             cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-            Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(1, 0))));
-            Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(0, 1))));
+            Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(1, 0))));
+            Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1))));
 
             cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
 
-            assertThat(index.getOrNull(Coordinate.create(1, 0))).isEqualTo(stateOne);
-            assertThat(index.getOrNull(Coordinate.create(0, 1))).isEqualTo(stateTwo);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(1, 0))).isEqualTo(stateOne);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(0, 1))).isEqualTo(stateTwo);
         }
 
         @Test
         void putOrUpdateAll_whenManyKeysAreUsed() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(Coordinate.create(0, 1), Coordinate.create(0, 2), Coordinate.create(0, 3)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(Coordinate.create(1, 0), Coordinate.create(2, 0), Coordinate.create(3, 0)));
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1), CoordinateLikeTestObject.create(0, 2), CoordinateLikeTestObject.create(0, 3)));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(1, 0), CoordinateLikeTestObject.create(2, 0), CoordinateLikeTestObject.create(3, 0)));
 
             cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-            assertThat(index.getOrNull(Coordinate.create(0, 1))).isEqualTo(stateOne);
-            assertThat(index.getOrNull(Coordinate.create(0, 2))).isEqualTo(stateOne);
-            assertThat(index.getOrNull(Coordinate.create(0, 3))).isEqualTo(stateOne);
-            assertThat(index.getOrNull(Coordinate.create(1, 0))).isEqualTo(stateTwo);
-            assertThat(index.getOrNull(Coordinate.create(2, 0))).isEqualTo(stateTwo);
-            assertThat(index.getOrNull(Coordinate.create(3, 0))).isEqualTo(stateTwo);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(0, 1))).isEqualTo(stateOne);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(0, 2))).isEqualTo(stateOne);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(0, 3))).isEqualTo(stateOne);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(1, 0))).isEqualTo(stateTwo);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(2, 0))).isEqualTo(stateTwo);
+            assertThat(index.getOrNull(CoordinateLikeTestObject.create(3, 0))).isEqualTo(stateTwo);
         }
     }
 
     private interface LocationState {
-        ImmutableSet<Coordinate> getLocations();
+        ImmutableSet<CoordinateLikeTestObject> getLocations();
     }
 
     private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final ImmutableSet<Coordinate> locations;
+        private final ImmutableSet<CoordinateLikeTestObject> locations;
 
-        private TestState(Id<TestState> id, ImmutableSet<Coordinate> locations) {
+        private TestState(Id<TestState> id, ImmutableSet<CoordinateLikeTestObject> locations) {
             super(id);
             this.locations = locations;
         }
 
         @Override
-        public ImmutableSet<Coordinate> getLocations() {
+        public ImmutableSet<CoordinateLikeTestObject> getLocations() {
             return locations;
         }
     }

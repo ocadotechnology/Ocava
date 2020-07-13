@@ -36,7 +36,7 @@ class OneToManyIndexTest {
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        OneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             return cache.addOneToManyIndex(TestState::getLocation);
         }
     }
@@ -44,12 +44,12 @@ class OneToManyIndexTest {
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        OneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addOneToManyIndex() require a type of
             // Function<TestState, Coordinate> instead of Function<? super TestState, Coordinate>, due to automatic type
             // coercion of the lambda.
-            Function<LocationState, Coordinate> indexFunction = LocationState::getLocation;
+            Function<LocationState, CoordinateLikeTestObject> indexFunction = LocationState::getLocation;
             return cache.addOneToManyIndex(indexFunction);
         }
     }
@@ -57,9 +57,9 @@ class OneToManyIndexTest {
     private abstract static class IndexTests {
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OneToManyIndex<Coordinate, TestState> index;
+        private OneToManyIndex<CoordinateLikeTestObject, TestState> index;
 
-        abstract OneToManyIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+        abstract OneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
 
         @BeforeEach
         void init() {
@@ -81,51 +81,51 @@ class OneToManyIndexTest {
             @Test
             void add_whenMultipleStatesHaveSameLocation_thenAllStatesReturnedInStreamOfIndexForLocation() {
                 ImmutableSet<TestState> states = ImmutableSet.of(
-                        new TestState(Id.create(1), Coordinate.ORIGIN),
-                        new TestState(Id.create(2), Coordinate.ORIGIN),
-                        new TestState(Id.create(3), Coordinate.ORIGIN));
+                        new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(3), CoordinateLikeTestObject.ORIGIN));
 
                 cache.addAll(states);
-                assertThat(index.stream(Coordinate.ORIGIN))
+                assertThat(index.stream(CoordinateLikeTestObject.ORIGIN))
                         .containsExactlyElementsOf(states);
             }
 
             @Test
             void delete_whenStateIsRemoved_thenItIsRemovedFromIndex() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
-                assertThat(index.stream(Coordinate.ORIGIN)).first().isEqualTo(testState);
+                assertThat(index.stream(CoordinateLikeTestObject.ORIGIN)).first().isEqualTo(testState);
 
                 cache.delete(testState.getId());
-                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+                assertThat(index.count(CoordinateLikeTestObject.ORIGIN)).isEqualTo(0);
             }
 
             @Test
             void deleteAll_whenMultipleStatesAreRemoved_thenTheyAreAllRemovedFromIndex() {
                 ImmutableSet<TestState> testStates = ImmutableSet.of(
-                        new TestState(Id.create(1), Coordinate.ORIGIN),
-                        new TestState(Id.create(2), Coordinate.ORIGIN),
-                        new TestState(Id.create(3), Coordinate.ORIGIN));
+                        new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(3), CoordinateLikeTestObject.ORIGIN));
                 cache.addAll(testStates);
-                assertThat(index.stream(Coordinate.ORIGIN))
+                assertThat(index.stream(CoordinateLikeTestObject.ORIGIN))
                         .containsExactlyElementsOf(testStates);
 
                 cache.deleteAll(testStates.stream().map(TestState::getId).collect(ImmutableSet.toImmutableSet()));
-                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+                assertThat(index.count(CoordinateLikeTestObject.ORIGIN)).isEqualTo(0);
             }
 
             @Test
             void clear_whenStatesAreCleared_thenTheyAreClearedFromIndex() {
                 ImmutableSet<TestState> testStates = ImmutableSet.of(
-                        new TestState(Id.create(1), Coordinate.ORIGIN),
-                        new TestState(Id.create(2), Coordinate.ORIGIN),
-                        new TestState(Id.create(3), Coordinate.ORIGIN));
+                        new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(2), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(3), CoordinateLikeTestObject.ORIGIN));
                 cache.addAll(testStates);
-                assertThat(index.stream(Coordinate.ORIGIN))
+                assertThat(index.stream(CoordinateLikeTestObject.ORIGIN))
                         .containsExactlyElementsOf(testStates);
 
                 cache.clear();
-                assertThat(index.count(Coordinate.ORIGIN)).isEqualTo(0);
+                assertThat(index.count(CoordinateLikeTestObject.ORIGIN)).isEqualTo(0);
             }
 
             @Test
@@ -135,7 +135,7 @@ class OneToManyIndexTest {
 
             @Test
             void snapshot_whenNoChangesToCache_returnsSnapshotWithSameContent() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -147,7 +147,7 @@ class OneToManyIndexTest {
             @Test
             void snapshot_whenIndexAddedTo_returnsSnapshotWithThatElement() {
                 index.snapshot();  // So call below is not first call
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 assertThat(index.snapshot()).isEqualTo(ImmutableMultimap.of(testState.getLocation(), testState));
@@ -155,8 +155,8 @@ class OneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(1, 0));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
                 index.snapshot();  // So call below is not first call
 
@@ -183,7 +183,7 @@ class OneToManyIndexTest {
 
             @Test
             void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -194,9 +194,9 @@ class OneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexAddedTo_newObjectReturned() {
-                ImmutableMultimap<Coordinate, TestState> firstSnapshot = index.snapshot();
+                ImmutableMultimap<CoordinateLikeTestObject, TestState> firstSnapshot = index.snapshot();
 
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
                 Object secondSnapshot = index.snapshot();
 
@@ -205,7 +205,7 @@ class OneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -219,19 +219,19 @@ class OneToManyIndexTest {
     }
 
     interface LocationState {
-        Coordinate getLocation();
+        CoordinateLikeTestObject getLocation();
     }
 
     private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Coordinate location;
+        private final CoordinateLikeTestObject location;
 
-        private TestState(Id<TestState> id, Coordinate location) {
+        private TestState(Id<TestState> id, CoordinateLikeTestObject location) {
             super(id);
             this.location = location;
         }
 
         @Override
-        public Coordinate getLocation() {
+        public CoordinateLikeTestObject getLocation() {
             return location;
         }
     }

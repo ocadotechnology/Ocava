@@ -33,35 +33,35 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A OneToOneIndex")
 class OneToOneIndexTest {
-    
+
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        OneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             return cache.addOneToOneIndex(TestState::getLocation);
         }
     }
-    
+
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        OneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        OneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addOneToOneIndex() require a type of
             // Function<TestState, Coordinate> instead of Function<? super TestState, Coordinate>, due to automatic type
             // coercion of the lambda.
-            Function<LocationState, Coordinate> indexFunction = LocationState::getLocation;
+            Function<LocationState, CoordinateLikeTestObject> indexFunction = LocationState::getLocation;
             return cache.addOneToOneIndex(indexFunction);
         }
     }
-    
+
     private abstract static class IndexTests {
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OneToOneIndex<Coordinate, TestState> index;
+        private OneToOneIndex<CoordinateLikeTestObject, TestState> index;
 
-        abstract OneToOneIndex<Coordinate, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
-        
+        abstract OneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+
         @BeforeEach
         void init() {
             cache = IndexedImmutableObjectCache.createHashMapBackedCache();
@@ -83,8 +83,8 @@ class OneToOneIndexTest {
 
             @Test
             void add_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
 
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
                 assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
@@ -92,8 +92,8 @@ class OneToOneIndexTest {
 
             @Test
             void addAll_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
 
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
                         .isInstanceOf(IllegalStateException.class);
@@ -101,9 +101,9 @@ class OneToOneIndexTest {
 
             @Test
             void addAll_whenTestStateMapsToCoordinateMappedToBySomeThingElse_thenExceptionThrownOnAdd() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 0));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(0, 1));
-                TestState stateThree = new TestState(Id.create(3), Coordinate.create(0, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 1));
+                TestState stateThree = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
 
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
@@ -112,18 +112,18 @@ class OneToOneIndexTest {
 
             @Test
             void addAll_whenLocationsAreSwappedTheyAreSwappedInIndex() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(1, 0));
 
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-                Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), Coordinate.create(1, 0)));
-                Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), Coordinate.create(0, 1)));
+                Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), CoordinateLikeTestObject.create(1, 0)));
+                Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 1)));
 
                 cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
 
-                assertThat(index.get(Coordinate.create(1, 0))).isEqualTo(stateOne);
-                assertThat(index.get(Coordinate.create(0, 1))).isEqualTo(stateTwo);
+                assertThat(index.get(CoordinateLikeTestObject.create(1, 0))).isEqualTo(stateOne);
+                assertThat(index.get(CoordinateLikeTestObject.create(0, 1))).isEqualTo(stateTwo);
             }
 
             @Test
@@ -133,7 +133,7 @@ class OneToOneIndexTest {
 
             @Test
             void snapshot_whenNoChangesToCache_returnsSnapshotWithSameContent() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -145,7 +145,7 @@ class OneToOneIndexTest {
             @Test
             void snapshot_whenIndexAddedTo_returnsSnapshotWithThatElement() {
                 index.snapshot();  // So call below is not first call
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(testState.getLocation(), testState));
@@ -153,8 +153,8 @@ class OneToOneIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-                TestState stateOne = new TestState(Id.create(1), Coordinate.create(0, 1));
-                TestState stateTwo = new TestState(Id.create(2), Coordinate.create(1, 0));
+                TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 1));
+                TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(1, 0));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
                 index.snapshot();  // So call below is not first call
 
@@ -181,7 +181,7 @@ class OneToOneIndexTest {
 
             @Test
             void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -194,7 +194,7 @@ class OneToOneIndexTest {
             void snapshot_whenIndexAddedTo_newObjectReturned() {
                 Object firstSnapshot = index.snapshot();
 
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
                 Object secondSnapshot = index.snapshot();
 
@@ -203,7 +203,7 @@ class OneToOneIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Coordinate.ORIGIN);
+                TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN);
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -217,19 +217,19 @@ class OneToOneIndexTest {
     }
 
     private interface LocationState {
-        Coordinate getLocation();
+        CoordinateLikeTestObject getLocation();
     }
-    
-    private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Coordinate location;
 
-        private TestState(Id<TestState> id, Coordinate location) {
+    private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
+        private final CoordinateLikeTestObject location;
+
+        private TestState(Id<TestState> id, CoordinateLikeTestObject location) {
             super(id);
             this.location = location;
         }
 
         @Override
-        public Coordinate getLocation() {
+        public CoordinateLikeTestObject getLocation() {
             return location;
         }
     }

@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -46,6 +47,15 @@ import com.ocadotechnology.id.Identity;
  *  update before notification of the first.</p>
  */
 public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> implements StateChangeListenable<C> {
+    /** There are several implementations of PredicateIndex and OptionalOneToOneIndex.<br>
+     *  There are optional methods to allow callers to hint about the expected workload
+     *  and for the cache to (possibly) take that into account.
+     */
+    public enum Hints {
+        optimiseForUpdate,
+        optimiseForQuery
+    }
+
     private final ObjectStore<C, I> objectStore;
     private final List<Index<C>> indexes = new ArrayList<>();
 
@@ -110,6 +120,9 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws IllegalArgumentException if both original and newObject are null
      */
     public void update(@Nullable C original, @Nullable C newObject) throws CacheUpdateException {
+        if (original == newObject) {
+            return;
+        }
         objectStore.update(original, newObject);
         updateIndexes(newObject, original);
     }
@@ -146,8 +159,8 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     @Override
-    public void registerCustomIndex(Index<? super C> index) {
-        addIndex(index);
+    public <T extends Index<? super C>> T registerCustomIndex(T index) {
+        return addIndex(index);
     }
 
     @Override
@@ -195,9 +208,22 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public PredicateIndex<C> addPredicateIndex(Predicate<? super C> predicate) {
-        PredicateIndex<C> index = new PredicateIndex<>(predicate);
-        addIndex(index);
-        return index;
+        return addPredicateIndex(predicate, Hints.optimiseForQuery);
+    }
+
+    /** A Predicate index optimised for update has zero update overhead and query performance equal to the cache (slow!)<br>
+     *  A query-optimised Predicate provides O(1) lookup and update.
+     */
+    public PredicateIndex<C> addPredicateIndex(Predicate<? super C> predicate, Hints hint) {
+        switch (hint) {
+            case optimiseForUpdate:
+                // We could consider a lazy index (build on first query), but our currently use case doesn't justify that
+                return addIndex(new UncachedPredicateIndex<C, I>(this, predicate));
+            case optimiseForQuery:
+                return addIndex(new DefaultPredicateIndex<C>(predicate));
+            default:
+                throw new UnsupportedOperationException("Missing case:" + hint);
+        }
     }
 
     public <R, T> PredicateValue<C, R, T> addPredicateValue(
@@ -207,20 +233,17 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             BiFunction<T, R, T> rightDecumulate,
             T initial) {
         PredicateValue<C, R, T> value = new PredicateValue<>(predicate, extract, leftAccumulate, rightDecumulate, initial);
-        addIndex(value);
-        return value;
+        return addIndex(value);
     }
 
     public PredicateCountValue<C> addPredicateCount(Predicate<? super C> predicate) {
         PredicateCountValue<C> counter = new PredicateCountValue<>(predicate);
-        addIndex(counter);
-        return counter;
+        return addIndex(counter);
     }
 
     public <R> ManyToManyIndex<R, C> addManyToManyIndex(Function<? super C, Set<R>> function) {
         ManyToManyIndex<R, C> index = new ManyToManyIndex<>(function);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     /**
@@ -235,38 +258,56 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         Function<? super C, Optional<Set<R>>> function,
         Comparator<? super C> comparator) {
         OptionalSortedManyToManyIndex<R, C> index = new OptionalSortedManyToManyIndex<>(function, comparator);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     public <R> OneToOneIndex<R, C> addOneToOneIndex(Function<? super C, R> function) {
-        OneToOneIndex<R, C> index = new OneToOneIndex<>(function);
-        addIndex(index);
-        return index;
+        return addOneToOneIndex(function, Hints.optimiseForQuery);
+    }
+
+    public <R> OneToOneIndex<R, C> addOneToOneIndex(Function<? super C, R> function, Hints hint) {
+        Function<? super C, Optional<R>> indexingFunction = function.andThen(Preconditions::checkNotNull).andThen(Optional::of);
+        AbstractOptionalOneToOneIndex<R, C> backingIndex = newOptionalOneToOneIndex(indexingFunction, hint);
+        return addIndex(new OneToOneIndex<>(backingIndex));
     }
 
     public <R> OneToManyIndex<R, C> addOneToManyIndex(Function<? super C, R> function) {
-        OneToManyIndex<R, C> index = new OneToManyIndex<>(function);
-        addIndex(index);
-        return index;
+        Function<? super C, Optional<R>> optionalFunction = function.andThen(Preconditions::checkNotNull).andThen(Optional::of);
+        OneToManyIndex<R, C> index = new OneToManyIndex<>(optionalFunction);
+        return addIndex(index);
     }
 
     public <R> ManyToOneIndex<R, C> addManyToOneIndex(Function<? super C, Collection<R>> function) {
         ManyToOneIndex<R, C> index = new ManyToOneIndex<>(function);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     public <R> OptionalOneToManyIndex<R, C> addOptionalOneToManyIndex(Function<? super C, Optional<R>> function) {
         OptionalOneToManyIndex<R, C> index = new OptionalOneToManyIndex<>(function);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     public <R> OptionalOneToOneIndex<R, C> addOptionalOneToOneIndex(Function<? super C, Optional<R>> function) {
-        OptionalOneToOneIndex<R, C> index = new OptionalOneToOneIndex<>(function);
-        addIndex(index);
-        return index;
+        return addOptionalOneToOneIndex(function, Hints.optimiseForQuery);
+    }
+
+    /** An Index optimised for update is a little faster.  Query times are equal.<br>
+     *  The update-optimised implementation does not separately validate uniqueness of value
+     *  (which is what makes a faster update possible).
+     */
+    public <R> OptionalOneToOneIndex<R, C> addOptionalOneToOneIndex(Function<? super C, Optional<R>> function, Hints hint) {
+        return addIndex(newOptionalOneToOneIndex(function, hint));
+    }
+
+    private <R> AbstractOptionalOneToOneIndex<R, C> newOptionalOneToOneIndex(Function<? super C, Optional<R>> function, Hints hint) {
+        switch (hint) {
+            case optimiseForUpdate:
+                return new FastOptionalOneToOneIndex<>(function);
+            case optimiseForQuery:
+                return new DefaultOptionalOneToOneIndex<>(function);
+            default:
+                throw new UnsupportedOperationException("Missing case:" + hint);
+        }
     }
 
     /**
@@ -281,8 +322,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         Function<? super C, R> function,
         Comparator<? super C> comparator) {
         SortedOneToManyIndex<R, C> index = new SortedOneToManyIndex<>(function, comparator);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     /**
@@ -298,8 +338,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             Function<? super C, R> function,
             Function<R, Comparator<C>> comparatorGenerator) {
         SeparatelySortedOneToManyIndex<R, C> index = new SeparatelySortedOneToManyIndex<>(function, comparatorGenerator);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     /**
@@ -314,20 +353,17 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             Function<? super C, Optional<R>> function,
             Comparator<? super C> comparator) {
         OptionalSortedOneToManyIndex<R, C> index = new OptionalSortedOneToManyIndex<>(function, comparator);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     public <G, T> CachedGroupBy<C, G, T> cacheGroupBy(Function<? super C, G> groupByExtractor, Collector<? super C, ?, T> collector) {
         CachedGroupBy<C, G, T> cachedGroupByAggregation = new CachedGroupBy<>(groupByExtractor, collector);
-        addIndex(cachedGroupByAggregation);
-        return cachedGroupByAggregation;
+        return addIndex(cachedGroupByAggregation);
     }
 
     public <R> MappedPredicateIndex<C, R> addMappedPredicateIndex(Predicate<? super C> predicate, Function<? super C, R> mappingFunction) {
         MappedPredicateIndex<C, R> index = new MappedPredicateIndex<>(predicate, mappingFunction);
-        addIndex(index);
-        return index;
+        return addIndex(index);
     }
 
     /**
@@ -339,8 +375,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      */
     public CachedSort<C> addCacheSort(Comparator<? super C> comparator) {
         CachedSort<C> cacheSort = new CachedSort<>(comparator);
-        addIndex(cacheSort);
-        return cacheSort;
+        return addIndex(cacheSort);
     }
 
     public C get(Identity<I> id) {
@@ -375,7 +410,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     @SuppressWarnings("unchecked")
-    private void addIndex(Index<? super C> index) {
+    private <T extends Index<? super C>> T addIndex(T index) {
         // The cast is safe as the objects in the cache should be immutable and the interface uses only immutable collections
         Index<C> castedIndex = (Index<C>)index;
         indexes.add(castedIndex);
@@ -383,6 +418,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         //Do not collect to an ImmutableSet - Guava's default collector does not infer the stream size
         //which results in a lot of collisions and array extensions.
         castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+        return index;
     }
 
     private void updateIndexes(C newValue, C oldValue) {
@@ -394,14 +430,20 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
 
             indexes.forEach(i -> i.update(newValue, oldValue));
             updateStateChangeListeners(oldValue, newValue);
-            if (!atomicStateChangeListeners.isEmpty()) {
-                ImmutableList<Change<C>> changes = ImmutableList.of(Change.change(oldValue, newValue));
-                atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
-            }
+            updateAtomicStateChangeListeners(oldValue, newValue);
         }
         finally {
             updateIndexesInProgressReEntryLatch = false;
         }
+    }
+
+    private void updateAtomicStateChangeListeners(@Nullable C oldValue, @Nullable C newValue) {
+        if (atomicStateChangeListeners.isEmpty()) {
+            return;
+        }
+
+        ImmutableList<Change<C>> changes = ImmutableList.of(Change.change(oldValue, newValue));
+        atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
     }
 
     private void updateIndexes(ImmutableCollection<Change<C>> changes) {
@@ -421,7 +463,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             updateIndexesInProgressReEntryLatch = false;
         }
     }
-    
+
     private void updateStateChangeListeners(@Nullable C oldState, @Nullable C newState) {
         stateChangeListeners.forEach(s -> s.stateChanged(oldState, newState));
     }

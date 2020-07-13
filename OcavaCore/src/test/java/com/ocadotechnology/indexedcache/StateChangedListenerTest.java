@@ -61,7 +61,7 @@ class StateChangedListenerTest {
         private TestListener<? super TestState> stateChangedListener;
 
         abstract TestListener<? super TestState> addListener(IndexedImmutableObjectCache<TestState, TestState> cache);
-        
+
         @BeforeEach
         void init() {
             cache = IndexedImmutableObjectCache.createHashMapBackedCache();
@@ -76,23 +76,23 @@ class StateChangedListenerTest {
 
         @Test
         void stateAdded_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             assertThat(stateChangedListener.hasReceived(Update.of(null, state))).isTrue();
         }
 
         @Test
         void stateAdded_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state, state);
             assertThat(stateChangedListener.hasReceived(Update.of(null, state))).isTrue();
         }
 
         @Test
         void stateAdded_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCache(state1, state2, state3);
             assertThat(stateChangedListener.hasReceived(
                     Update.of(null, state1),
@@ -109,23 +109,23 @@ class StateChangedListenerTest {
 
         @Test
         void stateAddedByUpdate_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state);
             assertThat(stateChangedListener.hasReceived(Update.of(null, state))).isTrue();
         }
 
         @Test
         void stateAddedByUpdate_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state, state);
             assertThat(stateChangedListener.hasReceived(Update.of(null, state))).isTrue();
         }
 
         @Test
         void stateAddedByUpdate_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCacheViaUpdate(state1, state2, state3);
             assertThat(stateChangedListener.hasReceived(
                     Update.of(null, state1),
@@ -143,7 +143,7 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemoved_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             stateChangedListener.clear();
             removeFromCache(state);
@@ -152,14 +152,14 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemoved_nonNullState_stateNotInCache_listenerNotCalled() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             removeFromCache(state);
             assertThat(stateChangedListener.statesUpdated).isEmpty();
         }
 
         @Test
         void stateRemoved_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             stateChangedListener.clear();
             removeFromCache(state, state);
@@ -168,9 +168,9 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemoved_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCache(state1, state2, state3);
             stateChangedListener.clear();
             removeFromCache(state1, state2, state3);
@@ -190,7 +190,7 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemovedByUpdate_nonNullState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             stateChangedListener.clear();
             removeFromCacheViaUpdate(state);
@@ -199,14 +199,14 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemovedByUpdate_nonNullState_stateNotInCache_listenerNotCalled() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             removeFromCacheViaUpdate(state);
             assertThat(stateChangedListener.statesUpdated).isEmpty();
         }
 
         @Test
         void stateRemovedByUpdate_repeatedState_listenerCalledOnce() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             stateChangedListener.clear();
             removeFromCacheViaUpdate(state, state);
@@ -215,9 +215,9 @@ class StateChangedListenerTest {
 
         @Test
         void stateRemovedByUpdate_multipleStates_listenerCalledForEachInOrder() {
-            TestState state1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState state2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState state3 = new TestState(Id.create(3), Coordinate.create(0, 0));
+            TestState state1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState state2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState state3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
             addToCache(state1, state2, state3);
             stateChangedListener.clear();
             removeFromCacheViaUpdate(state1, state2, state3);
@@ -237,8 +237,8 @@ class StateChangedListenerTest {
 
         @Test
         void stateUpdated_nonNullState_listenerCalledOnce() {
-            TestState initialState = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState updatedState = initialState.withLocation(Coordinate.create(0, 1));
+            TestState initialState = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState updatedState = initialState.withLocation(CoordinateLikeTestObject.create(0, 1));
             addToCache(initialState);
             stateChangedListener.clear();
             updateStatesInCache(updatedState);
@@ -247,43 +247,40 @@ class StateChangedListenerTest {
 
         @Test
         void stateUpdated_nonNullState_stateNotInCache_listenerNotCalled() {
-            TestState initialState = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState updatedState = initialState.withLocation(Coordinate.create(0, 1));
+            TestState initialState = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState updatedState = initialState.withLocation(CoordinateLikeTestObject.create(0, 1));
             updateStatesInCache(updatedState);
             assertThat(stateChangedListener.statesUpdated).isEmpty();
         }
 
         @Test
-        void stateUpdated_repeatedState_listenerCalledTwiceWithDifferentStatePairs() {
-            TestState initialState = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState updatedState = initialState.withLocation(Coordinate.create(0, 1));
+        void stateUpdated_repeatedState_listenerNotCalledAndUpdateIsIgnored() {
+            TestState initialState = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState updatedState = initialState.withLocation(CoordinateLikeTestObject.create(0, 1));
             addToCache(initialState);
             stateChangedListener.clear();
             updateStatesInCache(updatedState, updatedState);
-            assertThat(stateChangedListener.hasReceived(
-                    Update.of(initialState, updatedState),
-                    Update.of(updatedState, updatedState)
-            )).isTrue();
+            assertThat(stateChangedListener.isEmpty());
         }
 
         @Test
         void stateUpdated_noChange_listenerNotCalled() {
-            TestState state = new TestState(Id.create(1), Coordinate.create(0, 0));
+            TestState state = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             addToCache(state);
             stateChangedListener.clear();
             updateStatesInCache(state);
-            assertThat(stateChangedListener.hasReceived(Update.of(state, state))).isTrue();
+            assertThat(stateChangedListener.isEmpty());
         }
 
         @Test
         void stateUpdated_multipleStates_listenerCalledForEachInOrder() {
-            TestState initialState1 = new TestState(Id.create(1), Coordinate.create(0, 0));
-            TestState initialState2 = new TestState(Id.create(2), Coordinate.create(0, 0));
-            TestState initialState3 = new TestState(Id.create(3), Coordinate.create(0, 0));
-            TestState updatedState1 = initialState1.withLocation(Coordinate.create(0, 1));
-            TestState updatedState2 = initialState2.withLocation(Coordinate.create(0, 1));
-            TestState updatedState3 = initialState3.withLocation(Coordinate.create(0, 1));
-            
+            TestState initialState1 = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
+            TestState initialState2 = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
+            TestState initialState3 = new TestState(Id.create(3), CoordinateLikeTestObject.create(0, 0));
+            TestState updatedState1 = initialState1.withLocation(CoordinateLikeTestObject.create(0, 1));
+            TestState updatedState2 = initialState2.withLocation(CoordinateLikeTestObject.create(0, 1));
+            TestState updatedState3 = initialState3.withLocation(CoordinateLikeTestObject.create(0, 1));
+
             addToCache(initialState1, initialState2, initialState3);
             stateChangedListener.clear();
             updateStatesInCache(updatedState1, updatedState2, updatedState3);
@@ -305,11 +302,11 @@ class StateChangedListenerTest {
         private void removeFromCache(TestState... states) {
             doForStates(state -> cache.delete(state == null ? null : state.getId()), states);
         }
-        
+
         private void removeFromCacheViaUpdate(TestState... states) {
             doForStates(state -> cache.update(state, null), states);
         }
-        
+
         private void updateStatesInCache(TestState... states) {
             doForStates(this::updateStateInCache, states);
         }
@@ -323,7 +320,7 @@ class StateChangedListenerTest {
             }
             cache.update(currentState, updatedState);
         }
-        
+
         private void doForStates(Consumer<TestState> action, TestState... states) {
             for (TestState state : states) {
                 try {
@@ -334,7 +331,7 @@ class StateChangedListenerTest {
             }
         }
     }
-    
+
     private static final class TestListener<T> implements CacheStateChangeListener<T> {
         final List<Update<T>> statesUpdated = new ArrayList<>();
 
@@ -347,12 +344,16 @@ class StateChangedListenerTest {
         final boolean hasReceived(Update<T>... updates) {
             return statesUpdated.equals(Arrays.asList(updates));
         }
-        
+
+        boolean isEmpty() {
+            return statesUpdated.isEmpty();
+        }
+
         void clear() {
             statesUpdated.clear();
         }
     }
-    
+
     private static final class Update<T> {
         private final T original;
         private final T updated;
@@ -361,7 +362,7 @@ class StateChangedListenerTest {
             this.original = original;
             this.updated = updated;
         }
-        
+
         static <T> Update<T> of(T original, T updated) {
             return new Update<>(original, updated);
         }
@@ -384,25 +385,25 @@ class StateChangedListenerTest {
             return Objects.hash(original, updated);
         }
     }
-    
+
     private interface LocationState {
-        Coordinate getLocation();
+        CoordinateLikeTestObject getLocation();
     }
 
     private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
-        private final Coordinate location;
+        private final CoordinateLikeTestObject location;
 
-        private TestState(Id<TestState> id, Coordinate location) {
+        private TestState(Id<TestState> id, CoordinateLikeTestObject location) {
             super(id);
             this.location = location;
         }
 
         @Override
-        public Coordinate getLocation() {
+        public CoordinateLikeTestObject getLocation() {
             return location;
         }
-        
-        public TestState withLocation(Coordinate location) {
+
+        public TestState withLocation(CoordinateLikeTestObject location) {
             return new TestState(getId(), location);
         }
     }
