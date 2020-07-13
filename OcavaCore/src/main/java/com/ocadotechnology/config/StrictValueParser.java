@@ -144,6 +144,13 @@ public class StrictValueParser {
     }
 
     /**
+     * @return a {@link ListValueParser} operating on the String config value.
+     */
+    public ListValueParser asList() {
+        return new ListValueParser(value);
+    }
+
+    /**
      * @return the String config value parsed using the provided custom parser.
      */
     public <T> T withCustomParser(Function<String, T> parser) {

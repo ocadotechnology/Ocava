@@ -30,6 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.google.common.collect.ImmutableList;
+import com.ocadotechnology.config.TestConfig.Colours;
+import com.ocadotechnology.id.Id;
+import com.ocadotechnology.id.StringId;
+
 public class StrictValueParserTest {
 
     @Nested
@@ -412,6 +417,112 @@ public class StrictValueParserTest {
         void throwsExceptionForInvalidEnumValue() {
             StrictValueParser parser = new StrictValueParser("2, ORANGES");
             assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("test Lists")
+    class ListOfStringsTests {
+
+        @Test
+        @DisplayName("Empty string case returns empty list")
+        void testEmptyString() {
+            StrictValueParser parser = new StrictValueParser("");
+            assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of());
+        }
+
+        @Test
+        @DisplayName("Single case returns singleton list")
+        void testSingleElement() {
+            StrictValueParser parser = new StrictValueParser("RED");
+            assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of("RED"));
+        }
+
+        @DisplayName("separates valid strings")
+        @ParameterizedTest(name = "for config value \"{0}\"")
+        @ValueSource(strings = {"RED:YELLOW:APPLE", "RED,YELLOW,APPLE"})
+        void testColonSeparated(String value) {
+            StrictValueParser parser = new StrictValueParser(value);
+            assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of("RED", "YELLOW", "APPLE"));
+        }
+
+        @Test
+        @DisplayName("List of strings with space is trimmed")
+        void testSpaceIsTrimmed() {
+            StrictValueParser parser = new StrictValueParser("RED,YELLOW, APPLE");
+            assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of("RED", "YELLOW", "APPLE"));
+        }
+
+        @Test
+        @DisplayName("Comma-separated string can contain colons")
+        void testCommaSeparatedStringsWithColons() {
+            StrictValueParser parser = new StrictValueParser("key1:value1,key2:value2");
+            assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of("key1:value1", "key2:value2"));
+        }
+
+        @Test
+        @DisplayName("numerical methods with numbers")
+        void testNumericalLists() {
+            StrictValueParser parser = new StrictValueParser("1,5,10,3");
+            assertThat(parser.asList().ofIntegers()).isEqualTo(ImmutableList.of(1, 5, 10, 3));
+            assertThat(parser.asList().ofLongs()).isEqualTo(ImmutableList.of(1L, 5L, 10L, 3L));
+            assertThat(parser.asList().ofDoubles()).isEqualTo(ImmutableList.of(1D, 5D, 10D, 3D));
+            assertThat(parser.asList().ofIds()).isEqualTo(ImmutableList.of(Id.create(1), Id.create(5), Id.create(10), Id.create(3)));
+        }
+
+        @Test
+        @DisplayName("numerical methods with non-numbers throw exceptions")
+        void testNumericalListsThrow() {
+            StrictValueParser parser = new StrictValueParser("RED,BLUE,APPLE,PEAR");
+            assertThatThrownBy(() -> parser.asList().ofIntegers()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asList().ofLongs()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asList().ofDoubles()).isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parser.asList().ofIds()).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("enum values are parsed")
+        void testEnumLists() {
+            StrictValueParser parser = new StrictValueParser("RED,BLUE,BLUE,RED");
+            ImmutableList<Colours> expected = ImmutableList.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
+            assertThat(parser.asList().ofEnums(TestConfig.Colours.class)).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("incorrect enum values throw exception")
+        void testEnumListsThrow() {
+            StrictValueParser parser = new StrictValueParser("RED,BLUE,APPLE,PEAR");
+            assertThatThrownBy(() -> parser.asList().ofEnums(TestConfig.Colours.class)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("string Ids are conveted")
+        void testStringIdLists() {
+            StrictValueParser parser = new StrictValueParser("RED,BLUE,APPLE,PEAR");
+            ImmutableList<StringId<Object>> expected = ImmutableList.of(
+                    StringId.create("RED"),
+                    StringId.create("BLUE"),
+                    StringId.create("APPLE"),
+                    StringId.create("PEAR")
+            );
+            assertThat(parser.asList().ofStringIds()).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("custom parser is used as expected")
+        void callsParser() {
+            String testValue = "ANOTHER TEST VALUE";
+            StrictValueParser parser = new StrictValueParser(testValue);
+
+            List<String> arguments = new ArrayList<>();
+            TestClass testClass = new TestClass();
+            Function<String, TestClass> parserFunction = value -> {
+                arguments.add(value);
+                return testClass;
+            };
+            assertThat(parser.asList().withElementParser(parserFunction)).isEqualTo(ImmutableList.of(testClass));
+            assertThat(arguments.size()).isEqualTo(1);
+            assertThat(arguments.get(0)).isEqualTo(testValue);
         }
     }
 

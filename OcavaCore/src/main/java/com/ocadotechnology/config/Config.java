@@ -613,21 +613,30 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Returns a list of T
      *
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     *
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <T> ImmutableList<T> getListOf(Enum<?> key, Function<String, T> valueFunction) {
         return ConfigParsers.getListOf(valueFunction).apply(getString(key));
     }
 
     /**
      * Returns a list of T or empty if the key is not present
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <T> ImmutableList<T> getListOfOrEmpty(Enum<?> key, Function<String, T> valueFunction) {
         return getListOfOrDefault(key, valueFunction, ImmutableList.of());
     }
 
     /**
      * Returns a list of T or the default value if the key is not present
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public <T> ImmutableList<T> getListOfOrDefault(Enum<?> key, Function<String, T> valueFunction, ImmutableList<T> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOf(valueFunction), defaultValue);
     }
@@ -659,7 +668,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Returns a list of Integers. Defers value parsing to {@link ConfigParsers#parseInt(String)}
      *
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     *
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Integer> getListOfIntegers(Enum<?> key) {
         return ConfigParsers.getListOfIntegers().apply(getString(key));
     }
@@ -667,7 +679,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Integers or empty if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Integer> getListOfIntegersOrEmpty(Enum<?> key) {
         return getListOfIntegersOrDefault(key, ImmutableList.of());
     }
@@ -675,7 +690,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Integers or the default value if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseInt(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Integer> getListOfIntegersOrDefault(Enum<?> key, ImmutableList<Integer> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfIntegers(), defaultValue);
     }
@@ -709,7 +727,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Returns a list of Longs. Defers value parsing to {@link ConfigParsers#parseLong(String)}
      *
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     *
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Long> getListOfLongs(Enum<?> key) {
         return ConfigParsers.getListOfLongs().apply(getString(key));
     }
@@ -717,7 +738,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Longs or empty if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Long> getListOfLongsOrEmpty(Enum<?> key) {
         return getListOfLongsOrDefault(key, ImmutableList.of());
     }
@@ -725,7 +749,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Longs or the default value if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseLong(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Long> getListOfLongsOrDefault(Enum<?> key, ImmutableList<Long> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfLongs(), defaultValue);
     }
@@ -759,7 +786,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * Returns a list of Doubles. Defers value parsing to {@link ConfigParsers#parseDouble(String)}
      *
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     *
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Double> getListOfDoubles(Enum<?> key) {
         return ConfigParsers.getListOfDoubles().apply(getString(key));
     }
@@ -767,7 +797,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Doubles or empty if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Double> getListOfDoublesOrEmpty(Enum<?> key) {
         return getListOfDoublesOrDefault(key, ImmutableList.of());
     }
@@ -775,7 +808,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * Returns a list of Doubles or the default value if the key is not present.
      * Defers value parsing to {@link ConfigParsers#parseDouble(String)}
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
+    @Deprecated
     public ImmutableList<Double> getListOfDoublesOrDefault(Enum<?> key, ImmutableList<Double> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfDoubles(), defaultValue);
     }
@@ -806,11 +842,12 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getListOfIdsOrDefault(Enum, ImmutableList)} or
      * {@link #getListOfIdsOrEmpty(Enum)} instead.
      *
      * @return the same as {@link #getListOfIds} or an empty list if the config key isn't found
      * @throws NumberFormatException if the values given cannot be parsed as longs
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public <T> ImmutableList<Id<T>> getListOfIdsIfPresent(Enum<?> key) {
@@ -824,15 +861,26 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
      * @return the same as {@link ConfigParsers#getListOfIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
      * @throws NumberFormatException      if the values given cannot be parsed as longs
+     *
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <T> ImmutableList<Id<T>> getListOfIds(Enum<?> key) {
         return ConfigParsers.<T>getListOfIds().apply(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T> ImmutableList<Id<T>> getListOfIdsOrEmpty(Enum<?> key) {
         return getListOfIdsOrDefault(key, ImmutableList.of());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T> ImmutableList<Id<T>> getListOfIdsOrDefault(Enum<?> key, ImmutableList<Id<T>> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfIds(), defaultValue);
     }
@@ -881,26 +929,50 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return getOrDefault(key, v -> ConfigParsers.getSetOfEnums(enumClass).apply(v), defaultValue);
     }
 
+    /**
+     * @deprecated use {@link Config#getValue(Enum)} instead.
+     */
+    @Deprecated
     public <T extends Enum<T>> ImmutableList<T> getListOfEnums(Enum<?> key, Class<T> enumClass) {
         return ConfigParsers.getListOfEnums(enumClass).apply(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T extends Enum<T>> ImmutableList<T> getListOfEnumsOrEmpty(Enum<?> key, Class<T> enumClass) {
         return getOrDefault(key, ConfigParsers.getListOfEnums(enumClass), ImmutableList.of());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T extends Enum<T>> ImmutableList<T> getListOfEnumsOrDefault(Enum<?> key, Class<T> enumClass, ImmutableList<T> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfEnums(enumClass), defaultValue);
     }
 
+    /**
+     * @deprecated use {@link Config#getValue(Enum)} instead.
+     */
+    @Deprecated
     public ImmutableList<String> getListOfStrings(Enum<?> key) {
         return ConfigParsers.getListOf(Function.identity()).apply(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public ImmutableList<String> getListOfStringsOrEmpty(Enum<?> key) {
         return getListOfStringsOrDefault(key, ImmutableList.of());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public ImmutableList<String> getListOfStringsOrDefault(Enum<?> key, ImmutableList<String> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfStrings(), defaultValue);
     }
@@ -918,10 +990,11 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * @deprecated - see class javadoc for reasoning - use {@link #getListOfStringIdsOrEmpty(Enum)} or
      * {@link #getListOfStringIdsOrDefault(Enum, ImmutableList)} instead.
      *
      * @return the same as {@link #getListOfStringIds} or an empty list if the config key isn't found
+     *
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
      */
     @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIdsIfPresent(Enum<?> key) {
@@ -934,15 +1007,25 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     /**
      * @return the same as {@link ConfigParsers#getListOfStringIds()} with the value linked to the given config key
      * @throws ConfigKeyNotFoundException if the key does not have a value in this Config object
+     * @deprecated use {@link Config#getValue(Enum)} instead.
      */
+    @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIds(Enum<?> key) {
         return ConfigParsers.<T>getListOfStringIds().apply(getString(key));
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIdsOrEmpty(Enum<?> key) {
         return getListOfStringIdsOrDefault(key, ImmutableList.of());
     }
 
+    /**
+     * @deprecated use {@link Config#getIfValueDefined(Enum)} or {@link Config#getIfKeyAndValueDefined(Enum)} instead.
+     */
+    @Deprecated
     public <T> ImmutableList<StringId<T>> getListOfStringIdsOrDefault(Enum<?> key, ImmutableList<StringId<T>> defaultValue) {
         return getOrDefault(key, ConfigParsers.getListOfStringIds(), defaultValue);
     }

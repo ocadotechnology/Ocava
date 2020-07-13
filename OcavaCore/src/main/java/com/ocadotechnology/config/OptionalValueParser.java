@@ -22,24 +22,18 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
-import java.util.function.ToLongFunction;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Preconditions;
 
 /**
  * Parser class to convert a config value into a typed optional result. All parsing methods will return {@link
  * Optional#empty()} if the value is am empty String.
  */
 public class OptionalValueParser {
-    private final String value;
-    @CheckForNull
-    private final TimeUnit timeUnit;
+    private final Optional<StrictValueParser> parser;
 
     @VisibleForTesting
     OptionalValueParser(String value) {
@@ -47,8 +41,11 @@ public class OptionalValueParser {
     }
 
     OptionalValueParser(String value, @Nullable TimeUnit timeUnit) {
-        this.value = value;
-        this.timeUnit = timeUnit;
+        if (value.isEmpty()) {
+            parser = Optional.empty();
+        } else {
+            parser = Optional.of(new StrictValueParser(value, timeUnit));
+        }
     }
 
     /**
@@ -56,7 +53,7 @@ public class OptionalValueParser {
      *          containing the the config value.
      */
     public Optional<String> asString() {
-        return withCustomParser(Function.identity());
+        return parser.map(StrictValueParser::asString);
     }
 
     /**
@@ -65,7 +62,7 @@ public class OptionalValueParser {
      * @throws IllegalStateException if the config value does not strictly equal "true" or "false", case insensitive.
      */
     public Optional<Boolean> asBoolean() {
-        return withCustomParser(ConfigParsers::parseBoolean);
+        return parser.map(StrictValueParser::asBoolean);
     }
 
     /**
@@ -76,10 +73,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to an integer.
      */
     public OptionalInt asInt() {
-        if (value.isEmpty()) {
-            return OptionalInt.empty();
-        }
-        return OptionalInt.of(ConfigParsers.parseInt(value));
+        return parser.map(p -> OptionalInt.of(p.asInt())).orElse(OptionalInt.empty());
     }
 
     /**
@@ -90,7 +84,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a long.
      */
     public OptionalLong asLong() {
-        return asCustomLong(ConfigParsers::parseLong);
+        return parser.map(p -> OptionalLong.of(p.asLong())).orElse(OptionalLong.empty());
     }
 
     /**
@@ -100,7 +94,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */
     public OptionalDouble asDouble() {
-        return asCustomDouble(ConfigParsers::parseDouble);
+        return parser.map(p -> OptionalDouble.of(p.asDouble())).orElse(OptionalDouble.empty());
     }
 
     /**
@@ -109,7 +103,7 @@ public class OptionalValueParser {
      * @throws IllegalArgumentException if the string config value does not match a defined enum value.
      */
     public <T extends Enum<T>> Optional<T> asEnum(Class<T> enumClass) {
-        return withCustomParser(s -> Enum.valueOf(enumClass, s));
+        return parser.map(p -> p.asEnum(enumClass));
     }
 
     /**
@@ -126,7 +120,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public OptionalDouble asFractionalTime() {
-        return asCustomDouble(s -> ConfigParsers.parseFractionalTime(s, getTimeUnit()));
+        return parser.map(p -> OptionalDouble.of(p.asFractionalTime())).orElse(OptionalDouble.empty());
     }
 
     /**
@@ -144,7 +138,7 @@ public class OptionalValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double.
      */
     public OptionalLong asTime() {
-        return asCustomLong(s -> Math.round(ConfigParsers.parseFractionalTime(s, getTimeUnit())));
+        return parser.map(p -> OptionalLong.of(p.asTime())).orElse(OptionalLong.empty());
     }
 
     /**
@@ -160,7 +154,14 @@ public class OptionalValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double.
      */
     public Optional<Duration> asDuration() {
-        return withCustomParser(ConfigParsers::parseDuration);
+        return parser.map(StrictValueParser::asDuration);
+    }
+
+    /**
+     * @return a {@link OptionalListValueParser} operating on the String config value.
+     */
+    public OptionalListValueParser asList() {
+        return new OptionalListValueParser(parser.map(StrictValueParser::asList));
     }
 
     /**
@@ -168,24 +169,7 @@ public class OptionalValueParser {
      *          containing the the result of the the provided custom parser applied to the config value.
      */
     public <T> Optional<T> withCustomParser(Function<String, T> parser) {
-        if (value.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(parser.apply(value));
-    }
-
-    private OptionalDouble asCustomDouble(ToDoubleFunction<String> parser) {
-        if (value.isEmpty()) {
-            return OptionalDouble.empty();
-        }
-        return OptionalDouble.of(parser.applyAsDouble(value));
-    }
-
-    private OptionalLong asCustomLong(ToLongFunction<String> parser) {
-        if (value.isEmpty()) {
-            return OptionalLong.empty();
-        }
-        return OptionalLong.of(parser.applyAsLong(value));
+        return this.parser.map(p -> p.withCustomParser(parser));
     }
 
     /**
@@ -195,11 +179,7 @@ public class OptionalValueParser {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
-                .add("value", value)
+                .add("value", asString().orElse(""))
                 .toString();
-    }
-
-    private TimeUnit getTimeUnit() {
-        return Preconditions.checkNotNull(timeUnit, "timeUnit not set. See ConfigManager.Builder.setTimeUnit.");
     }
 }
