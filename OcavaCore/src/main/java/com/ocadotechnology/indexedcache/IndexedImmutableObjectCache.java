@@ -186,6 +186,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         this.stateChangeListeners.add((CacheStateChangeListener<C>)listener);
     }
 
+    /** Applies <tt>mapAndFilter</tt> to all updates, then calls listener (if either is non-null).<br>
+     *  Allows listeners to be written that are only notified when an object's type or property changes.
+     */
+    public <D extends Identified<?>> void registerStateChangeListener(Function<? super C, D> mapAndFilter, CacheStateChangeListener<? super D> listener) {
+        // The cast is safe as the objects in the cache should be immutable
+        asFilteringListenable(mapAndFilter).registerStateChangeListener(listener);
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void registerAtomicStateChangeListener(AtomicStateChangeListener<? super C> listener) {
@@ -205,6 +213,16 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     @Override
     public void removeStateChangeListener(CacheStateChangeListener<? super C> listener) {
         this.stateChangeListeners.remove(listener);
+    }
+
+    /**
+     * @param mapAndFilter all arguments will be non-null and present in the cache.
+     * The return from the function can be null (the null will either be passed to any listeners, or
+     * the whole update will be ignored (eg, an addition, removal or null-to-null state change).
+     * @return a listenable that will notify any registered listeners for a subset of the cache's contents (based on <tt>mapAndFilter</tt>)
+     */
+    public <D extends Identified<?>> StateChangeListenable<D> asFilteringListenable(Function<? super C, D> mapAndFilter) {
+        return new FilteringStateChangeListenable<>(this, mapAndFilter);
     }
 
     public PredicateIndex<C> addPredicateIndex(Predicate<? super C> predicate) {
