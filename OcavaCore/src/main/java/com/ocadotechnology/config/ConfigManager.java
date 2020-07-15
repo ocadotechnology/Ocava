@@ -301,6 +301,12 @@ public class ConfigManager {
             return getConfigForKey(key).getIfKeyAndValueDefined(key).asString();
         }
 
+        /**
+         * Allows access to config objects during their construction.  Further changes to the builder, such as loading
+         * config from additional sources will not be reflected in the returned Config object.
+         *
+         * @throws IllegalArgumentException if no config object has been created matching the enum key.
+         */
         public Config<?> getConfigForKey(Enum<?> key) {
             return config.values().stream()
                     .filter(c -> c.enumTypeIncludes(key))
