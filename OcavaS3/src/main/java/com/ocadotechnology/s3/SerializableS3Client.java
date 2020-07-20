@@ -36,9 +36,10 @@ public class SerializableS3Client implements Serializable {
     private final String endpoint, accessKey, secretKey;
 
     public SerializableS3Client(Config<S3Config> applicationConfig) {
-        this.endpoint = applicationConfig.getValue(S3Config.S3_ENDPOINT).asString();
-        this.accessKey = applicationConfig.getValue(S3Config.S3_ACCESS_KEY).asString();
-        this.secretKey = applicationConfig.getValue(S3Config.S3_SECRET_KEY).asString();
+        S3Credentials s3Credentials = new S3Credentials(applicationConfig);
+        this.endpoint = s3Credentials.getEndpoint();
+        this.accessKey = s3Credentials.getAccessKey();
+        this.secretKey = s3Credentials.getSecretKey();
     }
 
     public synchronized AmazonS3Client getS3Client() {
@@ -51,5 +52,9 @@ public class SerializableS3Client implements Serializable {
             amazonS3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
         }
         return amazonS3Client;
+    }
+
+    public String getEndpoint() {
+        return this.endpoint;
     }
 }

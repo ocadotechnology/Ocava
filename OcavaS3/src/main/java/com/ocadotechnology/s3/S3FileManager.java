@@ -56,7 +56,7 @@ public class S3FileManager implements Serializable {
 
     public S3FileManager(Config<S3Config> s3Config) {
         s3 = new SerializableS3Client(s3Config);
-        endpoint = s3Config.getValue(S3Config.S3_ENDPOINT).asString();
+        endpoint = s3.getEndpoint();
         logger.info("S3 client initialised for endpoint {} with signer override {}", endpoint, SerializableS3Client.signerType);
         bucketPrefix = s3Config.getIfKeyAndValueDefined(S3Config.BUCKET_PREFIX).asString().orElse("");
 
