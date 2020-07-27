@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.math.DoubleMath;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
@@ -670,6 +671,95 @@ public class StrictValueParserTest {
         void throwsExceptionWhenTimeUnitNotSet() {
             StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
             assertThatThrownBy(parser::asAcceleration).isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("for Jerk values")
+    class JerkConfigTests {
+
+        @Test
+        @DisplayName("returns the double value with units specified")
+        void returnValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(2.3);
+        }
+
+        @Test
+        @DisplayName("returns the double value with no units specified")
+        void returnValueWithDefaultUnits() {
+            StrictValueParser parser = new StrictValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(2.3);
+        }
+
+        @Test
+        @DisplayName("returns the scaled value ms -> s")
+        void returnTimeInputScaledValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(DoubleMath.fuzzyEquals(parser.asJerk(), 2.3e9, 1e-3)).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns the scaled value s -> ms")
+        void returnTimeOutputScaledValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(2.3e-9);
+        }
+
+        @Test
+        @DisplayName("returns the scaled value km -> m")
+        void returnLengthInputScaledValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(2300);
+        }
+
+        @Test
+        @DisplayName("returns the scaled value m -> km")
+        void returnLengthOutputScaledValue() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            assertThat(parser.asJerk()).isEqualTo(0.0023);
+        }
+
+        @Test
+        @DisplayName("allows negative values")
+        void allowsNegativeValues() {
+            StrictValueParser parser = new StrictValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(-2.3);
+        }
+
+        @Test
+        @DisplayName("throws an exception for non-number")
+        void throwsExceptionForNonNumber() {
+            StrictValueParser parser = new StrictValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asJerk).isInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception invalid structure")
+        void throwsExceptionForInvalidStructure() {
+            StrictValueParser parser = new StrictValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asJerk).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws an exception for invalid enum value")
+        void throwsExceptionForInvalidEnumValue() {
+            StrictValueParser parser = new StrictValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThatThrownBy(parser::asJerk).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if length unit not set")
+        void throwsExceptionWhenLengthUnitNotSet() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
+            assertThatThrownBy(parser::asJerk).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Throws an exception if time unit not set")
+        void throwsExceptionWhenTimeUnitNotSet() {
+            StrictValueParser parser = new StrictValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
+            assertThatThrownBy(parser::asJerk).isInstanceOf(NullPointerException.class);
         }
     }
 

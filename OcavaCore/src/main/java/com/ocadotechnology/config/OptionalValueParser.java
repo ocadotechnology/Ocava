@@ -177,7 +177,8 @@ public class OptionalValueParser {
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing the string config value parsed as a speed using the declared application time and length units.
+     *          containing the string config value parsed as a speed using the declared application time and length
+     *          units.
      * <p>
      * Speed config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters per second
@@ -194,7 +195,8 @@ public class OptionalValueParser {
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing the string config value parsed as an acceleration using the declared application time and length units.
+     *          containing the string config value parsed as an acceleration using the declared application time and
+     *          length units.
      * <p>
      * Acceleration config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters per second squared
@@ -207,6 +209,24 @@ public class OptionalValueParser {
      */
     public OptionalDouble asAcceleration() {
         return parser.map(p -> OptionalDouble.of(p.asAcceleration())).orElse(OptionalDouble.empty());
+    }
+
+    /**
+     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
+     *          containing the string config value parsed as a jerk using the declared application time and length
+     *          units.
+     * <p>
+     * Jerk config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second cubed
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public OptionalDouble asJerk() {
+        return parser.map(p -> OptionalDouble.of(p.asJerk())).orElse(OptionalDouble.empty());
     }
 
     /**

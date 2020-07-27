@@ -196,6 +196,22 @@ public class StrictValueParser {
     }
 
     /**
+     * @return the string config value parsed as a jerk using the declared application time and length units.
+     * <p>
+     * Jerk config values can be given either
+     * - as a double, in which case Config will assume that the value is being specified in meters per second cubed
+     * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     *
+     * @throws NullPointerException       if the application time or length units have not been set
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
+     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
+     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     */
+    public double asJerk() {
+        return ConfigParsers.parseJerk(value, getLengthUnit(), getTimeUnit());
+    }
+
+    /**
      * @return a {@link ListValueParser} operating on the String config value.
      */
     public ListValueParser asList() {
