@@ -30,7 +30,7 @@ public class S3FileFetcher implements DataAccessor {
     private final boolean cacheOnly;
 
     public S3FileFetcher(Config<?> config, boolean cacheOnly) {
-        Preconditions.checkArgument((config != null && config.enumTypeIncludes(S3Config.S3_ENDPOINT)), "Invalid S3Config");
+        Preconditions.checkArgument((config != null && config.enumTypeMatches(S3Config.class)), "Invalid S3Config");
         s3Config = (Config<S3Config>) config;
         this.cacheOnly = cacheOnly;
     }

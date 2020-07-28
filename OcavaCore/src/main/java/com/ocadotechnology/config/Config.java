@@ -252,22 +252,28 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     /**
-     * Check that the this config enum type contains the enum key independently from whether the key's value is set.
-     * For example, ExampleConfig.VALUE does have the same enum type of Config&lt;ExampleConfig&gt;,
-     * CounterExample.VALUE does not.
+     * Check that this config's enum type matches the one provided.
+     * For example, a Config&lt;ExampleConfig&gt; is not the same thing as a Config&lt;CounterExample&gt;.
      */
-    public boolean enumTypeIncludes(Enum<?> key) {
-        Class<?> clazz = key.getClass();
-
+    public boolean enumTypeMatches(Class<? extends Enum> enumClazz) {
+        Class<?> clazz = enumClazz;
         while (clazz != null) {
             if (clazz.equals(cls)) {
                 return true;
             }
-
             clazz = clazz.getEnclosingClass();
         }
 
         return false;
+    }
+
+    /**
+     * Check that this config enum type contains the enum key independently from whether the key's value is set.
+     * For example, ExampleConfig.VALUE does have the same enum type of Config&lt;ExampleConfig&gt;,
+     * CounterExample.VALUE does not.
+     */
+    public boolean enumTypeIncludes(Enum<?> key) {
+        return enumTypeMatches(key.getClass());
     }
 
     @SuppressWarnings("unchecked")

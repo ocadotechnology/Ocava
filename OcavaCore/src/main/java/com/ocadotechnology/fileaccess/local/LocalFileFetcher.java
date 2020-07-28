@@ -27,7 +27,7 @@ public class LocalFileFetcher implements DataAccessor {
     private final Config<LocalFileConfig> localConfig;
 
     public LocalFileFetcher(Config<?> initialConfig) {
-        Preconditions.checkArgument((initialConfig != null && initialConfig.enumTypeIncludes(LocalFileConfig.ROOT_DATA_DIR)), "Invalid localConfig");
+        Preconditions.checkArgument((initialConfig != null && initialConfig.enumTypeMatches(LocalFileConfig.class)), "Invalid localConfig");
         this.localConfig = (Config<LocalFileConfig>) initialConfig;
     }
 

@@ -309,7 +309,7 @@ public class ConfigManager {
          */
         public Config<?> getConfigForKey(Enum<?> key) {
             return config.values().stream()
-                    .filter(c -> c.enumTypeIncludes(key))
+                    .filter(c -> c.enumTypeMatches(key.getClass()))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException(String.format("%s does not belong to any of %s", key, config.keySet())));
         }

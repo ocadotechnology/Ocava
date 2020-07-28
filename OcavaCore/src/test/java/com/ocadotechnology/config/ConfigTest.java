@@ -94,6 +94,43 @@ class ConfigTest {
     }
 
     @Test
+    void enumTypeMatches_whenEnumKeyIsInConfig_thenReturnsTrue() {
+        Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Non empty value")
+                .put(TestConfig.BAR, "")
+                .buildWrapped();
+
+        assertThat(config.enumTypeMatches(TestConfig.FOO.getClass()))
+                .as("Config enum type should contain this enum key").isTrue();
+        assertThat(config.enumTypeMatches(TestConfig.BAR.getClass()))
+                .as("Config enum type should contain the enum key even if its value is explicitly set to empty in the config").isTrue();
+        assertThat(config.enumTypeMatches(TestConfig.BAZ.getClass()))
+                .as("Config enum type should contain the enum key even if its value is not set in the config").isTrue();
+        assertThat(config.enumTypeMatches(FirstSubConfig.HOO.getClass()))
+                .as("Config enum type should contain sub config enum key").isTrue();
+        assertThat(config.enumTypeMatches(FirstSubConfig.SubSubConfig.X.getClass()))
+                .as("Config enum type should contain sub sub config enum key").isTrue();
+
+        Config<TestConfig.FirstSubConfig> subConfig = config.getSubConfig(TestConfig.FirstSubConfig.class);
+        assertThat(subConfig.enumTypeMatches(FirstSubConfig.SubSubConfig.X.getClass()))
+                .as("Sub config should contain sub sub config enum key").isTrue();
+        assertThat(subConfig.getSubConfig(TestConfig.FirstSubConfig.SubSubConfig.class).enumTypeMatches(FirstSubConfig.SubSubConfig.X.getClass()))
+                .as("Sub sub config should contain this enum key").isTrue();
+    }
+
+    @Test
+    void enumTypeMatches_whenKeyCannotBeConfigured_thenReturnsFalse() {
+        Config<TestConfig> config =  SimpleConfigBuilder.create(TestConfig.class).buildWrapped();
+
+        assertThat(config.enumTypeMatches(TestConfigDummy.FOO.getClass()))
+                .as("Config enum type should not contain enum key of wrong config").isFalse();
+        assertThat(config.getSubConfig(TestConfig.SecondSubConfig.class).enumTypeMatches(FirstSubConfig.SubSubConfig.X.getClass()))
+                .as("Sub config enum should not contain enum key of different sub config").isFalse();
+        assertThat(config.getSubConfig(TestConfig.SecondSubConfig.class).enumTypeMatches(TestConfig.FOO.getClass()))
+                .as("Sub config enum should not contain enum key from parent config").isFalse();
+    }
+
+    @Test
     void enumTypeIncludes_whenEnumKeyIsInConfig_thenReturnsTrue() {
         Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
                 .put(TestConfig.FOO, "Non empty value")
