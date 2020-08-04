@@ -273,7 +273,7 @@ public class NotificationBusTest {
         assertThatThrownBy(() -> bus.addHandler(new Subscriber() {
 
             @Subscribe
-            public void invalidHandler(Object notANotification) {
+            public void invalidHandler(String notANotification) {
             }
 
             @Override
@@ -283,7 +283,7 @@ public class NotificationBusTest {
         }))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("invalidHandler")
-        .hasMessageContaining("Object");
+        .hasMessageContaining("String");
     }
 
     private static class TestBus extends NotificationBus<Notification> {
