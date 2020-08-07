@@ -92,7 +92,7 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      *               the {@code toString()} method of each element and then comma-separating the elements.
      * @return {@code this}, to facilitate fluent call chains.
      */
-    public SimpleConfigBuilder<E> put(Enum<?> key, Collection<Object> values) {
+    public SimpleConfigBuilder<E> put(Enum<?> key, Collection<?> values) {
         return put(getKeyName(key), Joiner.on(",").join(values));
     }
 

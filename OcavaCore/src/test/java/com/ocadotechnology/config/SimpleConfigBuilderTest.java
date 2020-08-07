@@ -92,9 +92,10 @@ class SimpleConfigBuilderTest {
     }
 
     @Test
-    @DisplayName("can be built using Object values")
+    @DisplayName("can be built using Collection values")
     void testSimpleConfig_canBeBuiltWithCollectionValues() {
-        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, ImmutableList.of(Id.create(42), Id.create(43), Id.create(44)))
+        ImmutableList<Id<Object>> of = ImmutableList.of(Id.create(42), Id.create(43), Id.create(44));
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, of)
                 .buildWrapped();
 
         assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("42,43,44");
