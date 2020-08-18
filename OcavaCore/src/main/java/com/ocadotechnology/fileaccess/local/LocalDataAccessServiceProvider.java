@@ -23,7 +23,7 @@ import com.ocadotechnology.fileaccess.serviceprovider.DataAccessServiceProvider;
  * ServiceProvider to access files in the local filesystem
  */
 public class LocalDataAccessServiceProvider implements DataAccessServiceProvider {
-    private static final String MODE = "LOCAL";
+    public static final String MODE = "LOCAL";
 
     @Override
     public DataAccessor createAccessor(Config<?> initialConfig) {

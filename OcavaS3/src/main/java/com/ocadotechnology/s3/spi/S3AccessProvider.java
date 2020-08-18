@@ -20,7 +20,7 @@ import com.ocadotechnology.fileaccess.service.DataAccessor;
 import com.ocadotechnology.fileaccess.serviceprovider.DataAccessServiceProvider;
 
 public class S3AccessProvider implements DataAccessServiceProvider {
-    private static final String MODE = "S3";
+    public static final String MODE = "S3";
 
     @Override
     public DataAccessor createAccessor(Config<?> initialConfig) {

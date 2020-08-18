@@ -24,15 +24,5 @@ public enum S3Config {
 
     ENABLE_S3_FILE_CACHE,
     S3_FILE_CACHE_ROOT,
-    BUCKET_PREFIX,
-    /**
-     * Prepends file paths with the windows special string \\?\ to overcome the default 260 character file path
-     * limitation in Windows.
-     *
-     * NOTE: Does not do anything if not running on Windows (the os.name system property does not contain the string
-     *        'win')
-     * NOTE: this is incompatible with the File.getCanonicalFile or File.getCanonicalPath methods.  If the calling code
-     *      needs to use them, other solutions must be sought.
-     */
-    PERMIT_EXTENDED_FILE_PATHS_IN_WINDOWS
+    BUCKET_PREFIX
 }

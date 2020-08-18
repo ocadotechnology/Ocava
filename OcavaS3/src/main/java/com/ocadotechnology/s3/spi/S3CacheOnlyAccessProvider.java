@@ -20,7 +20,7 @@ import com.ocadotechnology.fileaccess.service.DataAccessor;
 import com.ocadotechnology.fileaccess.serviceprovider.DataAccessServiceProvider;
 
 public class S3CacheOnlyAccessProvider implements DataAccessServiceProvider {
-    private static final String MODE = "S3_CACHE_ONLY";
+    public static final String MODE = "S3_CACHE_ONLY";
 
     @Override
     public DataAccessor createAccessor(Config<?> initialConfig) {
