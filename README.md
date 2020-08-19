@@ -30,10 +30,25 @@ Some of the other utilities included are:
 * Tools to make randomness deterministic between program runs
 * Physics utilities to help deal with acceleration
 * Immutable object cache for efficient lookups of immutable objects
+* API for different modes of file access implemented through [Java Service Provider Interface (SPI)]
+
+[Java Service Provider Interface (SPI)]: https://docs.oracle.com/javase/tutorial/ext/basics/spi.html
+### File Access through SPI
+In order to access files through a specific mode, the service provider for that mode, should be available in the classpath. For example, if the file needs to be accessed through mode S3, then OcavaS3 should be available in the classpath of the application. 
+
+OcavaCore also has a `CredentialProvider` class that allows the credentials for file access to be located in a file named `.ocava_access_credentials` within the `credentials` folder inside the home directory. 
+
+So credentials can be store in `<HOME_DIR>/credentials/.ocava_access_credentials`
 
 ## OcavaS3
 
 This component provides a number of useful utilities to connect to AWS services including caches to reduce costs from repeated connections.
+
+The credentials for S3 access can be provided in one of the following ways:
+* As part of the S3Config 
+* Using the credentials file - `<HOME_DIR>/credentials/.ocava_access_credentials` by providing values for `s3_access_key`, `s3_secret_key` and `s3_endpoint`
+
+Credentials coming through config takes priority over the ones provided through credentials file
 
 ## OcavaScenarioTest
 

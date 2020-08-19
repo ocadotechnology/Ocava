@@ -21,6 +21,14 @@ import com.ocadotechnology.config.Config;
 import com.ocadotechnology.fileaccess.DataSourceDefinition;
 
 public interface DataAccessor {
+    /**
+     * Retrieves the file requested using the preferred mode set in the dataConfig
+     *
+     * @param dataSourceDefinition defines the set of config keys for the data source
+     * @param dataConfig contains the values for the keys defined in dataSourceDefinition
+     * @param defaultBucket default bucket to look for the file if a bucket value is not provided inside dataconfig
+     * @return Path object for the file requested
+     */
     Path getFileFromConfig(DataSourceDefinition<?> dataSourceDefinition, Config<?> dataConfig, String defaultBucket);
 
 }
