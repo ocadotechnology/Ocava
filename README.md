@@ -38,7 +38,12 @@ In order to access files through a specific mode, the service provider for that 
 
 OcavaCore also has a `CredentialProvider` class that allows the credentials for file access to be located in a file named `.ocava_access_credentials` within the `credentials` folder inside the home directory. 
 
-So credentials can be store in `<HOME_DIR>/credentials/.ocava_access_credentials`
+So credentials can be stored in `<HOME_DIR>/.ocava_access_credentials/credentials`
+
+### Configuration for maven-shade plugin
+If maven-shade plugin is used in the project to build an uber-jar, then this will not enable multiple service providers for file access by default, even if all the required libraries are in classpath. A transformer configuration that will add all the service providers will be required. This can done by adding the following configuration to the maven-shade plugin.
+
+`<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>`
 
 ## OcavaS3
 
@@ -46,7 +51,7 @@ This component provides a number of useful utilities to connect to AWS services 
 
 The credentials for S3 access can be provided in one of the following ways:
 * As part of the S3Config 
-* Using the credentials file - `<HOME_DIR>/credentials/.ocava_access_credentials` by providing values for `s3_access_key`, `s3_secret_key` and `s3_endpoint`
+* Using the credentials file - `<HOME_DIR>/.ocava_access_credentials/credentials` by providing values for `s3_access_key`, `s3_secret_key` and `s3_endpoint`
 
 Credentials coming through config takes priority over the ones provided through credentials file
 
