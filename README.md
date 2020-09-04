@@ -40,6 +40,10 @@ This component provides a number of useful utilities to connect to AWS services 
 This component provides a scenario test framework designed to work with an event-driven process.
 The framework enables scenario tests to be written in code rather than in text which allows for both type safety and easy code re-use between scenario tests.
 
+## Contributing
+
+See [here](CONTRIBUTING.md)
+
 ## Attaching a Simulation to Production Code
 
 There are multiple ways in which you can attach a simulation to production code. Two ways Ocado has done it are:
@@ -51,10 +55,6 @@ There are multiple ways in which you can attach a simulation to production code.
 
 TrafficLightSimulation is an example project which utilises the framework to create a simulated environment for a traffic light controller that is able to run in both discrete event and realtime. 
 This simulation also makes use of the scenario test framework.
-
-# Development Process
-
-Please note that this library is primarily developed on an internal, private repository.  This means that issue numbers referenced in commit messages refer to the issue numbers in the internal repository.
 
 ## License
 
