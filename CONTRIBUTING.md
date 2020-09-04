@@ -3,7 +3,7 @@
 Please note that this library is primarily developed on an internal, private repository.  This means that issue numbers referenced in commit messages refer to the issue numbers in the internal repository.
 
 # Contributing
-Branch, edit, push, submit a merge request.  Please squash commits on merging into master.
+Branch, edit, push, submit a merge request. Please squash commits on merging into master.
 
 We would encourage users to contribute a variety of domain-independent utilities which fit into the broad theme of creating, running and using simulations.
 
