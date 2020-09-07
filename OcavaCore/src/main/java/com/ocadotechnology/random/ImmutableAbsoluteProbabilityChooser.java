@@ -51,8 +51,10 @@ public interface ImmutableAbsoluteProbabilityChooser<T> {
     }
 
     final class Builder<T> {
+        public static final double ROUNDING_TOLERANCE = 1e-12;
+
         private @Nonnegative double sumOfProbabilities;
-        private T defaultOutcome;
+        private final T defaultOutcome;
         private final ImmutableRangeMap.Builder<Double, T> probabilisticOutcomes;
 
         private Builder(T defaultOutcome) {
@@ -84,7 +86,7 @@ public interface ImmutableAbsoluteProbabilityChooser<T> {
         private Range<Double> getNextRange(@Nonnegative double probability) {
             double lowerBound = sumOfProbabilities;
             double upperBound = sumOfProbabilities + probability;
-            Preconditions.checkState(upperBound <= 1 + 1e-6, "Sum of probabilities is greater than 1");
+            Preconditions.checkState(upperBound <= 1 + ROUNDING_TOLERANCE, "Sum of probabilities is greater than 1");
             sumOfProbabilities = upperBound;
             return Range.closedOpen(lowerBound, upperBound);
         }
@@ -110,7 +112,7 @@ public interface ImmutableAbsoluteProbabilityChooser<T> {
                 return () -> onlyPossibleResult;
             }
 
-            return new ImmutableAbsoluteProbabilityChooserWithManyOutcomes<>(outcomes);
+            return () -> outcomes.get(RepeatableRandom.nextDouble());
 
         }
     }

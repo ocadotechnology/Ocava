@@ -32,14 +32,14 @@ public class MutableAbsoluteProbabilityChooserTest {
     }
 
     @Test
-    void whenItemProbabilityDefined_thenReturnsExpectedValue() {
+    void whenOutcomeProbabilityDefined_thenReturnsExpectedValue() {
         chooser.setProbability(VALUE_1, 0.5);
         testInRange(0, 0.5, VALUE_1);
         testInRange(0.5, 1, DEFAULT);
     }
 
     @Test
-    void whenMultipleItemProbabilitiesDefined_thenReturnsExpectedValue() {
+    void whenMultipleOutcomeProbabilitiesDefined_thenReturnsExpectedValue() {
         chooser.setProbability(VALUE_1, 0.5);
         chooser.setProbability(VALUE_2, 0.3);
         chooser.setProbability(VALUE_3, 0.2);
@@ -49,7 +49,7 @@ public class MutableAbsoluteProbabilityChooserTest {
     }
 
     @Test
-    void whenItemProbabilityOverridden_thenUsesNewProbability() {
+    void whenOutcomeProbabilityOverridden_thenUsesNewProbability() {
         chooser.setProbability(VALUE_1, 0.5);
         testInRange(0, 0.5, VALUE_1);
         testInRange(0.5, 1, DEFAULT);
@@ -60,12 +60,22 @@ public class MutableAbsoluteProbabilityChooserTest {
     }
 
     @Test
-    void whenItemProbabilitiesCleared_thenRevertsToDefaultBehaviour() {
+    void whenOutcomeProbabilitiesCleared_thenRevertsToDefaultBehaviour() {
         chooser.setProbability(VALUE_1, 0.5);
         testInRange(0, 0.5, VALUE_1);
         testInRange(0.5, 1, DEFAULT);
 
         chooser.clear();
+        testInRange(0, 1, DEFAULT);
+    }
+
+    @Test
+    void whenOutcomeRemoved_thenRevertsToDefaultBehaviour() {
+        chooser.setProbability(VALUE_1, 0.5);
+        testInRange(0, 0.5, VALUE_1);
+        testInRange(0.5, 1, DEFAULT);
+
+        chooser.removeOutcome(VALUE_1);
         testInRange(0, 1, DEFAULT);
     }
 

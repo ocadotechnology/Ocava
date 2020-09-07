@@ -40,6 +40,8 @@ import com.google.common.base.Preconditions;
  * @param <T> Common type for each of the possible outcomes.
  */
 public class MutableAbsoluteProbabilityChooser<T> {
+    public static final double ROUNDING_TOLERANCE = 1e-12;
+
     private final Map<T, Double> outcomesToProbability = new LinkedHashMap<>();
     private final T defaultOutcome;
 
@@ -69,9 +71,18 @@ public class MutableAbsoluteProbabilityChooser<T> {
             double newTotalProbability = outcomesToProbability.values().stream().reduce(0.0, Double::sum)
                     + probability
                     - outcomesToProbability.getOrDefault(outcome, 0.0);
-            Preconditions.checkState(newTotalProbability <= 1 + 1e-6, "Sum of probabilities for all outcomes has exceeded 1");
+            Preconditions.checkState(newTotalProbability <= 1 + ROUNDING_TOLERANCE, "Sum of probabilities for all outcomes has exceeded 1");
             outcomesToProbability.put(outcome, probability);
         }
+    }
+
+    /**
+     * Removes any chance of returning the selected outcome.
+     * @param outcome - the outcome to disable.
+     * @throws IllegalArgumentException if the outcome is equal to the defaultOutcome provided in the constructor.
+     */
+    public void removeOutcome(T outcome) {
+        setProbability(outcome, 0);
     }
 
     /**
@@ -83,6 +94,14 @@ public class MutableAbsoluteProbabilityChooser<T> {
     }
 
     /**
+     * Selects an option from the defined outcomes.
+     *
+     * Current implementation is O(N) across the number of possible outcomes. Should this be a concern, it would be
+     * possible to construct an {@link ImmutableAbsoluteProbabilityChooser} in
+     * {@link MutableAbsoluteProbabilityChooser#setProbability(Object, double)}. This would then benefit from the
+     * improved performance of the ImmutableRangeMap when calling choose at the cost of additional construction during
+     * the setProbability method.
+     *
      * @return An outcome selected from those with defined probabilities using a random number provided from the defined
      *          random number supplier.
      */
