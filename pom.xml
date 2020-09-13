@@ -38,7 +38,7 @@
         <jcommander.version>1.80</jcommander.version>
 
         <slf4j-api.version>1.7.30</slf4j-api.version>
-        <junit-jupiter.version>5.6.2</junit-jupiter.version>
+        <junit-jupiter.version>5.7.0</junit-jupiter.version>
         <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
         <assertj.version>3.17.1</assertj.version>
         <jfreechart.version>1.5.0</jfreechart.version>
