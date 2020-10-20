@@ -16,44 +16,49 @@
 package com.ocadotechnology.s3;
 
 import java.io.File;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.http.IdleConnectionReaper;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.google.common.base.Preconditions;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.fileaccess.FileCache;
 import com.ocadotechnology.fileaccess.FileManager;
 import com.ocadotechnology.validation.Failer;
 
 public class S3FileManager extends FileManager {
-    private static final int MAX_RETRY_ATTEMPTS = 5;
+    @VisibleForTesting
+    protected static final int MAX_RETRY_ATTEMPTS = 5;
     private static final int RETRY_WAIT_PERIOD = 5;
     private static final long serialVersionUID = 1L;
     private static final String DEFAULT_S3_CACHE_DIR = System.getProperty("user.home") + File.separatorChar + ".s3cache";
 
     private static final Logger logger = LoggerFactory.getLogger(S3FileManager.class);
 
-    protected final SerializableS3Client s3;
+    private final S3Querier s3Querier;
     private final String endpoint;
     private final String bucketPrefix;
 
     public S3FileManager(Config<S3Config> s3Config) {
-        super(s3Config);
-        s3 = new SerializableS3Client(s3Config);
-        endpoint = s3.getEndpoint();
+        this(
+                setupFileCache(s3Config),
+                new S3Querier(new SerializableS3Client(s3Config)),
+                s3Config.getIfKeyAndValueDefined(S3Config.BUCKET_PREFIX).asString().orElse(""));
         logger.info("S3 client initialised for endpoint {} with signer override {}", endpoint, SerializableS3Client.signerType);
-        bucketPrefix = s3Config.getIfKeyAndValueDefined(S3Config.BUCKET_PREFIX).asString().orElse("");
     }
 
-    protected FileCache setupFileCache(Config<?> s3Config) {
+    @VisibleForTesting
+    protected S3FileManager(FileCache fileCache, S3Querier s3Querier, String bucketPrefix) {
+        super(fileCache);
+        this.s3Querier = s3Querier;
+        this.endpoint = s3Querier.getEndpoint();
+        this.bucketPrefix = bucketPrefix;
+    }
+
+    private static FileCache setupFileCache(Config<S3Config> s3Config) {
         if (!s3Config.getValue(S3Config.ENABLE_S3_FILE_CACHE).asBoolean()) {
             return null;
         }
@@ -72,45 +77,39 @@ public class S3FileManager extends FileManager {
         return bucketPrefix + bucket;
     }
 
-    /** Will return up to Integer.MAX_VALUE objects in bucket. */
-    public List<S3ObjectSummary> getFullObjectList(String bucket) {
-        ListObjectsRequest fileCheck = new ListObjectsRequest().withBucketName(getFullyQualifiedBucketName(bucket)).withMaxKeys(Integer.MAX_VALUE);
-        return s3.getS3Client().listObjects(fileCheck).getObjectSummaries();
-    }
-
-    /** Will return up to Integer.MAX_VALUE objects in bucket. */
-    public List<S3ObjectSummary> getFullObjectList(String bucket, String keyPrefix) {
-        ListObjectsRequest fileCheck = new ListObjectsRequest().withBucketName(getFullyQualifiedBucketName(bucket)).withPrefix(keyPrefix).withMaxKeys(Integer.MAX_VALUE);
-        return s3.getS3Client().listObjects(fileCheck).getObjectSummaries();
-    }
-
-    /** Will only return the first 1,000 objects in bucket. */
-    public List<S3ObjectSummary> getObjectList(String bucket) {
-        return getFirstObjectListing(bucket).getObjectSummaries();
-    }
-
-    /** The first object listing contains the first 1,000 object.<br>
-     *  Use getMoreObjects to get the next batch (and so on).
+    /**
+     * @param bucket the bucket to search
+     * @return All (up to Integer.MAX_VALUE) keys in the bucket
      */
-    public ObjectListing getFirstObjectListing(String bucket) {
-        ListObjectsRequest fileCheck = new ListObjectsRequest().withBucketName(getFullyQualifiedBucketName(bucket));
-        return s3.getS3Client().listObjects(fileCheck);
+    public ImmutableList<String> getAllKeys(String bucket) {
+        return s3Querier.getAllKeys(getFullyQualifiedBucketName(bucket));
     }
 
-    public ObjectListing getMoreObjects(ObjectListing previousListing) {
-        return s3.getS3Client().listNextBatchOfObjects(previousListing);
+    /**
+     * @param bucket the bucket to search
+     * @param keyPrefix the key prefix to filter on
+     * @return All (up to Integer.MAX_VALUE) keys in the bucket which match the given prefix
+     */
+    public ImmutableList<String> getAllKeys(String bucket, String keyPrefix) {
+        return s3Querier.getAllKeys(getFullyQualifiedBucketName(bucket), keyPrefix);
     }
 
-    public void summarise(List<S3ObjectSummary> objectListing) {
-        objectListing.forEach(summary -> System.out.println(summary.getKey() + " (" + summary.getSize() + ")"));
+    /**
+     * @param bucket the bucket to search
+     * @param keyPrefix the key prefix to filter on
+     * @return true if any key is found in the given bucket matching the given prefix
+     */
+    public boolean fileWithPrefixExists(String bucket, String keyPrefix) {
+        return !getAllKeys(bucket, keyPrefix).isEmpty();
     }
 
-    public boolean fileWithPrefixExists(String bucket, String prefix) {
-        return getFullObjectList(bucket, prefix).isEmpty();
-    }
-
+    /**
+     * @param bucket the bucket to search
+     * @param name the key to search for
+     * @return true if the exact key specified is found in the bucket
+     */
     public boolean fileExists(String bucket, String name) {
-        return getFullObjectList(bucket, name).stream().anyMatch(o -> o.getKey().equals(name));
+        return getAllKeys(bucket, name).contains(name);
     }
 
     public File getS3File(String bucket, String key) {
@@ -118,17 +117,14 @@ public class S3FileManager extends FileManager {
     }
 
     public File getS3File(String bucket, String key, boolean cacheOnly) {
-        Preconditions.checkState(!cacheOnly || fileCache != null, "Attempted to fetch file Bucket=%s Key=%s using only S3 cache, but no cache configured.", bucket, key);
-        return fileCache != null ?
-                getFileUsingFileCache(getFullyQualifiedBucketName(bucket), key, cacheOnly) :
-                getFileAsLocalTemporaryFile(getFullyQualifiedBucketName(bucket), key);
+        return getFile(getFullyQualifiedBucketName(bucket), key, cacheOnly);
     }
 
     protected boolean verifyFileSize(File cachedFileHandle, String fullyQualifiedBucket, String key) {
         logger.info("Verifying size of {}", cachedFileHandle.getAbsolutePath());
         for (int retry = 0; retry < MAX_RETRY_ATTEMPTS; retry++) {
             try {
-                long remoteSizeInBytes = s3.getS3Client().getObjectMetadata(fullyQualifiedBucket, key).getContentLength();
+                long remoteSizeInBytes = s3Querier.getContentLength(fullyQualifiedBucket, key);
                 long localSizeInBytes = cachedFileHandle.length();
                 return remoteSizeInBytes == localSizeInBytes;
             } catch (AmazonClientException e) {
@@ -147,7 +143,7 @@ public class S3FileManager extends FileManager {
     protected void getFileAndWriteToDestination(String fullyQualifiedBucket, String key, File writableFileHandle) {
         for (int retry = 0; retry < MAX_RETRY_ATTEMPTS; retry++) {
             try {
-                s3.getS3Client().getObject(new GetObjectRequest(fullyQualifiedBucket, key), writableFileHandle);
+                s3Querier.writeObjectToFile(fullyQualifiedBucket, key, writableFileHandle);
                 return;
             } catch (AmazonClientException e) {
                 logger.warn("S3 File Fetch attempt {} failed: {}", retry, e.getMessage());

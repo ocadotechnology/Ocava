@@ -28,10 +28,10 @@ import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.google.common.base.Preconditions;
-import com.ocadotechnology.config.Config;
 import com.ocadotechnology.validation.Failer;
 
 public abstract class FileManager implements Serializable {
@@ -40,14 +40,20 @@ public abstract class FileManager implements Serializable {
     private static final String DIR_SEPARATOR_BACK_SLASH = "\\";
     private static final String REPLACEMENT_CHARACTER = "_";
     private static final String FILE_SUFFIX = "db";
+    @CheckForNull
     protected final FileCache fileCache;
 
-    protected FileManager(Config<?> config) {
-        Preconditions.checkNotNull(config, "config cannot be null");
-        this.fileCache = setupFileCache(config);
+    protected FileManager(@CheckForNull FileCache fileCache) {
+        this.fileCache = fileCache;
     }
 
-    protected File getFileUsingFileCache(String fullyQualifiedBucket, String key, boolean cacheOnly) {
+    protected File getFile(String fullyQualifiedBucket, String key, boolean cacheOnly) {
+        Preconditions.checkState(!cacheOnly || fileCache != null,
+                "Attempted to fetch file Bucket=%s Key=%s using only S3 cache, but no cache configured.", fullyQualifiedBucket, key);
+        if (fileCache == null) {
+            return getFileAsLocalTemporaryFile(fullyQualifiedBucket, key);
+        }
+
         File lockFileHandle = fileCache.createLockFileHandle(fullyQualifiedBucket, key);
         if (!lockFileHandle.exists()) {
             Optional<File> cachedFile = fileCache.get(fullyQualifiedBucket, key);
@@ -86,7 +92,7 @@ public abstract class FileManager implements Serializable {
         return writableFileHandle;
     }
 
-    protected File getFileAsLocalTemporaryFile(String fullyQualifiedBucket, String key) {
+    private File getFileAsLocalTemporaryFile(String fullyQualifiedBucket, String key) {
         try {
             //Sanitise the key to not contain any possible directory separators
             String sanitisedFilePrefix = key.replace(DIR_SEPARATOR_FORWARD_SLASH, REPLACEMENT_CHARACTER)
@@ -142,10 +148,7 @@ public abstract class FileManager implements Serializable {
         }
     }
 
-    protected abstract FileCache setupFileCache(Config<?> config);
-
     protected abstract boolean verifyFileSize(File cachedFile, String bucket, String key);
 
     protected abstract void getFileAndWriteToDestination(String bucket, String key, File writeableFileHandle);
-
 }

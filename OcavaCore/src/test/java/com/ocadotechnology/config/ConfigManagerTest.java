@@ -100,6 +100,28 @@ class ConfigManagerTest {
     }
 
     @Test
+    void whenLoadConfigTwice_thenKeepsOldDataWhereNewDataDoesNotOverride() throws ConfigKeysNotRecognisedException {
+        ImmutableMap<String, String> map1 = ImmutableMap.of(
+                "TestConfig.FOO", "0",
+                "TestConfig.BAR", "1");
+        ImmutableMap<String, String> map2 = ImmutableMap.of(
+                "TestConfig.BAR", "2",
+                "TestConfig.BAZ", "1");
+
+        Builder builder = new Builder(new String[]{});
+        builder.loadConfigFromMap(map1, ImmutableSet.of(TestConfig.class));
+        Config<TestConfig> config = builder.build().getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(0);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(1);
+
+        builder.loadConfigFromMap(map2, ImmutableSet.of(TestConfig.class));
+        config = builder.build().getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(0);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.BAZ).asInt()).isEqualTo(1);
+    }
+
+    @Test
     void builderGetConfigUnchecked_whenKeyIsTopLevel_thenReturnsValue() throws IOException {
         Builder builder = new Builder(new String[]{}).loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
