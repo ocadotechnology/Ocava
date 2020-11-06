@@ -649,6 +649,36 @@ class ConfigManagerTest {
         }
     }
 
+    @Test
+    void buildWithInitialConfig_whenInitialValueExists() throws ConfigKeysNotRecognisedException {
+        Config<TestConfig> initialConfig = new Config<>(
+                TestConfig.class,
+                ImmutableMap.of(TestConfig.FOO, new ConfigValue("1", ImmutableMap.of()), TestConfig.BAR, new ConfigValue("2", ImmutableMap.of())),
+                ImmutableMap.of(),
+                "TestConfig");
+        ConfigManager configManager = new ConfigManager.Builder(initialConfig)
+                .build();
+        Config<TestConfig> result = configManager.getConfig(TestConfig.class);
+        assertThat(result.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(result.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void overrideInitialConfig_whenOverrideExistsThenOverrideTakesPriority() throws ConfigKeysNotRecognisedException {
+        Config<TestConfig> initialConfig = new Config<>(
+                TestConfig.class,
+                ImmutableMap.of(TestConfig.FOO, new ConfigValue("1", ImmutableMap.of()), TestConfig.BAR, new ConfigValue("2", ImmutableMap.of())),
+                ImmutableMap.of(),
+                "TestConfig");
+        ConfigManager configManager = new ConfigManager.Builder(initialConfig)
+                .loadConfigFromMap(ImmutableMap.of("TestConfig.BAR", "3", "TestConfig.BAZ", "4"), ImmutableSet.of(TestConfig.class))
+                .build();
+        Config<TestConfig> result = configManager.getConfig(TestConfig.class);
+        assertThat(result.getValue(TestConfig.FOO).asInt()).isEqualTo(1);//no override
+        assertThat(result.getValue(TestConfig.BAR).asInt()).isEqualTo(3);//override exists
+        assertThat(result.getValue(TestConfig.BAZ).asInt()).isEqualTo(4);//no initial value
+    }
+
     static class PrefixedPropertyTest {
 
         private PrefixedProperty prefixedProperty = new PrefixedProperty("", "");
