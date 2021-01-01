@@ -44,7 +44,7 @@
         <mockito.version>3.6.28</mockito.version>
         <jfreechart.version>1.5.1</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
-        <aws-java-sdk-s3.version>1.11.928</aws-java-sdk-s3.version>
+        <aws-java-sdk-s3.version>1.11.930</aws-java-sdk-s3.version>
         <jackson.version>2.12.0</jackson.version>
         <disruptor.version>3.4.2</disruptor.version>
         <logback-classic.version>1.2.3</logback-classic.version>
