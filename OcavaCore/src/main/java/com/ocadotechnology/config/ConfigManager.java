@@ -324,16 +324,6 @@ public class ConfigManager {
         }
 
         /**
-         * @deprecated to discourage key presence on its own to be used for flow control
-         * (see class see {@link com.ocadotechnology.config.Config} javadoc for reasoning).
-         *  Use {@link #areKeyAndValueDefinedUnchecked(Enum)} instead.
-         */
-        @Deprecated
-        public boolean containsKeyUnchecked(Enum<?> key) {
-            return config.values().stream().anyMatch(c -> c.containsKey(key));
-        }
-
-        /**
          * Check that the key has been explicitly defined and not to the empty string during the construction of the
          * config object. When true {@link #getConfigUnchecked(Enum)} will not throw an exception and
          * {@link #getConfigIfKeyAndValueDefinedUnchecked(Enum)} will return a populated Optional.
