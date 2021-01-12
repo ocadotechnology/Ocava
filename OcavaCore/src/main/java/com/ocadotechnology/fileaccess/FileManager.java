@@ -39,7 +39,7 @@ public abstract class FileManager implements Serializable {
     private static final String DIR_SEPARATOR_FORWARD_SLASH = "/";
     private static final String DIR_SEPARATOR_BACK_SLASH = "\\";
     private static final String REPLACEMENT_CHARACTER = "_";
-    private static final String FILE_SUFFIX = "db";
+    private static final String FILE_PREFIX = "Temp";
     @CheckForNull
     protected final FileCache fileCache;
 
@@ -95,10 +95,10 @@ public abstract class FileManager implements Serializable {
     private File getFileAsLocalTemporaryFile(String fullyQualifiedBucket, String key) {
         try {
             //Sanitise the key to not contain any possible directory separators
-            String sanitisedFilePrefix = key.replace(DIR_SEPARATOR_FORWARD_SLASH, REPLACEMENT_CHARACTER)
+            String sanitisedFileSuffix = key.replace(DIR_SEPARATOR_FORWARD_SLASH, REPLACEMENT_CHARACTER)
                     .replace(DIR_SEPARATOR_BACK_SLASH, REPLACEMENT_CHARACTER);
 
-            File tempFile = File.createTempFile(sanitisedFilePrefix, FILE_SUFFIX);
+            File tempFile = File.createTempFile(FILE_PREFIX, sanitisedFileSuffix);
             tempFile.deleteOnExit();
             logger.info("Cache disabled, writing file {}:{} to temp file at {} (will delete on JVM termination)",
                     fullyQualifiedBucket, key, tempFile.getAbsolutePath());
