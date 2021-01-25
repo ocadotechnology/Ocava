@@ -25,17 +25,12 @@ import java.util.Collection;
 import java.util.StringJoiner;
 import java.util.zip.GZIPOutputStream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.tableio.TableLine;
 import com.ocadotechnology.tableio.WritableToTable;
 
 public class CSVWriter {
-    private static final Logger logger = LoggerFactory.getLogger(CSVWriter.class);
-
     private static final String COLUMN_DELIMITER = ",";
     private static final String NEW_LINE_SEPARATOR = "\n";
 
@@ -71,7 +66,7 @@ public class CSVWriter {
      * The file is compressed if enableCompression is true. Additionally, the row data is appended to the end of the file
      * if append is true.
      * <p>
-     * If any {@link IOException} is thrown the error will be logged.
+     * A {@link RuntimeException} is thrown if any {@link IOException} is caught writing to the file.
      *
      * @param supplier   which contains both the header data and the individual row data.
      * @param pathToFile the path to the file to write to.
@@ -99,7 +94,7 @@ public class CSVWriter {
                     writeLine(bufferedWriter, getObjectsToWrite(headers, tableLine)));
             supplier.fileWritten();
         } catch (IOException e) {
-            logger.error("Failed to write file " + filePath, e);
+            throw new RuntimeException("Failed to write file " + filePath, e);
         }
     }
 
@@ -116,7 +111,7 @@ public class CSVWriter {
             bufferedWriter.write(joiner.toString());
             bufferedWriter.write(NEW_LINE_SEPARATOR);
         } catch (IOException e) {
-            logger.error("Failed to write file", e);
+            throw new RuntimeException("Failed to write file ", e);
         }
     }
 

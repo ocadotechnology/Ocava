@@ -31,7 +31,8 @@ public class SQLWriter {
      * First this function checks if the {@link WritableToTable} supplier has any headers to write to the db file at the {@link Path}. If no headers are found
      * an error is logged and the function ends. If the supplier does have headers an {@link SQLiteConnection} is created to the desired file.
      * then the data from the supplier is written to the chosen table.
-     * If an {@link SQLException} is thrown the error is logged.
+     * <p>
+     * A {@link RuntimeException} is thrown if an {@link SQLException} is caught while writing the SQL.
      *
      * @param pathToFile the path to the file the data should be written at.
      * @param supplier   the supplier which holds the data to write. This includes the table headers and the individual row data.
@@ -52,7 +53,7 @@ public class SQLWriter {
 
             conn.insertEntries(tableName, supplier.streamLines());
         } catch (SQLException e) {
-            logger.error("Failed to write SQl to table: " + tableName, e);
+            throw new RuntimeException("Failed to write SQl to table: " + tableName, e);
         }
     }
 }

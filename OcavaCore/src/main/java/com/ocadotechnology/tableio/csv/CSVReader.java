@@ -23,25 +23,22 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.tableio.TableReader;
 
 public class CSVReader {
-    private static final Logger logger = LoggerFactory.getLogger(CSVReader.class);
-
     public static final String COLUMN_DELIMITER = ",";
 
     /**
      * This function first uses the lineConsumer parameter to consume the headings. Following that it consumes
      * each line in the file one by one using lineConsumer.
+     * <p>
      * This method will throw an {@link IllegalStateException} if the number of columns in an row does not match the size of the
      * number of headers.
-     * This method will log any {@link IOException}'s if the file is unsuccessfully read.
+     * <p>
+     * This method will throw a {@link RuntimeException} if an {@link IOException} is thrown while the file is being read.
      *
      * @param reader       the BufferedReader to read from.
      * @param lineConsumer the tableReader which consumes each line in the file individually.
@@ -74,24 +71,24 @@ public class CSVReader {
             lineConsumer.fileFinished();
             reader.close();
         } catch (IOException e) {
-            logger.error("Failed to read file", e);
+            throw new RuntimeException("Failed to read file", e);
         }
     }
 
     /**
      * Reads a file represented by a {@link Path} by first converting it into a {@link BufferedReader} and then calling
-     * {@link #read(BufferedReader, TableReader)}. If an {@link IOException} is thrown the error message is logged.
+     * {@link #read(BufferedReader, TableReader)}.
+     * <p>
+     * This method will throw a {@link RuntimeException} if an {@link IOException} is thrown while the file is being read.
      *
      * @param pathToFile   the path to the file file to read from
      * @param lineConsumer the tableReader which consumes each line in the file individually.
      */
     public void read(Path pathToFile, TableReader lineConsumer) {
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(pathToFile.toFile()), StandardCharsets.UTF_8));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(pathToFile.toFile()), StandardCharsets.UTF_8))) {
             read(reader, lineConsumer);
         } catch (IOException e) {
-            logger.error("Failed to create reader for specified file", e);
+            throw new RuntimeException("Failed to create reader for specified file", e);
         }
     }
 }

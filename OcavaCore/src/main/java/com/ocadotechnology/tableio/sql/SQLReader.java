@@ -22,21 +22,16 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.tableio.TableReader;
 
 public class SQLReader {
-    private static final Logger logger = LoggerFactory.getLogger(SQLReader.class);
-
     /**
      * This function first creates a {@link SQLiteConnection} for the database at the given {@link Path}. Then after executing a query to
      * retrieve all elements from the desired table of the database consumes each row individually using the {@link TableReader}
      * <p>
-     * If any {@link SQLException} is thrown an error will be logged.
+     * A {@link RuntimeException} is thrown if an {@link SQLException} is caught while reading the SQL.
      *
      * @param pathToFile   the path to the db file to read from.
      * @param lineConsumer the tableReader which is used to read the results row by row.
@@ -48,7 +43,7 @@ public class SQLReader {
 
             conn.consumeTable(tableName, rowConsumer);
         } catch (SQLException e) {
-            logger.error("Failed to read SQL from table: " + tableName, e);
+            throw new RuntimeException("Failed to read SQL from table: " + tableName, e);
         }
         lineConsumer.fileFinished();
     }
@@ -65,7 +60,8 @@ public class SQLReader {
         /**
          * Using the {@link TableReader} provided to the {@link SQLReader} first calls the {@link TableReader#consumeHeader(ImmutableList)}
          * on the columns of the resultSet. Following that each line is individually consumed by the {@link TableReader#consumeLine(ImmutableMap)}.
-         * If the {@link ResultSet} throws an {@link SQLException} this is caught and logged.
+         * <p>
+         * A {@link RuntimeException} if the {@link ResultSet} throws an {@link SQLException} while reading one of the lines.
          *
          * @param resultSet The results read from the sql database
          */
@@ -80,7 +76,7 @@ public class SQLReader {
                     tableReader.consumeLine(lineByHeader);
                 }
             } catch (SQLException e) {
-                logger.error("Failed to read line from SQL table: " + tableName, e);
+                throw new RuntimeException("Failed to read line from SQL table: " + tableName, e);
             }
         }
 
@@ -100,7 +96,7 @@ public class SQLReader {
         private ImmutableMap<String, String> getLineByHeader(
                 ImmutableList<String> columnNames,
                 ResultSet resultSet) throws SQLException {
-            ImmutableMap.Builder lineByHeaderBuilder = ImmutableMap.<String, String>builder();
+            ImmutableMap.Builder<String, String> lineByHeaderBuilder = ImmutableMap.builder();
 
             for (String columnName : columnNames) {
                 String columnValue = Objects.toString(resultSet.getString(columnName), "");
