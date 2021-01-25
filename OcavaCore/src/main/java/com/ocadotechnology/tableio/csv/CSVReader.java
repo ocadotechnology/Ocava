@@ -16,11 +16,11 @@
 package com.ocadotechnology.tableio.csv;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.slf4j.Logger;
@@ -60,7 +60,8 @@ public class CSVReader {
             while (line != null) {
                 if (!line.isEmpty()) {
                     String[] splitLine = line.split(COLUMN_DELIMITER, -1);
-                    Preconditions.checkState(splitLine.length == headerLength,
+                    Preconditions.checkState(
+                            splitLine.length == headerLength,
                             String.format("Line incompatible with header.%n Line: %s%n Header: %s", Arrays.toString(splitLine), header));
                     ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
                     for (int i = 0; i < headerLength; i++) {
@@ -78,16 +79,16 @@ public class CSVReader {
     }
 
     /**
-     * Reads a file by first converting it into a {@link BufferedReader} and then calling
+     * Reads a file represented by a {@link Path} by first converting it into a {@link BufferedReader} and then calling
      * {@link #read(BufferedReader, TableReader)}. If an {@link IOException} is thrown the error message is logged.
      *
-     * @param file         the file to read from
+     * @param pathToFile   the path to the file file to read from
      * @param lineConsumer the tableReader which consumes each line in the file individually.
      */
-    public void read(File file, TableReader lineConsumer) {
+    public void read(Path pathToFile, TableReader lineConsumer) {
         BufferedReader reader;
         try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(pathToFile.toFile()), StandardCharsets.UTF_8));
             read(reader, lineConsumer);
         } catch (IOException e) {
             logger.error("Failed to create reader for specified file", e);

@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.tableio.sql;
 
+import java.nio.file.Path;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -32,23 +33,24 @@ public class SQLReader {
     private static final Logger logger = LoggerFactory.getLogger(SQLReader.class);
 
     /**
-     * This function first creates a {@link SQLiteConnection} for the required database file. Then after executing a query to
+     * This function first creates a {@link SQLiteConnection} for the database at the given {@link Path}. Then after executing a query to
      * retrieve all elements from the desired table of the database consumes each row individually using the {@link TableReader}
-     *
+     * <p>
      * If any {@link SQLException} is thrown an error will be logged.
-     * @param tableReader the tableReader which is used to read the results row by row
-     * @param fileName    the name of the file to read from
-     * @param tableName   the name of the table to read from
+     *
+     * @param pathToFile   the path to the db file to read from.
+     * @param lineConsumer the tableReader which is used to read the results row by row.
+     * @param tableName    the table to read from.
      */
-    public void read(TableReader tableReader, String fileName, String tableName) {
-        try (SQLiteConnection conn = SQLiteConnection.create(fileName)) {
-            ResultConsumer rowConsumer = new ResultConsumer(tableReader, tableName);
+    public void read(Path pathToFile, TableReader lineConsumer, String tableName) {
+        try (SQLiteConnection conn = SQLiteConnection.create(pathToFile)) {
+            ResultConsumer rowConsumer = new ResultConsumer(lineConsumer, tableName);
 
             conn.consumeTable(tableName, rowConsumer);
         } catch (SQLException e) {
             logger.error("Failed to read SQL from table: " + tableName, e);
         }
-        tableReader.fileFinished();
+        lineConsumer.fileFinished();
     }
 
     private static class ResultConsumer implements Consumer<ResultSet> {

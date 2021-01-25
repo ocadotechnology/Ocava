@@ -18,6 +18,7 @@ package com.ocadotechnology.tableio.sql;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -33,11 +34,11 @@ import com.ocadotechnology.tableio.TableLineBuilder;
 import com.ocadotechnology.tableio.WritableToTable;
 
 class SQLWriterTest {
-    private static final File FILE = new File("src/test/SQLWriterTest.db");
+    private static final Path PATH_TO_FILE = new File("src/test/SQLWriterTest.db").toPath();
 
     @AfterEach
     void cleanup() throws IOException {
-        Files.delete(FILE.toPath());
+        Files.delete(PATH_TO_FILE);
     }
 
     @Test
@@ -47,9 +48,9 @@ class SQLWriterTest {
 
         TestLineSupplier lineSupplier = new TestLineSupplier(numberOfDataPoints, i -> i * i, false);
 
-        new SQLWriter().write(lineSupplier, FILE.getAbsolutePath(), tableName);
+        new SQLWriter().write(PATH_TO_FILE, lineSupplier, tableName);
 
-        try (SQLiteConnection conn = SQLiteConnection.create(FILE.getAbsolutePath())) {
+        try (SQLiteConnection conn = SQLiteConnection.create(PATH_TO_FILE)) {
             SQLiteChecker checker = new SQLiteChecker(conn);
 
             checker.getNumberOfRowsInTable(numberOfDataPoints, tableName);
@@ -68,10 +69,10 @@ class SQLWriterTest {
         TestLineSupplier lineSupplier_1 = new TestLineSupplier(10, i -> i, false);
         TestLineSupplier lineSupplier_2 = new TestLineSupplier(15, i -> i * i, false);
 
-        new SQLWriter().write(lineSupplier_1, FILE.getAbsolutePath(), tableName_1);
-        new SQLWriter().write(lineSupplier_2, FILE.getAbsolutePath(), tableName_2);
+        new SQLWriter().write(PATH_TO_FILE, lineSupplier_1, tableName_1);
+        new SQLWriter().write(PATH_TO_FILE, lineSupplier_2, tableName_2);
 
-        try (SQLiteConnection conn = SQLiteConnection.create(FILE.getAbsolutePath())) {
+        try (SQLiteConnection conn = SQLiteConnection.create(PATH_TO_FILE)) {
             checkQuantity(conn, tableName_1, 5, 5);
             checkQuantity(conn, tableName_2, 12, 12 * 12);
         } catch (SQLException e) {
@@ -86,9 +87,9 @@ class SQLWriterTest {
 
         TestLineSupplier lineSupplier = new TestLineSupplier(numberOfDataPoints, i -> i, true);
 
-        new SQLWriter().write(lineSupplier, FILE.getAbsolutePath(), tableName);
+        new SQLWriter().write(PATH_TO_FILE, lineSupplier, tableName);
 
-        try (SQLiteConnection conn = SQLiteConnection.create(FILE.getAbsolutePath())) {
+        try (SQLiteConnection conn = SQLiteConnection.create(PATH_TO_FILE)) {
             checkQuantity(conn, tableName, 1, 1);
         } catch (SQLException e) {
             Assertions.fail("Failed to read file\n" + e);
@@ -98,17 +99,17 @@ class SQLWriterTest {
     private void checkQuantity(SQLiteConnection conn, String tableName, int line, int expectedQuantity) throws SQLException {
         SQLiteChecker checker = new SQLiteChecker(conn);
 
-        ImmutableMap<String, Object> expectedRow = ImmutableMap.<String, Object>of(
+        ImmutableMap<String, Object> expectedRow = ImmutableMap.of(
                 "id", line,
                 "quantity", expectedQuantity);
 
         checker.queryAndCheckResultLine(
                 expectedRow,
                 tableName,
-                "id == " + Integer.toString(line));
+                "id == " + line);
     }
 
-    private class TestLineSupplier implements WritableToTable {
+    private static class TestLineSupplier implements WritableToTable {
         private final int numberOfDataPoints;
         private final Function<Integer, Integer> quantityCalculator;
         private final boolean useString;

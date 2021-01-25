@@ -16,11 +16,11 @@
 package com.ocadotechnology.tableio.csv;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.StringJoiner;
 import java.util.zip.GZIPOutputStream;
@@ -54,18 +54,18 @@ public class CSVWriter {
 
     /**
      * This function creates a temporary CSVWriter which then writes to the desired file using the supplier. This function
-     * automatically writes data to the beginning of the file using the {@link #write(WritableToTable, String)} method.
+     * automatically writes data to the beginning of the file using the {@link #write(Path, WritableToTable)} method.
      *
+     * @param pathToFile        the path to the file to write to.
      * @param supplier          the supplier which contains both the headers and the individual row data to write to the CSV file
-     * @param fileName          the file to write the CSV data to
      * @param enableCompression a boolean that is true if the file should be compressed. Otherwise false.
      */
-    public static void write(WritableToTable supplier, String fileName, boolean enableCompression) {
-        new CSVWriter(enableCompression, false).write(supplier, fileName);
+    public static void write(Path pathToFile, WritableToTable supplier, boolean enableCompression) {
+        new CSVWriter(enableCompression, false).write(pathToFile, supplier);
     }
 
     /**
-     * This function is used to write rows of data to a CSVFile.
+     * This function is used to write rows of data to a file represented by a {@link Path}.
      * This function first gets the headers of the supplier. If no headers exist then the function ends as no data can be
      * written to the file. Otherwise, the function writes rows of data to a CSVFile line by line adding a header if necessary.
      * The file is compressed if enableCompression is true. Additionally, the row data is appended to the end of the file
@@ -73,21 +73,22 @@ public class CSVWriter {
      * <p>
      * If any {@link IOException} is thrown the error will be logged.
      *
-     * @param supplier which contains both the header data and the individual row data.
-     * @param fileName the file name to write to.
+     * @param supplier   which contains both the header data and the individual row data.
+     * @param pathToFile the path to the file to write to.
      */
-    public void write(WritableToTable supplier, String fileName) {
+    public void write(Path pathToFile, WritableToTable supplier) {
         ImmutableSet<String> headers = supplier.getHeaders();
+        String filePath = pathToFile.toString();
 
         if (headers.isEmpty()) {
             return;
         }
 
         String newFileName = enableCompression ?
-                fileName + ".gz" :
-                fileName;
+                filePath + ".gz" :
+                filePath;
 
-        boolean writeHeader = !pathExists(newFileName) || !append;
+        boolean writeHeader = !pathToFile.toFile().exists() || !append;
 
         try (BufferedWriter bufferedWriter = getWriter(newFileName)) {
             if (writeHeader) {
@@ -98,12 +99,8 @@ public class CSVWriter {
                     writeLine(bufferedWriter, getObjectsToWrite(headers, tableLine)));
             supplier.fileWritten();
         } catch (IOException e) {
-            logger.error("Failed to write file " + fileName, e);
+            logger.error("Failed to write file " + filePath, e);
         }
-    }
-
-    private boolean pathExists(String fileName) {
-        return new File(fileName).exists();
     }
 
     private ImmutableList<String> getObjectsToWrite(ImmutableSet<String> header, TableLine tableLine) {

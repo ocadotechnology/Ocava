@@ -41,7 +41,7 @@ class SQLiteConnectionTest {
 
     @BeforeEach
     void setup() throws SQLException {
-        conn = SQLiteConnection.create(FILE.getAbsolutePath());
+        conn = SQLiteConnection.create(FILE);
         checker = new SQLiteChecker(conn);
     }
 

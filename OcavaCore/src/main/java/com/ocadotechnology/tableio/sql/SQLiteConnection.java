@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.tableio.sql;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -41,10 +43,33 @@ public class SQLiteConnection implements AutoCloseable {
     }
 
     /**
-     * Creates an SQLLiteConnection from a fileName concatenated with a SQL server String. Throws an {@link SQLException}
+     * Creates a SQLiteConnection from a {@link File} using {@link #create(String)}.
      *
-     * @param fileName the fileName to create the SQLConnection from.
-     * @return the SQLLiteConnection.
+     * @param file the file to create the SQLiteConnection from.
+     * @return the SQLiteConnection.
+     * @throws SQLException if the SQL Connection failed to connect.
+     */
+    public static SQLiteConnection create(File file) throws SQLException {
+        return create(file.toPath());
+    }
+
+    /**
+     * Creates a SQLiteConnection from a {@link Path} using {@link #create(String)}.
+     *
+     * @param path the path to create the SQLiteConnection from.
+     * @return the SQLiteConnection.
+     * @throws SQLException if the SQL Connection failed to connect.
+     */
+    public static SQLiteConnection create(Path path) throws SQLException {
+        return create(path.toString());
+    }
+
+    /**
+     * Creates a SQLiteConnection from a fileName concatenated with a SQL server String. Throws an {@link SQLException}
+     * if the connection failed to be created.
+     *
+     * @param fileName the fileName to create the SQLiteConnection from.
+     * @return the SQLiteConnection.
      * @throws SQLException if the SQL Connection failed to connect.
      */
     public static SQLiteConnection create(String fileName) throws SQLException {
@@ -192,7 +217,8 @@ public class SQLiteConnection implements AutoCloseable {
     private String getInsertSQL(String tableName, TableLine line) {
         String valueString = String.join(",\n", line.getLineMapWithStringsQuoted().values());
 
-        return String.join("\n",
+        return String.join(
+                "\n",
                 "INSERT INTO " + tableName + " VALUES (",
                 valueString,
                 ")"

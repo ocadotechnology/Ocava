@@ -18,6 +18,7 @@ package com.ocadotechnology.tableio.sql;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -30,7 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.tableio.TestTableReader;
 
 class SQLReaderTest {
-    private static final File FILE = new File("src/test/SQLReaderTest.db");
+    private static final Path PATH_TO_FILE = new File("src/test/SQLReaderTest.db").toPath();
     private static final String TABLE_NAME = "TABLE_NAME";
     private static final TestWritableToTable writable = setupTableToWrite();
 
@@ -48,19 +49,19 @@ class SQLReaderTest {
     void setup() {
         SQLWriter sqlWriter = new SQLWriter();
 
-        sqlWriter.write(writable, FILE.getAbsolutePath(), TABLE_NAME);
+        sqlWriter.write(PATH_TO_FILE, writable, TABLE_NAME);
     }
 
     @AfterEach
     void cleanup() throws IOException {
-        Files.delete(FILE.toPath());
+        Files.delete(PATH_TO_FILE);
     }
 
     @Test
     void testReadingFile() {
         TestTableReader tableReader = new TestTableReader();
 
-        reader.read(tableReader, FILE.getAbsolutePath(), TABLE_NAME);
+        reader.read(PATH_TO_FILE, tableReader, TABLE_NAME);
 
         Assertions.assertEquals(writable.getLines(), tableReader.getLines());
     }
@@ -68,7 +69,7 @@ class SQLReaderTest {
     @Test
     void testFileFinishedIsCalled() {
         TestTableReader tableReader = new TestTableReader();
-        reader.read(tableReader, FILE.getAbsolutePath(), TABLE_NAME);
+        reader.read(PATH_TO_FILE, tableReader, TABLE_NAME);
 
         Assertions.assertTrue(tableReader.hasFileFinishedBeenCalled());
     }

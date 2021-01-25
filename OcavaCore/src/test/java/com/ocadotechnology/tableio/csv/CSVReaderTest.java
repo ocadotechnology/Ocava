@@ -16,6 +16,7 @@
 package com.ocadotechnology.tableio.csv;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -24,13 +25,14 @@ import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.tableio.TestTableReader;
 
 public class CSVReaderTest {
+    private static final Path PATH_TO_FILE = new File("src/test/test.csv").toPath();
+
     @Test
     void testReadCSVFile() {
         SimpleTableReader consumer = new SimpleTableReader();
         CSVReader reader = new CSVReader();
 
-        File testFile = new File("src/test/test.csv");
-        reader.read(testFile, consumer);
+        reader.read(PATH_TO_FILE, consumer);
 
         ImmutableMap<String, String> line0 = ImmutableMap.<String, String>builder()
                 .put("THIS", "1")
@@ -52,7 +54,7 @@ public class CSVReaderTest {
     @Test
     void testFileFinishedIsCalled() {
         TestTableReader tableReader = new TestTableReader();
-        new CSVReader().read(new File("src/test/test.csv"), tableReader);
+        new CSVReader().read(PATH_TO_FILE, tableReader);
 
         Assertions.assertTrue(tableReader.hasFileFinishedBeenCalled());
     }

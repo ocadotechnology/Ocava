@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.tableio.sql;
 
+import java.nio.file.Path;
 import java.sql.SQLException;
 
 import org.slf4j.Logger;
@@ -27,26 +28,26 @@ public class SQLWriter {
     private static final Logger logger = LoggerFactory.getLogger(SQLWriter.class);
 
     /**
-     * First this function checks if the {@link WritableToTable} supplier has any headers to write to the file. If no headers are found
+     * First this function checks if the {@link WritableToTable} supplier has any headers to write to the db file at the {@link Path}. If no headers are found
      * an error is logged and the function ends. If the supplier does have headers an {@link SQLiteConnection} is created to the desired file.
      * then the data from the supplier is written to the chosen table.
      * If an {@link SQLException} is thrown the error is logged.
      *
-     * @param supplier  the supplier which holds the data to write. This includes the table headers and the individual row data.
-     * @param fileName  the file the data should be written to.
-     * @param tableName the table the data should be written to
+     * @param pathToFile the path to the file the data should be written at.
+     * @param supplier   the supplier which holds the data to write. This includes the table headers and the individual row data.
+     * @param tableName  the table to write to.
      */
-    public void write(WritableToTable supplier, String fileName, String tableName) {
+    public void write(Path pathToFile, WritableToTable supplier, String tableName) {
         ImmutableSet<String> header = supplier.getHeaders();
         if (header.isEmpty()) {
-            logger.info("Nothing to write to " + fileName);
+            logger.info("Nothing to write to " + pathToFile);
             return;
         }
-        writeFile(header, supplier, fileName, tableName);
+        writeFile(header, supplier, pathToFile, tableName);
     }
 
-    private void writeFile(ImmutableSet<String> header, WritableToTable supplier, String fileName, String tableName) {
-        try (SQLiteConnection conn = SQLiteConnection.create(fileName)) {
+    private void writeFile(ImmutableSet<String> header, WritableToTable supplier, Path pathToFile, String tableName) {
+        try (SQLiteConnection conn = SQLiteConnection.create(pathToFile)) {
             conn.createTable(tableName, header);
 
             conn.insertEntries(tableName, supplier.streamLines());
