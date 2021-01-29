@@ -16,6 +16,10 @@
 package com.ocadotechnology.physics;
 
 import java.io.Serializable;
+import java.util.Objects;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 
 /**
  * Wrapper class describing an objects physical motion properties.
@@ -30,6 +34,16 @@ public class VehicleMotionProperties implements Serializable {
     public final double jerkDecelerationUp;
     public final double jerkDecelerationDown;
 
+    /**
+     *
+     * @param acceleration must be greater than zero
+     * @param deceleration must be less than zero
+     * @param maxSpeed must be greater than zero
+     * @param jerkAccelerationUp must be greater than zero
+     * @param jerkAccelerationDown must be less than zero
+     * @param jerkDecelerationUp must be less than zero
+     * @param jerkDecelerationDown must be greater than zero
+     */
     public VehicleMotionProperties(
             double acceleration,
             double deceleration,
@@ -38,6 +52,15 @@ public class VehicleMotionProperties implements Serializable {
             double jerkAccelerationDown,
             double jerkDecelerationUp,
             double jerkDecelerationDown) {
+
+        Preconditions.checkArgument(acceleration > 0, "Acceleration should be greater than 0. Value: %s", acceleration);
+        Preconditions.checkArgument(deceleration < 0, "Deceleration should be less than 0. Value: %s", deceleration);
+        Preconditions.checkArgument(maxSpeed > 0, "Max Speed should be positive. Value: %s", maxSpeed);
+        Preconditions.checkArgument(jerkAccelerationUp > 0, "Jerk Acceleration Up should be positive. Value: %s", jerkAccelerationUp);
+        Preconditions.checkArgument(jerkAccelerationDown < 0, "Jerk Acceleration Down should be negative. Value: %s", jerkAccelerationDown);
+        Preconditions.checkArgument(jerkDecelerationUp < 0, "Jerk Deceleration Up should be negative. Value: %s", jerkDecelerationUp);
+        Preconditions.checkArgument(jerkDecelerationDown > 0, "Jerk Deceleration Down should be positive. Value: %s", jerkDecelerationDown);
+
         this.acceleration = acceleration;
         this.deceleration = deceleration;
         this.maxSpeed = maxSpeed;
@@ -45,5 +68,45 @@ public class VehicleMotionProperties implements Serializable {
         this.jerkAccelerationDown = jerkAccelerationDown;
         this.jerkDecelerationUp = jerkDecelerationUp;
         this.jerkDecelerationDown = jerkDecelerationDown;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        VehicleMotionProperties that = (VehicleMotionProperties) o;
+
+        return Double.compare(that.maxSpeed, maxSpeed) == 0
+                && Double.compare(that.acceleration, acceleration) == 0
+                && Double.compare(that.deceleration, deceleration) == 0
+                && Double.compare(that.jerkAccelerationUp, jerkAccelerationUp) == 0
+                && Double.compare(that.jerkAccelerationDown, jerkAccelerationDown) == 0
+                && Double.compare(that.jerkDecelerationUp, jerkDecelerationUp) == 0
+                && Double.compare(that.jerkDecelerationDown, jerkDecelerationDown) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maxSpeed, acceleration);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("maxSpeed", maxSpeed)
+                .add("acceleration", acceleration)
+                .add("deceleration", deceleration)
+                .add("jerkAccelerationUp", jerkAccelerationUp)
+                .add("jerkAccelerationDown", jerkAccelerationDown)
+                .add("jerkDecelerationUp", jerkDecelerationUp)
+                .add("jerkDecelerationDown", jerkDecelerationDown)
+                .toString();
     }
 }
