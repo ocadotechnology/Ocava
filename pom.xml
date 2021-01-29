@@ -1,8 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ocadotechnology</groupId>
     <artifactId>OcavaParent</artifactId>
-    <url><!--link to our git repo --></url>
 
     <version>9.3-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -11,6 +11,10 @@
         <name>Ocado</name>
     </organization>
 
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>Ocava is a Java library that helps facilitate the creation and testing of simulations.</description>
+    <url>https://github.com/ocadotechnology/Ocava</url>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -18,6 +22,14 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <name>Ocado Simulation</name>
+            <organization>Ocado</organization>
+            <organizationUrl>https://github.com/ocadotechnology/Ocava</organizationUrl>
+        </developer>
+    </developers>
 
     <properties>
         <!-- Build properties -->
@@ -71,7 +83,7 @@
         <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
 
         <!-- parent dir for spotbugs DO NOT REMOVE-->
-        <spotbugs.exclude.path />
+        <spotbugs.exclude.path/>
 
         <inceptionYear>2017</inceptionYear>
         <organizationName>Ocado</organizationName>
@@ -253,6 +265,7 @@
             scm:git:git@github.com:ocadotechnology/Ocava.git
         </developerConnection>
         <tag>HEAD</tag>
+        <url>https://github.com/ocadotechnology/Ocava</url>
     </scm>
 
     <build>
@@ -348,7 +361,7 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
-                        <phase>deploy</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>jar-no-fork</goal>
                         </goals>
@@ -362,7 +375,7 @@
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
-                        <phase>verify</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -449,4 +462,26 @@
 
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>bintray</id>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <name>bintray</name>
+            <url>https://dl.bintray.com/cbeust/maven</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo1-maven</id>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <name>Central Repository 1</name>
+            <url>https://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

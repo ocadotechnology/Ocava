@@ -39,7 +39,7 @@ import com.ocadotechnology.id.Identified;
  *      StateCacheListener&lt;C&gt; cListener;
  *      (new FilteringStateCacheListenable&lt;I,T,C&gt;(cache, t -&gt; (t instanceof C) ? (C)t : null);
  *  </pre>
- *  <tt>cListener</tt> will only be notified of changes in the cache to objects of type C.
+ *  <code>cListener</code> will only be notified of changes in the cache to objects of type C.
  *
  *  <br>
  *  <em>Note: Custom indexes and removing listeners are not supported.</em>
