@@ -37,8 +37,8 @@ class NotificationRouterTest {
 
     @BeforeEach
     void setup() {
-        SimpleDiscreteEventScheduler dashControllerEventScheduler = new SimpleDiscreteEventScheduler(new EventExecutor(), () -> {}, TestSchedulerType.TEST_SCHEDULER_TYPE, ADJUSTABLE_TIME_PROVIDER, true);
-        NotificationRouter.get().registerExecutionLayer(dashControllerEventScheduler, TestBus.get());
+        SimpleDiscreteEventScheduler eventScheduler = new SimpleDiscreteEventScheduler(new EventExecutor(), () -> {}, TestSchedulerType.TEST_SCHEDULER_TYPE, ADJUSTABLE_TIME_PROVIDER, true);
+        NotificationRouter.get().registerExecutionLayer(eventScheduler, TestBus.get());
 
         notificationRememberingService.subscribeForNotifications();
     }

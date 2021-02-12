@@ -53,7 +53,8 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      */
     public enum Hints {
         optimiseForUpdate,
-        optimiseForQuery
+        optimiseForQuery,
+        optimiseForInfrequentChanges
     }
 
     private final ObjectStore<C, I> objectStore;
@@ -229,8 +230,18 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addPredicateIndex(predicate, Hints.optimiseForQuery);
     }
 
-    /** A Predicate index optimised for update has zero update overhead and query performance equal to the cache (slow!)<br>
-     *  A query-optimised Predicate provides O(1) lookup and update.
+    /**
+     * An optimiseForUpdate index has zero update overhead and streaming queries are performed by applying the predicate
+     * function to every object in the parent cache.<br>
+     *
+     * An optimiseForQuery index caches a mapping from predicate result to object during update, so that streaming
+     * queries can directly stream the pre-cached result.<br>
+     *
+     * An optimiseForInfrequentChanges index caches a mapping from predicate result to object id during update, so that
+     * streaming queries can stream the pre-cached result and lookup the actual object in the parent cache. This makes
+     * querying faster than an optimiseForUpdate index (especially when there are few matches), and updates faster
+     * than an optimiseForQuery index (when the outcome of the predicate function does not change, the index cache
+     * requires no changes).<br>
      */
     public PredicateIndex<C> addPredicateIndex(Predicate<? super C> predicate, Hints hint) {
         switch (hint) {
@@ -239,6 +250,8 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
                 return addIndex(new UncachedPredicateIndex<C, I>(this, predicate));
             case optimiseForQuery:
                 return addIndex(new DefaultPredicateIndex<C>(predicate));
+            case optimiseForInfrequentChanges:
+                return addIndex(new IdCachedPredicateIndex<C, I>(this, predicate));
             default:
                 throw new UnsupportedOperationException("Missing case:" + hint);
         }
