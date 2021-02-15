@@ -57,7 +57,7 @@ public class SegmentGraphUtilities {
             return yValueInterpolator.apply(lastRegion, segmentToXExtent.applyAsDouble(lastRegion));
         }
 
-        throw Failer.fail("Should have found an answer in loop");
+        throw Failer.fail("Should have found an answer in loop. The given xValue [%s] was not within the total xValueAtBoundary [%s] for the given segments: %s", xValue, xValueAtBoundary, segments);
     }
 
     /**
@@ -94,6 +94,6 @@ public class SegmentGraphUtilities {
             return yValueAtBoundary;
         }
 
-        throw Failer.fail("Should have found an answer in loop");
+        throw Failer.fail("Should have found an answer in loop. The given xValue [%s] was not within the total xValueAtBoundary [%s] for the given segments: %s", xValue, xValueAtBoundary, segments);
     }
 }
