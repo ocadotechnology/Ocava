@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.beust.jcommander.DynamicParameter;
@@ -28,6 +29,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.converters.IParameterSplitter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * All config can be overridden in the form {@code '-O<key>=<value>'} overrides such that they can utilise our hierarchical override mechanism.
@@ -69,6 +71,20 @@ public class CLISetup {
 
     public String getOriginalArgs() {
         return commandLine;
+    }
+
+    public <E extends Enum<E>> String getRedactedArgs(Class<E> configClass) {
+        try {
+            ConfigManager cm = new ConfigManager.Builder(commandLine.split(" "))
+                    .loadConfigFromEnvironmentVariables(ImmutableMap.of(), ImmutableSet.of(configClass))
+                    .build();
+            return cm.getAllConfig().stream()
+                    .flatMap(config -> config.getKeyValueStringMapWithoutSecrets().entrySet().stream())
+                    .map(entry -> entry.getKey() + ":" + entry.getValue())
+                    .collect(Collectors.joining(" "));
+        } catch (ConfigKeysNotRecognisedException e) {
+            return "Error parsing config keys: " + e.getMessage();
+        }
     }
 
     public boolean hasResourceLocations() {
