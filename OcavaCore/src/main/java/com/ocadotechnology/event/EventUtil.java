@@ -129,6 +129,82 @@ public class EventUtil {
         return eventTimeToFormat(eventTime, dateTimeWithoutMsFormatter);
     }
 
+    /**
+     * Generates a computation for formatting a timestamp.
+     * <br><br>
+     * Many loggers defer the actual log-line formatting.  For example:<br>
+     * <code>
+     *    logger.info("Scheduling missiles for {}", EventUtil.logTime(now + durationToSafeDistance));
+     * </code><br>
+     * Here, <code>EventUtil.logTime</code> is always called regardless of the actual log level.
+     * <br>
+     * But, if the log level is higher than info, the log line will never be formatted and <code>toString</code>
+     * will never be called, which depending on how many millions of log lines are generated may save significant computation.
+     * <br>
+     * Further, many logging libraries off-load the log line formatting to separate threads, so the
+     * original thread may never incur the <code>toString</code> penalty.
+     * In thise case, using <code>logTime</code> instead of <code>eventTimeToString</code> is
+     * at least two orders of magnitude faster (for the calling thread).
+     *
+     * @param eventTime The timestamp to convert
+     * @return an Object where <code>toString</code> returns the same as <code>EventUtil.eventTimeToString</code>
+     */
+    public static Object logTime(double eventTime) {
+        return new Object() {
+            public String toString() {
+                return eventTimeToString(eventTime);
+            }
+        };
+    }
+
+    /**
+     * Generates a computation for formatting a (possibly null) timestamp.
+     * <br><br>
+     * This may provide faster logging; see {@link #logTime(double)}
+     *
+     * @param eventTime The timestamp to convert
+     * @return an Object where <code>toString</code> returns the same as <code>EventUtil.eventTimeToString</code>
+     */
+    public static Object logTime(@Nullable Double eventTime) {
+        return new Object() {
+            public String toString() {
+                return eventTimeToString(eventTime);
+            }
+        };
+    }
+
+    /**
+     * Generates a computation for formatting a timestamp.
+     * <br><br>
+     * This may provide faster logging; see {@link #logTime(double)}
+     *
+     * @param eventTime The timestamp to convert
+     * @return an Object where <code>toString</code> returns the same as <code>EventUtil.eventTimeToString</code>
+     */
+    public static Object logTime(long eventTime) {
+        return new Object() {
+            public String toString() {
+                return eventTimeToString(eventTime);
+            }
+        };
+    }
+
+    /**
+     * Generates a computation for formatting a (possibly null) timestamp.
+     * <br><br>
+     * This may provide faster logging; see {@link #logTime(double)}
+     *
+     * @param eventTime The timestamp to convert
+     * @return an Object where <code>toString</code> returns the same as <code>EventUtil.eventTimeToString</code>
+     */
+    public static Object logTime(@Nullable Long eventTime) {
+        return new Object() {
+            public String toString() {
+                return eventTimeToString(eventTime);
+            }
+        };
+    }
+
     public static String durationToString(double duration) {
         Duration d = Duration.ofMillis((long) duration);
         long seconds = d.getSeconds();
