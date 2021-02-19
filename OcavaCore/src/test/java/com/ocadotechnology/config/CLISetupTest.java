@@ -58,9 +58,11 @@ class CLISetupTest {
         assertEquals(expected, setup.getRedactedArgs(TestConfig.class));
     }
 
-    private String convertToOutputString(String string) {
-        // Strip first two characters, replace "=1" suffix with ":1"
-        return string.substring(2, string.length() - 2) + ":1";
+    @Test
+    public void getRedactedArgs_passedConfigWithSpacesInValues_omitsSecret() {
+        String[] args = {"-OTestConfig.FOO=(1, 2)", "-OTestConfig.SECRET_1=20"};
+        CLISetup setup = CLISetup.parseCommandLineArguments(args);
+        assertEquals("TestConfig.FOO:(1, 2)", setup.getRedactedArgs(TestConfig.class));
     }
 
     @Test
@@ -68,6 +70,11 @@ class CLISetupTest {
         String[] args = {"-OTestConfig.FOO=1", "-OTestConfig.SECRET_22=20"};
         CLISetup setup = CLISetup.parseCommandLineArguments(args);
         assertEquals("Error parsing config keys: The following config keys were not recognised:[TestConfig.SECRET_22]", setup.getRedactedArgs(TestConfig.class));
+    }
+
+    private String convertToOutputString(String string) {
+        // Strip first two characters, replace "=1" suffix with ":1"
+        return string.substring(2, string.length() - 2) + ":1";
     }
 
 }

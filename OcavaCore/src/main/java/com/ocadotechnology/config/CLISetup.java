@@ -75,7 +75,7 @@ public class CLISetup {
 
     public <E extends Enum<E>> String getRedactedArgs(Class<E> configClass) {
         try {
-            ConfigManager cm = new ConfigManager.Builder(commandLine.split(" "))
+            ConfigManager cm = new ConfigManager.Builder(commandLine.split(" (?=-O)"))
                     .loadConfigFromEnvironmentVariables(ImmutableMap.of(), ImmutableSet.of(configClass))
                     .build();
             return cm.getAllConfig().stream()
