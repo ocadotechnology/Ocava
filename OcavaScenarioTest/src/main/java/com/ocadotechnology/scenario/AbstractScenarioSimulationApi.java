@@ -20,9 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
 import com.ocadotechnology.notification.NotificationRouter;
@@ -32,7 +30,7 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
 
     private boolean started = false;
 
-    protected ImmutableMap<EventSchedulerType, EventScheduler> schedulers;
+    protected EventScheduler scheduler;
     private double timeout = -1;
 
     @Override
@@ -42,7 +40,7 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
 
     @Override
     public EventScheduler getEventScheduler() {
-        return schedulers.get(ScenarioTestSchedulerType.INSTANCE);
+        return scheduler;
     }
 
     @Override
@@ -55,15 +53,14 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
     public void start(ScenarioNotificationListener listener) {
         started = true;
 
-        schedulers = createSchedulers();
+        scheduler = createScheduler();
 
-        Preconditions.checkState(schedulers.containsKey(ScenarioTestSchedulerType.INSTANCE),
-                "Must create ScenarioTestSchedulerType");
-        Preconditions.checkState(schedulers.get(ScenarioTestSchedulerType.INSTANCE).getType() == ScenarioTestSchedulerType.INSTANCE,
+        Preconditions.checkState(
+                ScenarioTestSchedulerType.INSTANCE.equals(scheduler.getType()),
                 "Scenario scheduler created with the wrong type (%s) - it wouldn't receive messages",
-                schedulers.get(ScenarioTestSchedulerType.INSTANCE).getType());
+                scheduler.getType());
 
-        NotificationRouter.get().registerExecutionLayer(schedulers.get(ScenarioTestSchedulerType.INSTANCE), createNotificationBus());
+        NotificationRouter.get().registerExecutionLayer(scheduler, createNotificationBus());
 
         //This call should actually start the scheduler and is not expected to return as startSimulation should trigger the then step which continues the process.
         //See com.ocadotechnology.scenario.CoreSimulationWhenSteps.starts
@@ -92,15 +89,15 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
     }
 
     /**
-     * Create the schedulers used in the simulation, plus a ScenarioTestSchedulerType.INSTANCE scheduler.
+     * Creates a scheduler of type ScenarioTestSchedulerType.INSTANCE for use by the framework.
      */
-    protected abstract ImmutableMap<EventSchedulerType, EventScheduler> createSchedulers();
+    protected abstract EventScheduler createScheduler();
 
     protected abstract void startSimulation();
 
     @Override
     public void clean() {
         started = false;
-        schedulers = null;
+        scheduler = null;
     }
 }

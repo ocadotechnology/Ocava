@@ -19,9 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.event.scheduling.SourceTrackingEventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.scenario.AbstractScenarioSimulationApi;
@@ -40,7 +38,7 @@ public class TrafficSimulationApi extends AbstractScenarioSimulationApi<TrafficS
     TrafficSimulationApi() {}
 
     @Override
-    protected ImmutableMap<EventSchedulerType, EventScheduler> createSchedulers() {
+    protected EventScheduler createScheduler() {
 
         String[] configArgs = configMap.entrySet().stream()
                 .map(entry -> "-O" + entry.getKey() + "=" + entry.getValue())
@@ -53,7 +51,7 @@ public class TrafficSimulationApi extends AbstractScenarioSimulationApi<TrafficS
         eventScheduler = trafficSimulation.getScheduler();
 
         SourceTrackingEventScheduler simulationScheduler = Types.fromTypeOrFail(trafficSimulation.getScheduler(), SourceTrackingEventScheduler.class);
-        return ImmutableMap.of(ScenarioTestSchedulerType.INSTANCE, simulationScheduler.createSibling(ScenarioTestSchedulerType.INSTANCE));
+        return simulationScheduler.createSibling(ScenarioTestSchedulerType.INSTANCE);
     }
 
     @Override

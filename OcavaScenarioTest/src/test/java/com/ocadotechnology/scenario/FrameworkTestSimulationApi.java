@@ -20,10 +20,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.event.scheduling.EventExecutor;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
@@ -61,9 +59,9 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
     }
 
     @Override
-    protected ImmutableMap<EventSchedulerType, EventScheduler> createSchedulers() {
+    protected EventScheduler createScheduler() {
         createCleanScheduler();
-        return ImmutableMap.of(ScenarioTestSchedulerType.INSTANCE, eventScheduler);
+        return eventScheduler;
     }
 
     @Override
