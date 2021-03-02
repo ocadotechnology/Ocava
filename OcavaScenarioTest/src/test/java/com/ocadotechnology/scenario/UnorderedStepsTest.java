@@ -25,7 +25,7 @@ class UnorderedStepsTest {
 
     @Test
     void waitForStepsFailsWithAnEmptyCollection() {
-        UnorderedSteps unorderedSteps = new UnorderedSteps(new StepManager(null, null, null, null));
+        UnorderedSteps<?> unorderedSteps = new UnorderedSteps<>(new StepManager<>(null, null, null, null));
 
         assertThrows(IllegalStateException.class, () -> unorderedSteps.waitForSteps(ImmutableSet.of()));
     }

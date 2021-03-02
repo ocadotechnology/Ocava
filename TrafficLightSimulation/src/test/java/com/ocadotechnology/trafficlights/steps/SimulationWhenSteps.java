@@ -18,12 +18,13 @@ package com.ocadotechnology.trafficlights.steps;
 import com.ocadotechnology.scenario.AbstractWhenSteps;
 import com.ocadotechnology.scenario.CoreSimulationWhenSteps;
 import com.ocadotechnology.scenario.StepManager;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationStartedNotification;
 
-public class SimulationWhenSteps extends AbstractWhenSteps {
-    private CoreSimulationWhenSteps coreSteps;
+public class SimulationWhenSteps extends AbstractWhenSteps<TrafficSimulation> {
+    private final CoreSimulationWhenSteps<TrafficSimulation> coreSteps;
 
-    public SimulationWhenSteps(StepManager stepManager, CoreSimulationWhenSteps coreSteps) {
+    public SimulationWhenSteps(StepManager<TrafficSimulation> stepManager, CoreSimulationWhenSteps<TrafficSimulation> coreSteps) {
         super(stepManager);
         this.coreSteps = coreSteps;
     }

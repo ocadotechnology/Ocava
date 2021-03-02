@@ -35,6 +35,7 @@ import com.ocadotechnology.event.scheduling.SourceTrackingEventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.notification.SimpleBus;
 import com.ocadotechnology.random.RepeatableRandom;
+import com.ocadotechnology.simulation.Simulation;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 import com.ocadotechnology.time.UtcTimeProvider;
 import com.ocadotechnology.trafficlights.controller.LightColour;
@@ -50,7 +51,7 @@ import com.ocadotechnology.trafficlights.simulation.comms.SimulatedRestSender;
 import com.ocadotechnology.trafficlights.simulation.entities.SimulatedTrafficLight;
 import com.ocadotechnology.validation.Failer;
 
-public class TrafficSimulation {
+public class TrafficSimulation implements Simulation {
     private static final Logger logger = LoggerFactory.getLogger(TrafficSimulation.class);
     private static final String CONFIG_FILE = "trafficSimulation.properties";
 

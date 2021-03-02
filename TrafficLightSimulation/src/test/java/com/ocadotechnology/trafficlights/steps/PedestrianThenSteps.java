@@ -19,23 +19,24 @@ import com.ocadotechnology.scenario.AbstractThenSteps;
 import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.simulation.PedestrianFinishesCrossingNotification;
 import com.ocadotechnology.trafficlights.simulation.PedestrianStartsCrossingNotification;
 import com.ocadotechnology.trafficlights.simulation.comms.PedestrianCrossingRequestedNotification;
 
-public class PedestrianThenSteps extends AbstractThenSteps<PedestrianThenSteps> {
+public class PedestrianThenSteps extends AbstractThenSteps<TrafficSimulation, PedestrianThenSteps> {
 
-    public PedestrianThenSteps(StepManager stepManager, NotificationCache notificationCache) {
-        this(stepManager, notificationCache, CheckStepExecutionType.ordered(), false);
+    public PedestrianThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache) {
+        this(stepManager, notificationCache, CheckStepExecutionType.ordered());
     }
 
-    private PedestrianThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        super(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    private PedestrianThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        super(stepManager, notificationCache, checkStepExecutionType);
     }
 
     @Override
-    protected PedestrianThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        return new PedestrianThenSteps(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    protected PedestrianThenSteps create(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        return new PedestrianThenSteps(stepManager, notificationCache, checkStepExecutionType);
     }
 
     public void pressesButton() {

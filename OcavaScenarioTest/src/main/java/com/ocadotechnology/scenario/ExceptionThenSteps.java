@@ -17,10 +17,12 @@ package com.ocadotechnology.scenario;
 
 import java.util.function.Predicate;
 
-public class ExceptionThenSteps {
-    private final StepManager stepManager;
+import com.ocadotechnology.simulation.Simulation;
 
-    public ExceptionThenSteps(StepManager stepManager) {
+public class ExceptionThenSteps<S extends Simulation> {
+    private final StepManager<S> stepManager;
+
+    public ExceptionThenSteps(StepManager<S> stepManager) {
         this.stepManager = stepManager;
     }
 

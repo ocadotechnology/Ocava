@@ -18,16 +18,21 @@ package com.ocadotechnology.scenario;
 import java.util.concurrent.TimeUnit;
 
 import com.ocadotechnology.event.scheduling.EventScheduler;
+import com.ocadotechnology.simulation.Simulation;
 
 /**
  * Used to interface the scenario testing framework with your simulation.
  * The AbstractScenarioSimulationAPI implementation is provided for convenience, but may not always suit.
  */
-public interface ScenarioSimulationApi {
+public interface ScenarioSimulationApi<S extends Simulation> {
     boolean isStarted();
     EventScheduler getEventScheduler();
     void setDiscreteEventTimeout(double duration, TimeUnit unit);
     void start(ScenarioNotificationListener listener);
     double getSchedulerStartTime();
     TimeUnit getSchedulerTimeUnit();
+    
+    default S getSimulation() {
+        throw new UnsupportedOperationException("getSimulation");
+    }
 }

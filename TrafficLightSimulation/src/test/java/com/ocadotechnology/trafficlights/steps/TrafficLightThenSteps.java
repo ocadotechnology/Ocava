@@ -19,23 +19,24 @@ import com.ocadotechnology.scenario.AbstractThenSteps;
 import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.controller.LightColour;
 import com.ocadotechnology.trafficlights.simulation.comms.PedestrianLightChangedNotification;
 import com.ocadotechnology.trafficlights.simulation.comms.TrafficLightChangedNotification;
 
-public class TrafficLightThenSteps extends AbstractThenSteps<TrafficLightThenSteps> {
+public class TrafficLightThenSteps extends AbstractThenSteps<TrafficSimulation, TrafficLightThenSteps> {
 
-    private TrafficLightThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        super(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    private TrafficLightThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        super(stepManager, notificationCache, checkStepExecutionType);
     }
 
-    public TrafficLightThenSteps(StepManager stepManager, NotificationCache notificationCache) {
-        this(stepManager, notificationCache, CheckStepExecutionType.ordered(), false);
+    public TrafficLightThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache) {
+        this(stepManager, notificationCache, CheckStepExecutionType.ordered());
     }
 
     @Override
-    protected TrafficLightThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        return new TrafficLightThenSteps(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    protected TrafficLightThenSteps create(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        return new TrafficLightThenSteps(stepManager, notificationCache, checkStepExecutionType);
     }
 
     public void changesTrafficLightTo(LightColour colour) {

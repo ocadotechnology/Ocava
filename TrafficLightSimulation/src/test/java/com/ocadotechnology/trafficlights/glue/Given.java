@@ -18,6 +18,7 @@ package com.ocadotechnology.trafficlights.glue;
 import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.ScenarioNotificationListener;
 import com.ocadotechnology.scenario.StepManager;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 import com.ocadotechnology.trafficlights.steps.ConfigGivenSteps;
 
@@ -25,7 +26,7 @@ public class Given {
 
     public ConfigGivenSteps config;
 
-    public Given(StepManager stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
+    public Given(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
         config = new ConfigGivenSteps(stepManager, simulationApi.getConfigMap());
     }
 }

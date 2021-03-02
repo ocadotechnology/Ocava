@@ -60,6 +60,8 @@ Credentials coming through config takes priority over the ones provided through 
 This component provides a scenario test framework designed to work with an event-driven process.
 The framework enables scenario tests to be written in code rather than in text which allows for both type safety and easy code re-use between scenario tests.
 
+See [here](OcavaScenarioTest/README.md) for further information.
+
 ## Contributing
 
 See [here](CONTRIBUTING.md)

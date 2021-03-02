@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 
 public class TestThreadWhenSteps {
-    private final StepManager stepManager;
+    private final StepManager<?> stepManager;
 
-    public TestThreadWhenSteps(StepManager stepManager) {
+    public TestThreadWhenSteps(StepManager<?> stepManager) {
         this.stepManager = stepManager;
     }
 

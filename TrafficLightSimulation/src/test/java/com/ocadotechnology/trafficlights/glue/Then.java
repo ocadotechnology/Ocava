@@ -20,6 +20,7 @@ import com.ocadotechnology.scenario.ScenarioNotificationListener;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.scenario.TimeThenSteps;
 import com.ocadotechnology.scenario.UnorderedSteps;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 import com.ocadotechnology.trafficlights.steps.CarThenSteps;
 import com.ocadotechnology.trafficlights.steps.PedestrianThenSteps;
@@ -30,20 +31,20 @@ public class Then {
 
     //generic steps
     public final SimulationThenSteps simulation;
-    public final TimeThenSteps time;
-    public final UnorderedSteps unordered;
+    public final TimeThenSteps<TrafficSimulation> time;
+    public final UnorderedSteps<TrafficSimulation> unordered;
 
     //simulation specific steps
     public final CarThenSteps car;
     public final PedestrianThenSteps pedestrian;
     public final TrafficLightThenSteps trafficLight;
 
-    public Then(StepManager stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
+    public Then(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
 
         this.simulation = new SimulationThenSteps(stepManager, notificationCache);
-        this.time = new TimeThenSteps(simulationApi, stepManager, listener);
+        this.time = new TimeThenSteps<>(simulationApi, stepManager, listener);
 
-        this.unordered = new UnorderedSteps(stepManager);
+        this.unordered = new UnorderedSteps<>(stepManager);
         this.car = new CarThenSteps(stepManager, notificationCache);
         this.pedestrian = new PedestrianThenSteps(stepManager, notificationCache);
         trafficLight = new TrafficLightThenSteps(stepManager, notificationCache);

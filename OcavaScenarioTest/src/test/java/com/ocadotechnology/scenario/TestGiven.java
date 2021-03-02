@@ -18,7 +18,7 @@ package com.ocadotechnology.scenario;
 public class TestGiven {
     public final TimeoutGivenSteps timeout;
 
-    TestGiven(StepsRunner runner, ScenarioSimulationApi simulation) {
+    TestGiven(StepsRunner runner, ScenarioSimulationApi<?> simulation) {
         this.timeout = new TimeoutGivenSteps(runner, simulation);
     }
 }

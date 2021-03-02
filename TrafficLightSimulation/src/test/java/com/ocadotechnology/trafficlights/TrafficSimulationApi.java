@@ -31,7 +31,7 @@ import com.ocadotechnology.utils.Types;
 /**
  * Used to interface the scenario testing framework with traffic simulation.
  */
-public class TrafficSimulationApi extends AbstractScenarioSimulationApi {
+public class TrafficSimulationApi extends AbstractScenarioSimulationApi<TrafficSimulation> {
     private EventScheduler eventScheduler;
     private Map<String, String> configMap = new LinkedHashMap<>();
 
@@ -74,11 +74,12 @@ public class TrafficSimulationApi extends AbstractScenarioSimulationApi {
         return TimeUnit.SECONDS;
     }
 
-    public Map<String, String> getConfigMap() {
-        return configMap;
+    @Override
+    public TrafficSimulation getSimulation() {
+        return trafficSimulation;
     }
 
-    public TrafficSimulation getTrafficSimulation() {
-        return trafficSimulation;
+    public Map<String, String> getConfigMap() {
+        return configMap;
     }
 }

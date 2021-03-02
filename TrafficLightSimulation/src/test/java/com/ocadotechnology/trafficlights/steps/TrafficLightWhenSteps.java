@@ -17,18 +17,19 @@ package com.ocadotechnology.trafficlights.steps;
 
 import com.ocadotechnology.scenario.AbstractWhenSteps;
 import com.ocadotechnology.scenario.StepManager;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 import com.ocadotechnology.trafficlights.controller.LightColour;
 
-public class TrafficLightWhenSteps extends AbstractWhenSteps {
+public class TrafficLightWhenSteps extends AbstractWhenSteps<TrafficSimulation> {
     private final TrafficSimulationApi simulationApi;
 
-    public TrafficLightWhenSteps(StepManager stepManager, TrafficSimulationApi simulationApi) {
+    public TrafficLightWhenSteps(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi) {
         super(stepManager);
         this.simulationApi = simulationApi;
     }
 
     public void isChangedTo(LightColour colour) {
-        addExecuteStep(() -> simulationApi.getTrafficSimulation().getTrafficLightController().setTrafficLight(colour));
+        addExecuteStep(() -> simulationApi.getSimulation().getTrafficLightController().setTrafficLight(colour));
     }
 }

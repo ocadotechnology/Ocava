@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.scenario;
+package com.ocadotechnology.simulation;
 
-import org.junit.jupiter.api.Assertions;
-
-public class FuturesThenSteps {
-    private final StepManager<?> stepManager;
-
-    public FuturesThenSteps(StepManager<?> stepManager) {
-        this.stepManager = stepManager;
-    }
-
-    public <T> void assertEquals(T expected, StepFuture<T> futureActual) {
-        stepManager.addExecuteStep(() -> Assertions.assertEquals(expected, futureActual.get()));
-    }
+/**
+ * Marker interface for designating an object as the top level container for an Ocava-backed simulation.
+ *
+ * This is intended to be used with the `SimulationAPI` class in the ScenarioTest framework to allow the steps to gain
+ * access to the simulation objects for their logic.
+ */
+public interface Simulation {
 }

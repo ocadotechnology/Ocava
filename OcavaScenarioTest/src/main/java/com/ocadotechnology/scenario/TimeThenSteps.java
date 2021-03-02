@@ -19,12 +19,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
 
-public class TimeThenSteps {
-    private final ScenarioSimulationApi scenarioSimulationApi;
-    private final StepManager stepManager;
+import com.ocadotechnology.simulation.Simulation;
+
+public class TimeThenSteps<S extends Simulation> {
+    private final ScenarioSimulationApi<S> scenarioSimulationApi;
+    private final StepManager<S> stepManager;
     private final ScenarioNotificationListener scenarioNotificationListener;
 
-    public TimeThenSteps(ScenarioSimulationApi scenarioSimulationApi, StepManager stepManager, ScenarioNotificationListener scenarioNotificationListener) {
+    public TimeThenSteps(ScenarioSimulationApi<S> scenarioSimulationApi, StepManager<S> stepManager, ScenarioNotificationListener scenarioNotificationListener) {
         this.scenarioSimulationApi = scenarioSimulationApi;
         this.stepManager = stepManager;
         this.scenarioNotificationListener = scenarioNotificationListener;

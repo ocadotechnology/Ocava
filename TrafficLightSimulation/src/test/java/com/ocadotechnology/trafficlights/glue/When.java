@@ -19,6 +19,7 @@ import com.ocadotechnology.scenario.CoreSimulationWhenSteps;
 import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.ScenarioNotificationListener;
 import com.ocadotechnology.scenario.StepManager;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 import com.ocadotechnology.trafficlights.steps.CarWhenSteps;
 import com.ocadotechnology.trafficlights.steps.PedestrianWhenSteps;
@@ -35,8 +36,8 @@ public class When {
     public final PedestrianWhenSteps pedestrian;
     public final TrafficLightWhenSteps trafficLight;
 
-    public When(StepManager stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
-        CoreSimulationWhenSteps coreSteps = new CoreSimulationWhenSteps(stepManager, simulationApi, listener, notificationCache);
+    public When(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
+        CoreSimulationWhenSteps<TrafficSimulation> coreSteps = new CoreSimulationWhenSteps<>(stepManager, simulationApi, listener, notificationCache);
 
         simulation = new SimulationWhenSteps(stepManager, coreSteps);
         car = new CarWhenSteps(stepManager, simulationApi);

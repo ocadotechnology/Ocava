@@ -25,15 +25,16 @@ import java.util.function.Supplier;
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.id.StringIdGenerator;
+import com.ocadotechnology.simulation.Simulation;
 import com.ocadotechnology.validation.Failer;
 
-public class StepManager {
+public class StepManager<S extends Simulation> {
     private final StepCache stepsCache;
-    protected final ScenarioSimulationApi simulation;
+    protected final ScenarioSimulationApi<S> simulation;
     protected final NotificationCache notificationCache;
     protected final ScenarioNotificationListener listener;
 
-    public StepManager(StepCache stepsCache, ScenarioSimulationApi simulation, NotificationCache notificationCache, ScenarioNotificationListener listener) {
+    public StepManager(StepCache stepsCache, ScenarioSimulationApi<S> simulation, NotificationCache notificationCache, ScenarioNotificationListener listener) {
         this.stepsCache = stepsCache;
         this.simulation = simulation;
         this.notificationCache = notificationCache;
@@ -42,6 +43,10 @@ public class StepManager {
 
     public StepCache getStepsCache() {
         return stepsCache;
+    }
+
+    public S getSimulation() {
+        return simulation.getSimulation();
     }
 
     public TimeUnit getTimeUnit() {
@@ -230,7 +235,7 @@ public class StepManager {
         private final Double duration;
 
         /** Used to mark this check step as expecting to fail */
-        private boolean isFailingStep;
+        private final boolean isFailingStep;
 
         /**
          * Default constructor creates an ORDERED CheckStepExecutionType with the next id.
@@ -276,6 +281,10 @@ public class StepManager {
             return type;
         }
 
+        public boolean isFailingStep() {
+            return isFailingStep;
+        }
+
         public static CheckStepExecutionType ordered() {
             return new CheckStepExecutionType(nextId(), Type.ORDERED);
         }
@@ -305,6 +314,10 @@ public class StepManager {
          */
         public CheckStepExecutionType markFailingStep() {
             return new CheckStepExecutionType(name, type, schedulerSupplier, duration, true);
+        }
+
+        public CheckStepExecutionType applyModifiersFrom(CheckStepExecutionType sourceCheckStepExecutionType) {
+            return new CheckStepExecutionType(name, type, schedulerSupplier, duration, sourceCheckStepExecutionType.isFailingStep);
         }
 
         private static String nextId() {

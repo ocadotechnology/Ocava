@@ -18,20 +18,17 @@ package com.ocadotechnology.scenario;
 import org.junit.jupiter.api.Assertions;
 
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
+import com.ocadotechnology.simulation.Simulation;
 
-public class TestEventThenSteps extends AbstractThenSteps<TestEventThenSteps> {
+public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventThenSteps> {
 
-    TestEventThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+    TestEventThenSteps(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
         super(stepManager, notificationCache, checkStepExecutionType);
     }
 
-    private TestEventThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean failingStep) {
-        super(stepManager, notificationCache, checkStepExecutionType, failingStep);
-    }
-
     @Override
-    protected TestEventThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType, boolean failingStep) {
-        return new TestEventThenSteps(stepManager, notificationCache, executionType, failingStep);
+    protected TestEventThenSteps create(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
+        return new TestEventThenSteps(stepManager, notificationCache, executionType);
     }
 
     public void occurs(String name) {

@@ -22,20 +22,21 @@ import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.trafficlights.SimulationEndedNotification;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 
-public class SimulationThenSteps extends AbstractThenSteps<SimulationThenSteps> {
+public class SimulationThenSteps extends AbstractThenSteps<TrafficSimulation, SimulationThenSteps> {
 
-    private SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        super(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    private SimulationThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        super(stepManager, notificationCache, checkStepExecutionType);
     }
 
-    public SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache) {
-        this(stepManager, notificationCache, CheckStepExecutionType.ordered(), false);
+    public SimulationThenSteps(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache) {
+        this(stepManager, notificationCache, CheckStepExecutionType.ordered());
     }
 
     @Override
-    protected SimulationThenSteps create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean isFailingStep) {
-        return new SimulationThenSteps(stepManager, notificationCache, checkStepExecutionType, isFailingStep);
+    protected SimulationThenSteps create(StepManager<TrafficSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+        return new SimulationThenSteps(stepManager, notificationCache, checkStepExecutionType);
     }
 
     /**

@@ -26,7 +26,7 @@ import com.ocadotechnology.trafficlights.glue.Then;
 import com.ocadotechnology.trafficlights.glue.When;
 
 @StoryContent
-public class TrafficSimulationStory extends AbstractStory {
+public class TrafficSimulationStory extends AbstractStory<TrafficSimulation> {
 
     protected final Given given; // Allows stories to use given steps
     protected final When when; // Allows stories to use when steps

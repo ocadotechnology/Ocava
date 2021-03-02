@@ -15,14 +15,16 @@
  */
 package com.ocadotechnology.scenario;
 
+import com.ocadotechnology.simulation.Simulation;
+
 public class TestWhen {
 
-    private final CoreSimulationWhenSteps simulationWhenSteps;
+    private final CoreSimulationWhenSteps<?> simulationWhenSteps;
     public final TestEventWhenSteps testEvent;
     public final TestThreadWhenSteps testThread;
 
-    public TestWhen(StepManager stepManager, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
-        this.simulationWhenSteps = new CoreSimulationWhenSteps(stepManager, simulationApi, listener, notificationCache);
+    public TestWhen(StepManager<Simulation> stepManager, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
+        this.simulationWhenSteps = new CoreSimulationWhenSteps<>(stepManager, simulationApi, listener, notificationCache);
         this.testEvent = new TestEventWhenSteps(stepManager, simulationApi);
         this.testThread = new TestThreadWhenSteps(stepManager);
     }

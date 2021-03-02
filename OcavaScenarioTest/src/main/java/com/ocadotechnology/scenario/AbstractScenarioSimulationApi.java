@@ -26,8 +26,9 @@ import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
 import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.simulation.Simulation;
 
-public abstract class AbstractScenarioSimulationApi extends Cleanable implements ScenarioSimulationApi {
+public abstract class AbstractScenarioSimulationApi<S extends Simulation> extends Cleanable implements ScenarioSimulationApi<S> {
 
     private boolean started = false;
 

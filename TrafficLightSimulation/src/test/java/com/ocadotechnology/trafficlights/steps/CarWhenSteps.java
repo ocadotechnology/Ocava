@@ -17,19 +17,18 @@ package com.ocadotechnology.trafficlights.steps;
 
 import com.ocadotechnology.scenario.AbstractWhenSteps;
 import com.ocadotechnology.scenario.StepManager;
+import com.ocadotechnology.trafficlights.TrafficSimulation;
 import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 
-public class CarWhenSteps extends AbstractWhenSteps {
-    private final StepManager stepManager;
+public class CarWhenSteps extends AbstractWhenSteps<TrafficSimulation> {
     private final TrafficSimulationApi simulationApi;
 
-    public CarWhenSteps(StepManager stepManager, TrafficSimulationApi simulationApi) {
+    public CarWhenSteps(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi) {
         super(stepManager);
-        this.stepManager = stepManager;
         this.simulationApi = simulationApi;
     }
 
     public void arrives() {
-        stepManager.addExecuteStep(() -> simulationApi.getTrafficSimulation().getCarSpawner().carArrivesAtJunction());
+        addExecuteStep(() -> simulationApi.getSimulation().getCarSpawner().carArrivesAtJunction());
     }
 }

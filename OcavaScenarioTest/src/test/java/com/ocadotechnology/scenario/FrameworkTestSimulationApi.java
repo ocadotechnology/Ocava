@@ -28,9 +28,10 @@ import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
 import com.ocadotechnology.notification.NotificationRouter;
+import com.ocadotechnology.simulation.Simulation;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 
-public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi {
+public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Simulation> {
     private static final Logger logger = LoggerFactory.getLogger(FrameworkTestSimulationApi.class);
 
     private SimpleDiscreteEventScheduler eventScheduler;

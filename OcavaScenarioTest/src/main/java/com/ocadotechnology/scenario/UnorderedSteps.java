@@ -27,24 +27,25 @@ import org.junit.jupiter.api.Assertions;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.ocadotechnology.simulation.Simulation;
 
-public class UnorderedSteps {
+public class UnorderedSteps<S extends Simulation> {
     private final StepCache stepCache;
-    private final StepManager stepManager;
+    private final StepManager<S> stepManager;
     private final boolean isFailingStep;
 
-    private UnorderedSteps(StepManager stepManager, boolean isFailingStep) {
+    private UnorderedSteps(StepManager<S> stepManager, boolean isFailingStep) {
         this.stepManager = stepManager;
         this.stepCache = stepManager.getStepsCache();
         this.isFailingStep = isFailingStep;
     }
 
-    public UnorderedSteps(StepManager stepManager) {
+    public UnorderedSteps(StepManager<S> stepManager) {
         this(stepManager, false);
     }
 
-    public UnorderedSteps failingStep() {
-        return new UnorderedSteps(stepManager, true);
+    public UnorderedSteps<S> failingStep() {
+        return new UnorderedSteps<>(stepManager, true);
     }
 
     private void addSimpleExecuteStep(Runnable runnable) {

@@ -17,17 +17,18 @@ package com.ocadotechnology.scenario;
 
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
+import com.ocadotechnology.simulation.Simulation;
 
-public class CoreSimulationWhenSteps extends AbstractWhenSteps {
-    private final ScenarioSimulationApi simulationAPI;
+public class CoreSimulationWhenSteps<S extends Simulation> extends AbstractWhenSteps<S> {
+    private final ScenarioSimulationApi<S> simulationAPI;
     private final ScenarioNotificationListener listener;
-    private final SimulationThenSteps simulationThen;
+    private final SimulationThenSteps<S> simulationThen;
 
-    public CoreSimulationWhenSteps(StepManager stepManager, ScenarioSimulationApi simulationAPI, ScenarioNotificationListener listener, NotificationCache notificationCache) {
+    public CoreSimulationWhenSteps(StepManager<S> stepManager, ScenarioSimulationApi<S> simulationAPI, ScenarioNotificationListener listener, NotificationCache notificationCache) {
         super(stepManager);
         this.simulationAPI = simulationAPI;
         this.listener = listener;
-        this.simulationThen = new SimulationThenSteps(stepManager, notificationCache);
+        this.simulationThen = new SimulationThenSteps<>(stepManager, notificationCache);
     }
 
     /**
@@ -57,22 +58,18 @@ public class CoreSimulationWhenSteps extends AbstractWhenSteps {
     /**
      * private internal class to allow the when steps to check for receipt of a notification
      */
-    private static class SimulationThenSteps extends AbstractThenSteps {
-        public SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
+    private static class SimulationThenSteps<S extends Simulation> extends AbstractThenSteps<S, SimulationThenSteps<S>> {
+        public SimulationThenSteps(StepManager<S> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
             super(stepManager, notificationCache, executionType);
         }
 
-        private SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType, boolean failingStep) {
-            super(stepManager, notificationCache, executionType, failingStep);
-        }
-
-        public SimulationThenSteps(StepManager stepManager, NotificationCache notificationCache) {
+        public SimulationThenSteps(StepManager<S> stepManager, NotificationCache notificationCache) {
             this(stepManager, notificationCache, CheckStepExecutionType.ordered());
         }
 
         @Override
-        protected AbstractThenSteps<?> create(StepManager stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, boolean failingStep) {
-            return new SimulationThenSteps(stepManager, notificationCache, checkStepExecutionType);
+        protected SimulationThenSteps<S> create(StepManager<S> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+            return new SimulationThenSteps<>(stepManager, notificationCache, checkStepExecutionType);
         }
     }
 }

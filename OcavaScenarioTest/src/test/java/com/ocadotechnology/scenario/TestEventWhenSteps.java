@@ -19,10 +19,10 @@ import com.ocadotechnology.notification.NotificationRouter;
 
 public class TestEventWhenSteps {
 
-    private final StepManager stepManager;
-    private final ScenarioSimulationApi simulationHolder;
+    private final StepManager<?> stepManager;
+    private final ScenarioSimulationApi<?> simulationHolder;
 
-    public TestEventWhenSteps(StepManager stepManager, ScenarioSimulationApi simulationHolder) {
+    public TestEventWhenSteps(StepManager<?> stepManager, ScenarioSimulationApi<?> simulationHolder) {
         this.stepManager = stepManager;
         this.simulationHolder = simulationHolder;
     }

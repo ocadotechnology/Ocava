@@ -17,8 +17,10 @@ package com.ocadotechnology.scenario;
 
 import java.util.concurrent.TimeUnit;
 
+import com.ocadotechnology.simulation.Simulation;
+
 @StoryContent
-public abstract class AbstractFrameworkTestStory extends AbstractStory {
+public abstract class AbstractFrameworkTestStory extends AbstractStory<Simulation> {
 
     public final TestWhen when;
     public final TestThen then;

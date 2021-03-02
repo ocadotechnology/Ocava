@@ -26,30 +26,31 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.random.RepeatableRandom;
+import com.ocadotechnology.simulation.Simulation;
 import com.ocadotechnology.validation.Failer;
 
 @ExtendWith(ScenarioTestWrapper.class)
 @DefaultStory
-public abstract class AbstractStory {
+public abstract class AbstractStory<S extends Simulation> {
     public static final String TEST_PASSES_WITH_FIX_REQUIRED = "Test is successful but it is annotated with FixRequired:%n\t%s%nMarked failing steps:%n\t%s";
     private static Logger logger = LoggerFactory.getLogger(AbstractStory.class);
 
     protected final StepsRunner stepsRunner;
-    protected final ScenarioSimulationApi simulation;
+    protected final ScenarioSimulationApi<S> simulation;
     protected final StepCache stepCache = new StepCache();
     protected final AssertionCache assertionCache = new AssertionCache();
     protected final NotificationCache notificationCache = new NotificationCache();
-    protected final StepManager stepManager;
+    protected final StepManager<S> stepManager;
     protected final ScenarioNotificationListener listener;
 
-    public AbstractStory(AbstractScenarioSimulationApi simulation) {
+    public AbstractStory(AbstractScenarioSimulationApi<S> simulation) {
         OcavaCleaner.register();
 
         this.simulation = simulation;
         stepsRunner = new StepsRunner(stepCache, simulation);
 
         listener = new ScenarioNotificationListener(notificationCache, stepsRunner);
-        stepManager = new StepManager(stepCache, simulation, notificationCache, listener);
+        stepManager = new StepManager<>(stepCache, simulation, notificationCache, listener);
 
         Preconditions.checkArgument(this.getClass().isAnnotationPresent(Story.class),
                 "Missing @Story annotation in %s", getClass().getSimpleName());

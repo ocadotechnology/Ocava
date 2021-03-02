@@ -15,15 +15,21 @@
  */
 package com.ocadotechnology.scenario;
 
-public abstract class AbstractWhenSteps {
+import com.ocadotechnology.simulation.Simulation;
 
-    private StepManager stepManager;
+public abstract class AbstractWhenSteps<S extends Simulation> {
 
-    public AbstractWhenSteps(StepManager stepManager) {
+    private final StepManager<S> stepManager;
+
+    public AbstractWhenSteps(StepManager<S> stepManager) {
         this.stepManager = stepManager;
     }
 
     protected void addExecuteStep(Runnable r) {
         stepManager.addExecuteStep(r);
+    }
+
+    protected S getSimulation() {
+        return stepManager.getSimulation();
     }
 }
