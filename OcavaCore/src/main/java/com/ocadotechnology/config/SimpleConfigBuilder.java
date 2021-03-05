@@ -158,8 +158,12 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
     public Config<E> build() throws ConfigKeysNotRecognisedException {
         ConfigManager.Builder configManagerBuilder = new ConfigManager.Builder(new String[] {});
         configManagerBuilder.loadConfigFromMap(ImmutableMap.copyOf(configMap), ImmutableSet.of(configType));
-        configManagerBuilder.setTimeUnit(timeUnit);
-        configManagerBuilder.setLengthUnit(lengthUnit);
+        if (timeUnit != null) {
+            configManagerBuilder.setTimeUnit(timeUnit);
+        }
+        if (lengthUnit != null) {
+            configManagerBuilder.setLengthUnit(lengthUnit);
+        }
         return configManagerBuilder.build().getConfig(configType);
     }
 

@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -41,23 +42,62 @@ public class EventUtil {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final long MIN_TIMESTAMP = -62135596800000L;  // 0001-01-01 00:00:00.000
 
+    private static long millisecondsInSimulationTimeUnitLong = 1000; // Default to assuming the simulation runs in seconds
+    private static double millisecondsInSimulationTimeUnitDouble = Double.NaN; // Only required for sub ms time units
+
+    /**
+     * Sets the simulation time unit to allow for conversion to a standard display format
+     *
+     * @param simulationTimeUnit the timeUnit that inputs to this class will be using
+     */
+    public static void setSimulationTimeUnit(TimeUnit simulationTimeUnit) {
+        millisecondsInSimulationTimeUnitLong = TimeUnit.MILLISECONDS.convert(1, simulationTimeUnit);
+        if (millisecondsInSimulationTimeUnitLong == 0) { // simulationTimeUnit < MILLISECONDS
+            millisecondsInSimulationTimeUnitDouble = 1.0 / simulationTimeUnit.convert(1, TimeUnit.MILLISECONDS);
+        }
+    }
+
     private static String eventTimeToFormat(double eventTime, DateTimeFormatter dateTimeFormatter) {
         return Double.isFinite(eventTime)
-                ? eventTimeToFormat(roundToLong(eventTime), dateTimeFormatter)
+                ? milliEventTimeToFormat(convertToMillis(eventTime), dateTimeFormatter)
                 : Double.toString(eventTime);
     }
 
-    private static long roundToLong(double eventTime) {
+    private static String eventTimeToFormat(long eventTime, DateTimeFormatter dateTimeFormatter) {
+        return milliEventTimeToFormat(convertToMillis(eventTime), dateTimeFormatter);
+    }
+
+    private static long convertToMillis(double eventTime) {
         try {
-            return DoubleMath.roundToLong(eventTime, RoundingMode.FLOOR);
+            if (millisecondsInSimulationTimeUnitLong != 0) {
+                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitLong, RoundingMode.FLOOR);
+            } else {
+                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitDouble, RoundingMode.FLOOR);
+            }
         } catch (ArithmeticException e) {
             throw new IllegalArgumentException("Invalid timestamp: " + eventTime, e);
         }
     }
 
-    private static String eventTimeToFormat(long eventTime, DateTimeFormatter dateTimeFormatter) {
-        Preconditions.checkArgument(eventTime >= MIN_TIMESTAMP, "Timestamp is before 0001-01-01 00:00:00.000: %s", eventTime);
-        return dateTimeFormatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(eventTime), UTC));
+    private static long convertToMillis(long eventTime) {
+        try {
+            if (millisecondsInSimulationTimeUnitLong != 0) {
+                long milliTime = eventTime * millisecondsInSimulationTimeUnitLong;
+                if (milliTime / millisecondsInSimulationTimeUnitLong != eventTime) {
+                    throw new IllegalArgumentException("Invalid timestamp - overflows Long: " + eventTime);
+                }
+                return milliTime;
+            } else {
+                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitDouble, RoundingMode.FLOOR);
+            }
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("Invalid timestamp: " + eventTime, e);
+        }
+    }
+
+    private static String milliEventTimeToFormat(long eventTimeInMillis, DateTimeFormatter dateTimeFormatter) {
+        Preconditions.checkArgument(eventTimeInMillis >= MIN_TIMESTAMP, "Timestamp is before 0001-01-01 00:00:00.000: %s", eventTimeInMillis);
+        return dateTimeFormatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(eventTimeInMillis), UTC));
     }
 
     /**
@@ -100,7 +140,8 @@ public class EventUtil {
      *
      * @param eventTime The timestamp to convert.
      *
-     * @throws IllegalArgumentException If the timestamp corresponds to a time prior to 0001-01-01 00:00:00.000.
+     * @throws IllegalArgumentException If the timestamp corresponds to a time prior to 0001-01-01 00:00:00.000 or
+     *          greater than Long.MAX_VALUE milliseconds.
      */
     public static String eventTimeToString(long eventTime) {
         return eventTimeToFormat(eventTime, dateTimeFormatter);
@@ -113,7 +154,8 @@ public class EventUtil {
      *
      * @param eventTime The timestamp to convert.
      *
-     * @throws IllegalArgumentException If the timestamp corresponds to a time prior to 0001-01-01 00:00:00.000.
+     * @throws IllegalArgumentException If the timestamp corresponds to a time prior to 0001-01-01 00:00:00.000 or
+     *          greater than Long.MAX_VALUE milliseconds.
      */
     public static String eventTimeToString(@Nullable Long eventTime) {
         return eventTime == null

@@ -176,7 +176,7 @@ public class TrafficSimulation implements Simulation {
         try {
             return new Builder(args)
                     .loadConfigFromLocalResources(resourceFiles, configKeys)
-                    .setTimeUnit(TimeUnit.MILLISECONDS)
+                    .setTimeUnit(TimeUnit.SECONDS)
                     .build();
         } catch (Exception e) {
             e.printStackTrace();
