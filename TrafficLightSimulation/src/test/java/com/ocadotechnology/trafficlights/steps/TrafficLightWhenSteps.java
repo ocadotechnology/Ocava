@@ -32,4 +32,8 @@ public class TrafficLightWhenSteps extends AbstractWhenSteps<TrafficSimulation> 
     public void isChangedTo(LightColour colour) {
         addExecuteStep(() -> simulationApi.getSimulation().getTrafficLightController().setTrafficLight(colour));
     }
+
+    public void placeUnderManualControl() {
+        addExecuteStep(() -> simulationApi.getSimulation().getTrafficLightController().placeUnderManualControl());
+    }
 }

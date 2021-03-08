@@ -19,9 +19,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import com.ocadotechnology.scenario.Story;
+import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficConfig.TrafficLight;
 import com.ocadotechnology.trafficlights.TrafficSimulationStory;
 import com.ocadotechnology.trafficlights.controller.LightColour;
+import com.ocadotechnology.trafficlights.controller.TrafficLightController.Mode;
 
 @Story
 class TrafficLightsChangeTest extends TrafficSimulationStory {
@@ -35,8 +37,7 @@ class TrafficLightsChangeTest extends TrafficSimulationStory {
         given.config.set(TrafficLight.INITIAL_TRAFFIC_STATE, initialColour);
 
         //setting traffic light to switch between RED and GREEN automatically
-        given.config.set(TrafficLight.ENABLE_AUTOMATIC_CHANGE, true);
-
+        given.config.set(TrafficConfig.TrafficLight.MODE, Mode.AUTOMATIC_CHANGE);
         when.simulation.starts();
 
         //define two steps to be executed in any order
@@ -56,8 +57,7 @@ class TrafficLightsChangeTest extends TrafficSimulationStory {
         given.config.set(TrafficLight.INITIAL_TRAFFIC_STATE, initialColour);
 
         //setting traffic light to switch between RED and GREEN automatically
-        given.config.set(TrafficLight.ENABLE_AUTOMATIC_CHANGE, true);
-
+        given.config.set(TrafficConfig.TrafficLight.MODE, Mode.AUTOMATIC_CHANGE);
         when.simulation.starts();
 
         //define two steps to be executed in any order

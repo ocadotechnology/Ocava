@@ -15,45 +15,28 @@
  */
 package com.ocadotechnology.trafficlights.scenarios;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.Story;
-import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficConfig.TrafficLight;
 import com.ocadotechnology.trafficlights.TrafficSimulationStory;
 import com.ocadotechnology.trafficlights.controller.LightColour;
-import com.ocadotechnology.trafficlights.controller.TrafficLightController.Mode;
 
 @Story
-class CarStaysOnRedTest extends TrafficSimulationStory {
-
-    private static final String YOU_SHALL_NOT_PASS = "YOU_SHALL_NOT_PASS";
+public class NoLightsChangeInManualModeTest extends TrafficSimulationStory {
 
     @Test
     void scenario() {
-        //we set traffic light to be RED initially
+        //The specific configuration is not important.
         given.config.set(TrafficLight.INITIAL_TRAFFIC_STATE, LightColour.RED);
-        //making sure traffic light stays RED unless we tell it to change
-        given.config.set(TrafficConfig.TrafficLight.MODE, Mode.PEDESTRIAN_REQUEST_ONLY);
+        given.config.set(TrafficLight.INITIAL_PEDESTRIAN_STATE, LightColour.GREEN);
 
         when.simulation.starts();
-        when.car.arrives();
 
-        //car should not pass on RED
-        then.car.never(YOU_SHALL_NOT_PASS).leaves();
+        when.trafficLight.placeUnderManualControl();
+        then.trafficLight.never().changesTrafficLightTo(LightColour.GREEN);
+        then.trafficLight.never().changesPedestrianLightTo(LightColour.RED);
 
-        //waiting for a while, so we are sure car is not passing
-        then.time.waitForDuration(2, TimeUnit.MINUTES);
-
-        //change traffic light to green, car can now leave
-        when.trafficLight.isChangedTo(LightColour.GREEN);
-
-        //remove the YOU_SHALL_NOT_PASS restriction, as we now want the car to move
-        then.unordered.removesUnorderedSteps(YOU_SHALL_NOT_PASS);
-
-        //car leaves
-        then.car.leaves();
+        then.simulation.hasFinished("Wait until simulation end to verify the never conditions.");
     }
 }

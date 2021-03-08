@@ -21,18 +21,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.event.scheduling.Cancelable;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficConfig.TrafficLight;
+import com.ocadotechnology.validation.Failer;
 
 public class TrafficLightController implements RestHandler {
 
+    public enum Mode {
+        /*
+        Only schedule light change if the pedestrian light is GREEN. Otherwise, vehicles should continue to move until
+        a pedestrian crossing is requested via a button press.
+        */
+        PEDESTRIAN_REQUEST_ONLY,
+        /*
+        Always cycle lights. A pedestrian crossing request via a button press may separately adjust the cycle durations.
+        */
+        AUTOMATIC_CHANGE,
+        /*
+        Do nothing in manual mode. A pedestrian button press will still schedule a light change.
+        In this case the lights will never switch back and vehicles will be stuck.
+        */
+        MANUAL
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(TrafficLightController.class);
     private static final int CYCLE_CHANGE_DELAY = 100;
-    private final boolean automaticTrafficLightChangeEnabled;
     private final double pedestrianButtonPressLightChangeDelay;
 
     private final RestSender restSender;
@@ -40,6 +58,7 @@ public class TrafficLightController implements RestHandler {
     private final EventScheduler scheduler;
     private final ImmutableMap<LightColour, Long> lightDurationsForTraffic;
     private TrafficLightState currentState;
+    private Mode trafficLightMode;
     private double timeOfPreviousCycleChange;
 
     private Cancelable nextCycleEvent;
@@ -58,17 +77,36 @@ public class TrafficLightController implements RestHandler {
                 .build();
 
         this.pedestrianButtonPressLightChangeDelay = trafficConfig.getValue(TrafficLight.PEDESTRIAN_CROSSING_CHANGE_DELAY).asTime();
-        this.automaticTrafficLightChangeEnabled = trafficConfig.getValue(TrafficLight.ENABLE_AUTOMATIC_CHANGE).asBoolean();
+        this.trafficLightMode = trafficConfig.getValue(TrafficLight.MODE).asEnum(Mode.class);
+        Preconditions.checkState(!trafficLightMode.equals(Mode.MANUAL), "%s mode is only allowed in testing.", Mode.MANUAL.toString());
 
         scheduler.doNow(() -> initialiseTrafficLight(startingTrafficLightColour, startingPedestrianLightColour));
     }
 
     private void initialiseTrafficLight(LightColour lightColour, LightColour pedestrianColour) {
         this.currentState = new TrafficLightState(lightColour, pedestrianColour, false);
-        updateTrafficLights(Function.identity());
+        updateTrafficLightState(Function.identity());
 
-        if (automaticTrafficLightChangeEnabled || currentState.canPedestrianCross()) {
-            scheduleNextCycleIn(getDurationOfCycle(currentState));
+        scheduleNextEventInMode();
+    }
+
+    private void scheduleNextEventInMode() {
+        switch (trafficLightMode) {
+            case PEDESTRIAN_REQUEST_ONLY:
+                if (currentState.canPedestrianCross()) {
+                    scheduleNextCycleIn(getDurationOfCycle(currentState));
+                }
+                break;
+
+            case AUTOMATIC_CHANGE:
+                scheduleNextCycleIn(getDurationOfCycle(currentState));
+                break;
+
+            case MANUAL:
+                break;
+
+            default:
+                throw Failer.fail("Unrecognised mode {}", trafficLightMode);
         }
     }
 
@@ -78,7 +116,7 @@ public class TrafficLightController implements RestHandler {
             return;
         }
 
-        updateTrafficLights(builder -> builder.setCrossingRequested(true));
+        updateTrafficLightState(builder -> builder.setCrossingRequested(true));
 
         double currentCycleElapsedTime = scheduler.getTimeProvider().getTime() - timeOfPreviousCycleChange;
         double minimumCycleDuration = getDurationOfCycle(currentState);
@@ -97,19 +135,17 @@ public class TrafficLightController implements RestHandler {
         TrafficLightState.LightType nextToTurnGreen = currentState.nextTypeToTurnGreen();
         TrafficLightState.LightType nextToTurnRed = TrafficLightState.LightType.getInverse(nextToTurnGreen);
 
-        updateTrafficLights(builder -> builder.setColourForType(nextToTurnRed, LightColour.RED));
+        updateTrafficLightState(builder -> builder.setColourForType(nextToTurnRed, LightColour.RED));
 
         scheduler.doIn(CYCLE_CHANGE_DELAY, (now) -> {
-            updateTrafficLights(builder -> builder.setColourForType(nextToTurnGreen, LightColour.GREEN).setCrossingRequested(false));
+            updateTrafficLightState(builder -> builder.setColourForType(nextToTurnGreen, LightColour.GREEN).setCrossingRequested(false));
             timeOfPreviousCycleChange = now;
 
-            if (automaticTrafficLightChangeEnabled || currentState.canPedestrianCross()) {
-                scheduleNextCycleIn(getDurationOfCycle(currentState));
-            }
+            scheduleNextEventInMode();
         }, "Finish light change event.");
     }
 
-    private void updateTrafficLights(Function<TrafficLightState.Builder, TrafficLightState.Builder> mutator) {
+    private void updateTrafficLightState(Function<TrafficLightState.Builder, TrafficLightState.Builder> mutator) {
         TrafficLightState oldState = currentState;
         currentState = mutator.apply(currentState.builder()).build();
         lightsStateChanged(oldState, currentState);
@@ -134,9 +170,17 @@ public class TrafficLightController implements RestHandler {
     @VisibleForTesting
     public void setTrafficLight(LightColour lightColour) {
         LightColour pedestrianColour = LightColour.getInverse(lightColour);
-        updateTrafficLights(builder -> builder.setPedestrianColour(pedestrianColour).setLightColour(lightColour));
+        updateTrafficLightState(builder -> builder.setPedestrianColour(pedestrianColour).setLightColour(lightColour));
 
         scheduleNextCycleIn(getDurationOfCycle(currentState));
+    }
+
+    @VisibleForTesting
+    public void placeUnderManualControl() {
+        if (nextCycleEvent != null) {
+            nextCycleEvent.cancel();
+        }
+        trafficLightMode = Mode.MANUAL;
     }
 
 }

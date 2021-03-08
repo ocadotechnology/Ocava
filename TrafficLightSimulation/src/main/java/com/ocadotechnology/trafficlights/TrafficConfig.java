@@ -25,7 +25,10 @@ public enum TrafficConfig {
         RED_LIGHT_INTERVAL,
         GREEN_LIGHT_INTERVAL,
         PEDESTRIAN_CROSSING_CHANGE_DELAY,
-        ENABLE_AUTOMATIC_CHANGE,
+        /**
+         * See {@link com.ocadotechnology.trafficlights.controller.TrafficLightController.Mode} for available modes.
+         */
+        MODE,
     }
 
     public enum Vehicles {

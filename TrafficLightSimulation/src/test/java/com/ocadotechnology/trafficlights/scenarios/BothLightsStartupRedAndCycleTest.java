@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import com.ocadotechnology.scenario.Story;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficSimulationStory;
+import com.ocadotechnology.trafficlights.controller.TrafficLightController.Mode;
 
 @Story
 public class BothLightsStartupRedAndCycleTest extends TrafficSimulationStory {
@@ -33,7 +34,7 @@ public class BothLightsStartupRedAndCycleTest extends TrafficSimulationStory {
     void scenario() {
         given.config.set(INITIAL_TRAFFIC_STATE, RED);
         given.config.set(INITIAL_PEDESTRIAN_STATE, RED);
-        given.config.set(TrafficConfig.TrafficLight.ENABLE_AUTOMATIC_CHANGE, true);
+        given.config.set(TrafficConfig.TrafficLight.MODE, Mode.AUTOMATIC_CHANGE);
 
         when.simulation.starts();
 
