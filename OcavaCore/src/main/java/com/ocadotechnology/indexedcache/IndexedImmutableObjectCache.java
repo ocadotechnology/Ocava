@@ -22,6 +22,7 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -40,11 +41,21 @@ import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
 
-/** <p>This implementation is <em>not</em> thread-safe.</p>
- *  <p>Calling any method which modifies the cache from within a listener is <em>not</em> permitted and will throw
- *  a ConcurrentModificationException.
- *  This is to prevent out-of-order updates, where some listeners may be notified of the second cache
- *  update before notification of the first.</p>
+/**
+ * This implementation is <em>not</em> thread-safe.
+ *
+ * Calling any method which modifies the cache while another invocation is modifying the cache will cause a
+ * ConcurrentModificationException.
+ *
+ * Calling any method which queries the cache while another invocation is modifying the cache will cause a
+ * ConcurrentModificationException
+ *
+ * Calling a method which updates the cache while another invocation is querying the cache will not be detected.  This
+ * is a limitation of the implementation, designed to be as performant as possible.  It is expected that thorough test
+ * coverage of the calling code should detect this case as it seems unlikely that a multi-threaded approach could ensure
+ * that the overlap only ever occurred in one direction
+ *
+ * Calling a method which queries the cache while another invocation is querying the cache is deliberately permitted.
  */
 public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> implements StateChangeListenable<C> {
     /** There are several implementations of PredicateIndex and OptionalOneToOneIndex.<br>
@@ -63,7 +74,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     private final List<CacheStateChangeListener<C>> stateChangeListeners = new ArrayList<>();
     private final List<AtomicStateChangeListener<C>> atomicStateChangeListeners = new ArrayList<>();
 
-    private transient boolean updateIndexesInProgressReEntryLatch;  // true if we're already updating the indexes (notifying stateChangeListeners)
+    private final AtomicReference<String> updatingThread = new AtomicReference<>(null); // The thread name of the thread currently updating the cache, null if no update is ongoing
 
     public static <C extends Identified<? extends I>, I> IndexedImmutableObjectCache<C, I> createHashMapBackedCache() {
         return new IndexedImmutableObjectCache<>(new HashMapObjectStore<>(128, 0.99f));
@@ -85,8 +96,13 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws CacheUpdateException if any expected values do not match the objects present in the cache
      */
     public void updateAll(ImmutableCollection<Change<C>> updates) throws CacheUpdateException {
-        objectStore.updateAll(updates);
-        updateIndexes(updates);
+        try {
+            updateStarting();
+            objectStore.updateAll(updates);
+            updateIndexes(updates);
+        } finally {
+            updateComplete();
+        }
     }
 
     /**
@@ -96,8 +112,13 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws CacheUpdateException if any objects are already present in the cache with matching ids
      */
     public void addAll(ImmutableCollection<C> newObjects) throws CacheUpdateException {
-        objectStore.addAll(newObjects);
-        updateIndexes(newObjects.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+        try {
+            updateStarting();
+            objectStore.addAll(newObjects);
+            updateIndexes(newObjects.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+        } finally {
+            updateComplete();
+        }
     }
 
     /**
@@ -107,8 +128,13 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws CacheUpdateException if there is an object stored in the cache with the provided id
      */
     public void add(C newObject) throws CacheUpdateException {
-        objectStore.add(newObject);
-        updateIndexes(newObject, null);
+        try {
+            updateStarting();
+            objectStore.add(newObject);
+            updateIndexes(newObject, null);
+        } finally {
+            updateComplete();
+        }
     }
 
     /**
@@ -121,11 +147,16 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws IllegalArgumentException if both original and newObject are null
      */
     public void update(@Nullable C original, @Nullable C newObject) throws CacheUpdateException {
-        if (original == newObject) {
-            return;
+        try {
+            updateStarting();
+            if (original == newObject) {
+                return;
+            }
+            objectStore.update(original, newObject);
+            updateIndexes(newObject, original);
+        } finally {
+            updateComplete();
         }
-        objectStore.update(original, newObject);
-        updateIndexes(newObject, original);
     }
 
     /**
@@ -139,9 +170,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws CacheUpdateException if any of the provided ids do not map to objects in the cache
      */
     public ImmutableCollection<C> deleteAll(ImmutableCollection<Identity<? extends I>> ids) throws CacheUpdateException {
-        ImmutableCollection<C> oldObjects = objectStore.deleteAll(ids);
-        updateIndexes(oldObjects.stream().map(Change::delete).collect(ImmutableList.toImmutableList()));
-        return oldObjects;
+        try {
+            updateStarting();
+            ImmutableCollection<C> oldObjects = objectStore.deleteAll(ids);
+            updateIndexes(oldObjects.stream().map(Change::delete).collect(ImmutableList.toImmutableList()));
+            return oldObjects;
+        } finally {
+            updateComplete();
+        }
     }
 
     /**
@@ -154,9 +190,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      * @throws CacheUpdateException if the provided id does not map to one in the cache
      */
     public C delete(Identity<? extends I> id) throws CacheUpdateException {
-        C old = objectStore.delete(id);
-        updateIndexes(null, old);
-        return old;
+        try {
+            updateStarting();
+            C old = objectStore.delete(id);
+            updateIndexes(null, old);
+            return old;
+        } finally {
+            updateComplete();
+        }
     }
 
     @Override
@@ -410,10 +451,12 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public C get(Identity<I> id) {
+        verifyCanQuery();
         return objectStore.get(id);
     }
 
     public boolean containsId(Identity<I> id) {
+        verifyCanQuery();
         return objectStore.containsId(id);
     }
 
@@ -427,45 +470,43 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
 
     @Override
     public Stream<C> stream() {
+        verifyCanQuery();
         return objectStore.stream();
     }
 
     @Override
     public UnmodifiableIterator<C> iterator() {
+        verifyCanQuery();
         return objectStore.iterator();
     }
 
     @Override
     public void forEach(Consumer<C> action) {
+        verifyCanQuery();
         objectStore.forEach(action);
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Index<? super C>> T addIndex(T index) {
-        // The cast is safe as the objects in the cache should be immutable and the interface uses only immutable collections
-        Index<C> castedIndex = (Index<C>)index;
-        indexes.add(castedIndex);
+        try {
+            updateStarting();
+            // The cast is safe as the objects in the cache should be immutable and the interface uses only immutable collections
+            Index<C> castedIndex = (Index<C>) index;
+            indexes.add(castedIndex);
 
-        //Do not collect to an ImmutableSet - Guava's default collector does not infer the stream size
-        //which results in a lot of collisions and array extensions.
-        castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
-        return index;
+            //Do not collect to an ImmutableSet - Guava's default collector does not infer the stream size
+            //which results in a lot of collisions and array extensions.
+            castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+            return index;
+        } finally {
+            updateComplete();
+        }
     }
 
     private void updateIndexes(C newValue, C oldValue) {
-        if (updateIndexesInProgressReEntryLatch) {
-            throw new ConcurrentModificationException(this.toString());
-        }
-        try {
-            updateIndexesInProgressReEntryLatch = true;
-
-            indexes.forEach(i -> i.update(newValue, oldValue));
-            updateStateChangeListeners(oldValue, newValue);
-            updateAtomicStateChangeListeners(oldValue, newValue);
-        }
-        finally {
-            updateIndexesInProgressReEntryLatch = false;
-        }
+        indexes.forEach(i -> i.update(newValue, oldValue));
+        updateStateChangeListeners(oldValue, newValue);
+        updateAtomicStateChangeListeners(oldValue, newValue);
     }
 
     private void updateAtomicStateChangeListeners(@Nullable C oldValue, @Nullable C newValue) {
@@ -478,20 +519,10 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     private void updateIndexes(ImmutableCollection<Change<C>> changes) {
-        if (updateIndexesInProgressReEntryLatch) {
-            throw new ConcurrentModificationException(this.toString());
-        }
-        try {
-            updateIndexesInProgressReEntryLatch = true;
-
-            indexes.forEach(i -> i.updateAll(changes));
-            changes.forEach(update -> updateStateChangeListeners(update.originalObject, update.newObject));
-            if (!atomicStateChangeListeners.isEmpty()) {
-                atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
-            }
-        }
-        finally {
-            updateIndexesInProgressReEntryLatch = false;
+        indexes.forEach(i -> i.updateAll(changes));
+        changes.forEach(update -> updateStateChangeListeners(update.originalObject, update.newObject));
+        if (!atomicStateChangeListeners.isEmpty()) {
+            atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
         }
     }
 
@@ -500,9 +531,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public void clear() {
-        ImmutableCollection<Change<C>> clearedObjects = objectStore.stream().map(Change::delete).collect(ImmutableList.toImmutableList());
-        objectStore.clear();
-        updateIndexes(clearedObjects);
+        try {
+            updateStarting();
+            ImmutableCollection<Change<C>> clearedObjects = objectStore.stream().map(Change::delete).collect(ImmutableList.toImmutableList());
+            objectStore.clear();
+            updateIndexes(clearedObjects);
+        } finally {
+            updateComplete();
+        }
     }
 
     @Override
@@ -513,7 +549,44 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public ImmutableMap<Identity<? extends I>, C> snapshotObjects() {
+        verifyCanQuery();
         return objectStore.snapshot();
+    }
+
+    private void verifyCanQuery() {
+        if (updatingThread.get() != null) {
+            failQuery();
+        }
+    }
+
+    /**
+     * Method separated out to make it easier for the JVM to inline the queryStarting method for performance
+     */
+    private void failQuery() {
+        throw new ConcurrentModificationException(
+                String.format("Attempting to query cache while an update is ongoing. currentThread=[%s] updatingThread=[%s]",
+                        Thread.currentThread().getName(),
+                        updatingThread));
+    }
+
+    private void updateStarting() {
+        if (!updatingThread.compareAndSet(null, Thread.currentThread().getName())) {
+            failUpdate();
+        }
+    }
+
+    /**
+     * Method separated out to make it easier for the JVM to inline the updateStarting method for performance
+     */
+    private void failUpdate() {
+        throw new ConcurrentModificationException(
+                String.format("Attempting to update cache while another update is ongoing. currentThread=[%s] otherThread=[%s]",
+                        Thread.currentThread().getName(),
+                        updatingThread));
+    }
+
+    private void updateComplete() {
+        updatingThread.compareAndSet(Thread.currentThread().getName(), null);
     }
 
 }
