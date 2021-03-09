@@ -288,11 +288,11 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         switch (hint) {
             case optimiseForUpdate:
                 // We could consider a lazy index (build on first query), but our currently use case doesn't justify that
-                return addIndex(new UncachedPredicateIndex<C, I>(this, predicate));
+                return addIndex(new UncachedPredicateIndex<>(this, predicate));
             case optimiseForQuery:
-                return addIndex(new DefaultPredicateIndex<C>(predicate));
+                return addIndex(new DefaultPredicateIndex<>(predicate));
             case optimiseForInfrequentChanges:
-                return addIndex(new IdCachedPredicateIndex<C, I>(this, predicate));
+                return addIndex(new IdCachedPredicateIndex<>(this, predicate));
             default:
                 throw new UnsupportedOperationException("Missing case:" + hint);
         }
@@ -451,12 +451,10 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public C get(Identity<I> id) {
-        verifyCanQuery();
         return objectStore.get(id);
     }
 
     public boolean containsId(Identity<I> id) {
-        verifyCanQuery();
         return objectStore.containsId(id);
     }
 
@@ -470,19 +468,16 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
 
     @Override
     public Stream<C> stream() {
-        verifyCanQuery();
         return objectStore.stream();
     }
 
     @Override
     public UnmodifiableIterator<C> iterator() {
-        verifyCanQuery();
         return objectStore.iterator();
     }
 
     @Override
     public void forEach(Consumer<C> action) {
-        verifyCanQuery();
         objectStore.forEach(action);
     }
 
@@ -549,24 +544,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public ImmutableMap<Identity<? extends I>, C> snapshotObjects() {
-        verifyCanQuery();
         return objectStore.snapshot();
-    }
-
-    private void verifyCanQuery() {
-        if (updatingThread.get() != null) {
-            failQuery();
-        }
-    }
-
-    /**
-     * Method separated out to make it easier for the JVM to inline the queryStarting method for performance
-     */
-    private void failQuery() {
-        throw new ConcurrentModificationException(
-                String.format("Attempting to query cache while an update is ongoing. currentThread=[%s] updatingThread=[%s]",
-                        Thread.currentThread().getName(),
-                        updatingThread));
     }
 
     private void updateStarting() {

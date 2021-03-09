@@ -49,11 +49,9 @@ public class ConcurrentAccessTest {
     }
 
     @Test
-    void queryConcurrentlyFromSameThread_fails() {
+    void queryConcurrentlyFromSameThread_passes() {
         cache.registerStateChangeListener((oldState, newState) -> cache.get(ID_2));
-
-        ConcurrentModificationException e = assertThrows(ConcurrentModificationException.class, () -> cache.delete(ID_1));
-        assertTrue(e.getMessage().contains(Thread.currentThread().getName()), "Error message should reference current thread");
+        cache.delete(ID_1);
     }
 
     @Test
@@ -67,17 +65,17 @@ public class ConcurrentAccessTest {
     @Test
     void updateFromMultipleThreads_fails() throws InterruptedException {
         testWithMultipleThreads(
-                () -> cache.get(ID_1),
+                () -> cache.update(cache.get(ID_1), new TestState(ID_1, false, 10)),
                 () -> cache.update(cache.get(ID_2), new TestState(ID_2, false, 10)),
                 true);
     }
 
     @Test
-    void updateAndQueryFromSeparateThreads_fails() throws InterruptedException {
+    void updateAndQueryFromSeparateThreads_passes() throws InterruptedException {
         testWithMultipleThreads(
-                () -> cache.update(cache.get(ID_1), new TestState(ID_1, false, 10)),
+                () -> cache.get(ID_1),
                 () -> cache.update(cache.get(ID_2), new TestState(ID_2, false, 10)),
-                true);
+                false);
     }
 
     private void testWithMultipleThreads(Runnable action1, Runnable action2, boolean expectsFailure) throws InterruptedException {
