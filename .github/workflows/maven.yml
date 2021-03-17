@@ -18,8 +18,10 @@ name: Java CI
 
 on:
   push:
-    branches:
-    - master
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   test:
