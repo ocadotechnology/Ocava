@@ -32,7 +32,7 @@ As a result, unordered step only receives notifications from the point of time w
 
 I.e., for unordered step to receive all notifications which happen in a scenario, it has to be defined before all of the ordered steps.
 
-If  any ordered steps are defined before unordered step, then this unordered step will not receive any notifications which happen before all prior ordered steps complete.
+If any ordered steps are defined before unordered step, then this unordered step will not receive any notifications which happen before all prior ordered steps complete.
 
 Consider the following scenario
 ```

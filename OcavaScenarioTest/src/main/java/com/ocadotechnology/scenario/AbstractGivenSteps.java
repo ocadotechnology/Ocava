@@ -21,10 +21,10 @@ import com.ocadotechnology.id.StringIdGenerator;
 import com.ocadotechnology.notification.Notification;
 
 public abstract class AbstractGivenSteps {
-    protected final StepManager stepManager;
+    protected final StepManager<?> stepManager;
     private final NotificationCache notificationCache;
 
-    protected AbstractGivenSteps(StepManager stepManager, NotificationCache notificationCache) {
+    protected AbstractGivenSteps(StepManager<?> stepManager, NotificationCache notificationCache) {
         this.stepManager = stepManager;
         this.notificationCache = notificationCache;
     }
