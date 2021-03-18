@@ -109,7 +109,7 @@ public class Traversal implements Serializable {
             throw new TraversalCalculationException("Negative distance provided.");
         }
         if (distance >= totalDistance) {
-            throw new TraversalCalculationException("Distance beyond end of traversal provided");
+            throw new TraversalCalculationException("Distance provided " + distance + " is beyond total traversal distance " + totalDistance);
         }
 
         return SegmentGraphUtilities.accumulateValueTo(
@@ -162,7 +162,7 @@ public class Traversal implements Serializable {
             throw new TraversalCalculationException("Negative distance provided.");
         }
         if (distance >= totalDistance) {
-            throw new TraversalCalculationException("Distance beyond end of traversal provided");
+            throw new TraversalCalculationException("Distance provided " + distance + " is beyond total traversal distance " + totalDistance);
         }
 
         return SegmentGraphUtilities.getValueAt(
@@ -214,7 +214,7 @@ public class Traversal implements Serializable {
             throw new TraversalCalculationException("Negative distance provided.");
         }
         if (distance >= totalDistance) {
-            throw new TraversalCalculationException("Distance beyond end of traversal provided");
+            throw new TraversalCalculationException("Distance provided " + distance + " is beyond total traversal distance " + totalDistance);
         }
 
         return SegmentGraphUtilities.getValueAt(
