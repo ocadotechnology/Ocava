@@ -61,8 +61,8 @@ public class CSVRow<T extends CSVColumn> {
 
         if (!csvColumn.isNullable()) {
             Preconditions.checkState(
-                    !value.equals(""),
-                    header + " should not be null");
+                    !"".equals(value),
+                    header + " should not be empty");
         }
 
         return value;

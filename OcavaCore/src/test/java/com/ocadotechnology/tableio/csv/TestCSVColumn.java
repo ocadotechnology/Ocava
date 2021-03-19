@@ -16,16 +16,25 @@
 package com.ocadotechnology.tableio.csv;
 
 public enum TestCSVColumn implements CSVColumn {
+    STRING,
     INTEGER,
     DOUBLE,
     BIG_DECIMAL,
     BOOLEAN,
     ENUM,
-    MISSING;
+    DO_NOT_ALLOW_MISSING_VALUE,
+    ALLOW_MISSING_COLUMN,
+    ALLOW_MISSING_COLUMN_NOT_MISSING_VALUE,
+    ;
 
     @Override
     public boolean isNullable() {
-        return this != MISSING;
+        return !this.equals(DO_NOT_ALLOW_MISSING_VALUE) && !this.equals(ALLOW_MISSING_COLUMN_NOT_MISSING_VALUE);
+    }
+
+    @Override
+    public boolean allowMissingColumn() {
+        return this.equals(ALLOW_MISSING_COLUMN) || this.equals(ALLOW_MISSING_COLUMN_NOT_MISSING_VALUE);
     }
 
 }
