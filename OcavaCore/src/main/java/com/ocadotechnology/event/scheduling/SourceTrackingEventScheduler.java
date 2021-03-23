@@ -58,33 +58,73 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
      * start running again at the latest of the current and new pause end times.
      */
     public void delayExecutionUntil(double delayEndTime) {
-        logger.info("Delaying execution on thread {} until {}", type, EventUtil.eventTimeToString(delayEndTime));
+        delayExecutionUntil(delayEndTime, false);
+    }
 
-        delayed.set(true);
+    /**
+     * Stops this scheduler (simulated thread) from executing any tasks before dealyEndTime.<br>
+     * <em>Other schedulers (simulated threads) are unaffected.</em><br><br>
+     *
+     * There are two return-from-this-call behaviours:<br>
+     * Blocking behaviour:<br>
+     *     "This method returns when the timeProvider time equals delayEndTime.
+     *      No events will have run for this scheduler, but other schedulers (simulated threads)
+     *      will have run through all their events up to delayEndTime.<br>
+     *      Any doNow events the caller then adds will run after all overdue delayed events have run
+     *      (but before any doNow events those delayed events may add).
+     *      Any doAt events the caller adds will run after all delayed events
+     *      (we only add doAt events in the future, so this is expected behaviour).
+     *      The delayed events will only start executing once the caller event has completed."
+     * <br>
+     * Non-blocking behaviour:<br>
+     *     "This method returns immediately (with time unchanged).
+     *      No events will have run for this scheduler (or any others) as no time has passed.<br>
+     *      Any doNow events the caller then adds will be run first.
+     *      Any doAt events the caller adds will be run in time order (as expected),
+     *      The caller can schedule events earlier than delayedEndTime (as long as they are after "now")
+     *      and they will be executed in order at the maximum of delayedEndTime and their scheduled time.
+     * <br><br>
+     * <em>This method is reentrant safe.</em>
+     */
+    public void delayExecutionUntil(double delayEndTime, boolean blocking) {
+        logger.info("Delaying execution on thread {}: {} until {}",
+                type, (blocking ? "blocking" : "non-blocking"), EventUtil.logTime(delayEndTime));
 
         if (this.delayEndTime.get() >= delayEndTime) {
+            // Either we're trying to delay in the past (in which case delayedEndEvent will be null and we should not delay)
+            // or, we're delaying within a delay (in which case delayedEndEvent will not be null and we're already delaying)
             return;
         }
+
+        delayed.set(true);
 
         if (delayEndEvent != null) {
             delayEndEvent.cancel();
         }
 
-        //Use the backing scheduler so that ending the delay is not itself delayed.  Would cause an infinite loop.
         this.delayEndTime.set(delayEndTime);
         double delayStartTime = getTimeProvider().getTime();
-        delayEndEvent = backingScheduler.doAt(delayEndTime, () -> delayFinished(delayStartTime));
+        // Use the backing scheduler so that ending the delay is not itself delayed.  Would cause an infinite loop.
+        delayEndEvent = backingScheduler.doAt(delayEndTime, () -> delayFinished(delayStartTime), "Scheduler " + type + (blocking ? " blocking" : " delayed"));
+        if (blocking) {
+            // This causes the scheduler to run through all events up to delayEndTime and call "wrappedDoAt/Now" for each
+            // which adds to the delayedDoNowRunnables.
+            backingScheduler.blockEvent(() -> !delayed.get());  // exitCondition should be true when the delay is over
+        }
     }
 
     private void delayFinished(double delayStartTime) {
-        logger.info("Resuming execution on thread {}. Pause started at {}", type, EventUtil.eventTimeToString(delayStartTime));
+        logger.info("Resuming execution on thread {}. Pause started at {}", type, EventUtil.logTime(delayStartTime));
 
         delayed.set(false);
         delayEndEvent = null;
-        //doNow to preserve ordering.
+
+        // The doNow queue will be empty (otherwise we wouldn't have run our doAt).
+        // We don't want to actually run the delayed Runnables now as they'll interfere with the blocking Runnable (if any)
+        // So, we can schedule them on the doNow queue to preserve ordering.
         delayedDoNowRunnables.stream()
                 .filter(h -> !h.wasCancelled)
-                .forEach(this::doNow);
+                .forEach(this::doNow);  // schedules
         delayedDoNowRunnables.clear();
     }
 

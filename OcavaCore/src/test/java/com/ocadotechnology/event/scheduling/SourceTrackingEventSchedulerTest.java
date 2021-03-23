@@ -240,4 +240,57 @@ public class SourceTrackingEventSchedulerTest {
             });
         }
     }
+
+    @Nested
+    @DisplayName("Thread blocking behaviour tests")
+    class ThreadPauseBlockingBehaviourTests {
+        private final List<String> eventList = new ArrayList<>();
+
+        @Test
+        @DisplayName("When delayExecutionUntil doesn't pause current event, we can still schedule but not execute")
+        void whenThreadPausedButNotBlocked_thenEventContinuesAndSchedules() {
+            double pauseTime = threadOneScheduler.getTimeProvider().getTime() + 10_000;
+            double pauseEndTime = pauseTime + 1_000;
+
+            threadTwoScheduler.doAt(pauseTime - 10, () -> eventList.add("2_PRE_PAUSE"));
+            threadOneScheduler.doAt(pauseTime, () -> {
+                threadOneScheduler.delayExecutionUntil(pauseEndTime, false);
+
+                eventList.add("1_CONTINUES");
+                threadTwoScheduler.doNow(() -> eventList.add("2_IN_PAUSE"));  // added immediately -- run now
+                threadOneScheduler.doNow(() -> eventList.add("1_IN_PAUSE"));  // added immediately -- run later
+            });
+            // This should not be run until thread1 is un-paused
+            threadOneScheduler.doAt(pauseTime + 10, () -> eventList.add("1_DELAYED"));
+
+            // This should run at +20 and be undelayed
+            threadTwoScheduler.doAt(pauseTime + 20, () -> eventList.add("2_POST_PAUSE"));
+            backingScheduler.unPause();
+
+            ImmutableList<String> expectedEvents = ImmutableList.of("2_PRE_PAUSE", "1_CONTINUES", "2_IN_PAUSE", "2_POST_PAUSE", "1_IN_PAUSE", "1_DELAYED");
+            Assertions.assertEquals(expectedEvents, ImmutableList.copyOf(eventList), "Incorrect events recorded");
+        }
+        @Test
+        @DisplayName("When delayedExecutionUntil also pauses the current event, then nothing happens until unpaused")
+        void whenThreadPausedAndBlocked_thenEventStopsUntilThreadUnpaused() {
+            double pauseTime = threadOneScheduler.getTimeProvider().getTime() + 10_000;
+            double pauseEndTime = pauseTime + 1_000;
+
+            threadTwoScheduler.doAt(pauseTime - 10, () -> eventList.add("2_PRE_PAUSE"));
+            threadOneScheduler.doAt(pauseTime, () -> {
+                threadOneScheduler.delayExecutionUntil(pauseEndTime, true);  // blocks
+
+                // code should only be run after thead1 unpauses
+                eventList.add("1_CONTINUES");
+                threadTwoScheduler.doNow(() -> eventList.add("2_IN_PAUSE"));
+                threadOneScheduler.doNow(() -> eventList.add("1_IN_PAUSE"));
+            });
+            threadOneScheduler.doAt(pauseTime + 10, () -> eventList.add("1_DELAYED"));
+            threadTwoScheduler.doAt(pauseTime + 20, () -> eventList.add("2_POST_PAUSE"));
+            backingScheduler.unPause();
+
+            ImmutableList<String> expectedEvents = ImmutableList.of("2_PRE_PAUSE", "2_POST_PAUSE", "1_CONTINUES", "2_IN_PAUSE", "1_IN_PAUSE", "1_DELAYED");
+            Assertions.assertEquals(expectedEvents, ImmutableList.copyOf(eventList), "Incorrect events recorded");
+        }
+    }
 }
