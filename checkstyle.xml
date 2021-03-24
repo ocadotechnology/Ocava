@@ -113,6 +113,12 @@ See http://checkstyle.sourceforge.net/checks.html for available checks
         <property name="message" value="Logger message string includes '%s' instead of '{}'"/>
     </module>
 
+    <!-- Detects logger.info("Time {}", EventUtil.eventTimeToString(t));  eventTimeToString is slow and unnecessary for many log lines. -->
+    <module name="RegexpMultiline">
+        <property name="format" value="\slog(?:ger)?\s*\.\s*\w+\(.*EventUtil\.eventTimeToString\(.*\)"/>
+        <property name="message" value="Logger pre-calculates time string (it may not be needed).  Use EventUtil.logTime instead."/>
+    </module>
+
     <module name="RegexpMultiline">
         <property name="format" value="\sclass\sFailureListener\s(?:.*\n)*\s*failIfEnabled\s*\([^&quot;)]*(?:&quot;[^&quot;]*&quot;[^&quot;)]*)*&quot;[^&quot;]*\{\}"/>
         <property name="message" value="Failer.fail message string includes '{}' instead of '%s'"/>

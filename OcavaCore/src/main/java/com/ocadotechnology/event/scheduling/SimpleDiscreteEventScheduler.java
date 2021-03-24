@@ -151,7 +151,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
                 simpleEventExecutor.execute(nextEvent, timeProvider.getTime());
             } catch (Throwable t) {
                 if (shouldLogExceptions) {
-                    logger.error("Throwable caught at {} whilst processing {}", EventUtil.eventTimeToString(timeProvider.getTime()), nextEvent, t);
+                    logger.error("Throwable caught at {} whilst processing {}", EventUtil.logTime(timeProvider.getTime()), nextEvent, t);
                 }
                 stop(t);
 

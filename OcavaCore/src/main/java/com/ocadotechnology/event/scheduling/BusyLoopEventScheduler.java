@@ -192,7 +192,7 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
             Throwable cause = t.getCause();
             while (cause != null) {
                 if (cause instanceof RecoverableException) {
-                    String message = String.format("Scheduler %s attempting to recover at %s from failure processing %s", name, EventUtil.eventTimeToString(timeProvider.getTime()), lastEvent);
+                    String message = String.format("Scheduler %s attempting to recover at %s from failure processing %s", name, EventUtil.logTime(timeProvider.getTime()), lastEvent);
                     logger.error(message, cause);  // required method is error(message, throwable).  error(message, args, throwable) doesn't exist
                     RecoverableException exception = (RecoverableException) cause;
                     try {
@@ -219,7 +219,7 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
             String message = "Scheduler %s failed at %s whilst processing %s";
             try {
                 double time = timeProvider.getTime();
-                message = String.format(message, name, EventUtil.eventTimeToString(time), event);
+                message = String.format(message, name, EventUtil.logTime(time), event);
             } catch (Throwable ignoreMe) {
                 // ignore
             }
