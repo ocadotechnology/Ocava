@@ -34,7 +34,7 @@ public class Event implements Cancelable {
     };
 
     /**
-     * This is a long rather than Id<Event> for performance. It's private, so the extra type-safety of Id<Event> is
+     * This is a long rather than Id&lt;Event&gt; for performance. It's private, so the extra type-safety of Id&lt;Event&gt; is
      * of limited use anyway.
      */
     private final long id = idGenerator.getAndIncrement();
