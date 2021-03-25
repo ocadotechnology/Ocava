@@ -23,49 +23,49 @@ public class VehicleMotionPropertiesTest {
     @Test
     public void constructor_whenAllArgumentsAreValid_thenPasses () {
         Assertions.assertDoesNotThrow(
-                () -> new VehicleMotionProperties(1, -1, 1, 1, -1, -1, 1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, 1, 0, 1, -1, -1, 1));
     }
 
     @Test
     public void constructor_whenAccelerationIsNegative_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(-1, -1, 1, 1, -1, -1, 1));
+                () -> new VehicleMotionProperties(-1, 0, -1, 0, 1, 0, 1, -1, -1, 1));
     }
 
     @Test
     public void constructor_whenDecelerationIsPositive_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, 1, 1, 1, -1, -1, 1));
+                () -> new VehicleMotionProperties(1, 0, 1, 0, 1, 0, 1, -1, -1, 1));
     }
 
     @Test
     public void constructor_whenMaxSpeedIsNegative_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, -1, -1, 1, -1, -1, 1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, -1, 0, 1, -1, -1, 1));
     }
 
     @Test
     public void constructor_whenJerkAccelerationUpIsNegative_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, -1, 1, -1, -1, -1, 1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, 1, 0, -1, -1, -1, 1));
     }
 
     @Test
     public void constructor_whenJerkAccelerationDownIsPositive_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, -1, 1, 1, 1, -1, 1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, 1, 0, 1, 1, -1, 1));
     }
 
     @Test
     public void constructor_whenJerkDecelerationUpIsPositive_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, -1, 1, 1, -1, 1, 1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, 1, 0, 1, -1, 1, 1));
     }
 
     @Test
     public void constructor_whenJerkDecelerationDownIsNegative_thenFails () {
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> new VehicleMotionProperties(1, -1, 1, 1, -1, -1, -1));
+                () -> new VehicleMotionProperties(1, 0, -1, 0, 1, 0, 1, -1, -1, -1));
     }
 
 }

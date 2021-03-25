@@ -33,7 +33,7 @@ class BaseConstantJerkTraversalFactoryTest {
     private static final double jerkDecelerationUp = -2.2d;
     private static final double jerkDecelerationDown = 1.2d;
 
-    private static final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(acceleration, deceleration, maxSpeed, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
+    private static final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(maxSpeed, acceleration, deceleration, 0, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
 
     @Test
     void create_whenCalledForADistance_thenReturnsATraversalOfExactlyThatDistance() {

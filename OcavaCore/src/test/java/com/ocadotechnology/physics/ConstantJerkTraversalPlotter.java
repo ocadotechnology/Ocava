@@ -33,14 +33,7 @@ public class ConstantJerkTraversalPlotter {
 
         double errorFraction = 0.01;
 
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(
-                acceleration,
-                deceleration,
-                maxSpeed,
-                jerkAccelerationUp,
-                jerkAccelerationDown,
-                jerkDecelerationUp,
-                jerkDecelerationDown);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(maxSpeed, acceleration, jerkDecelerationDown, 0.01);
 
         Optional<ImmutableList<TraversalSection>> constantJerkSections = ConstantJerkSectionsFactory.maxAccelerationDecelerationAndSpeedReached(100d, vehicleMotionProperties);
         Traversal traversal = new Traversal(constantJerkSections.orElseThrow(Failer::valueExpected));

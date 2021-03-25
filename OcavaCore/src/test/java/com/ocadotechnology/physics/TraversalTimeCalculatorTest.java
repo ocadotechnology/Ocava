@@ -33,7 +33,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTime_notGoingAnywhere() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(0, 0, 0, vehicleMotionProperties);
         assertThat(ValuesInSIUnits.convertDuration(calcTime(traversal), TimeUnit.MILLISECONDS)).isZero();
     }
@@ -41,7 +41,7 @@ class TraversalTimeCalculatorTest {
     @Test
     void testCalcTraversalTime_nearInstantAccelDecel() {
 
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(999999999, -999999999, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 999999999, 1E-9, 0.01);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(
                 15,
                 0,
@@ -52,7 +52,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTime_reachingMaxSpeed() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
         assertThat(ValuesInSIUnits.convertDuration(calcTime(traversal), TimeUnit.MILLISECONDS)).isEqualTo(16);
 
@@ -60,14 +60,14 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTime_notReachingMaxSpeed() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 9999, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(9999, 1E-6, 1E-9, 0.01);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
         assertThat(ValuesInSIUnits.convertDuration(calcTime(traversal), TimeUnit.MILLISECONDS)).isCloseTo(7.75, within(EPSILON));
     }
 
     @Test
     void testCalcTraversalTime_wonkyAccelerationDeceleration() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(3E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 3E-6, -1E-6, 0, 1E-9, -1E-9, -1E-9, 1E-9);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(
                 15,
                 0,
@@ -78,7 +78,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTime_fractionalVals() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(3.5E-6, -1.5E-6, 1.25E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1.25E-3, 3.5E-6, -1.5E-6, 0, 1E-9, -1E-9, -1E-9, 1E-9);
         List<TraversalSection> traversal = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(
                 15.5,
                 0,
@@ -97,7 +97,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTimeAndSpeedAtDistance() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         ImmutableList<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
 
         assertThat(calcTraversalTimeAndSpeedAtDistanceInSIUnits(parts, 0)).containsExactly(new double[]{0, 0}, within(EPSILON));
@@ -112,7 +112,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTimeAndSpeedAtDistance_startAndEndAtMaxSpeed() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         ImmutableList<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 1E-3, 1E-3, vehicleMotionProperties);
 
         assertThat(calcTraversalTimeAndSpeedAtDistanceInSIUnits(parts, 0)).containsExactly(new double[]{0, 1}, within(EPSILON));
@@ -127,7 +127,7 @@ class TraversalTimeCalculatorTest {
 
     @Test
     void testCalcTraversalTimeAndSpeedAtDistance_nonZeroVelocities() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -2E-6, 5E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(5E-3, 1E-6, -2E-6, 0, 1E-9, -1E-9, -1E-9, 1E-9);
 
         ImmutableList<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 1E-3, 2E-3, vehicleMotionProperties);
 

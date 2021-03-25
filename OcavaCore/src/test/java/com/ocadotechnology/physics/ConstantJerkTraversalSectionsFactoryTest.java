@@ -47,7 +47,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     private final double jerkDecelerationUp = -1E-9;
     private final double jerkDecelerationDown = 1E-9;
 
-    private final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(acceleration, deceleration, maxSpeed, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
+    private final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(maxSpeed, acceleration, deceleration, 0, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
 
     @Test
     void neitherMaxAccelerationNorMaxDecelerationReached_whenTotalDistanceTooLongForThisCase_thenReturnAbsent() {
@@ -167,8 +167,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
         int numSections = sections1.size();
         Traversal traversal1 = new Traversal(sections1);
 
-        VehicleMotionProperties symetricallyFlippedVehicleProperties = new VehicleMotionProperties(-deceleration, -acceleration, maxSpeed, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp,
-                jerkDecelerationDown);
+        VehicleMotionProperties symetricallyFlippedVehicleProperties = new VehicleMotionProperties(maxSpeed, -deceleration, jerkDecelerationDown, 0.01);
 
         ImmutableList<TraversalSection> sections2 = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOther(24.452915, symetricallyFlippedVehicleProperties);
         Traversal traversal2 = new Traversal(sections2);
@@ -555,4 +554,3 @@ class ConstantJerkTraversalSectionsFactoryTest {
         return ValuesInSIUnits.convertJerk(jerk, LengthUnit.METERS, TimeUnit.MILLISECONDS);
     }
 }
-        

@@ -30,7 +30,7 @@ class ConstantAccelerationTraversalTimeFactoryTest {
 
     @Test
     void testGetTimeAtDistance_constantSpeed() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(9999999E-6, -9999999E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 9999999E-6, 1E-9, 0);
         List<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
 
         TraversalSection traversalTimePart = parts.get(1);
@@ -41,7 +41,7 @@ class ConstantAccelerationTraversalTimeFactoryTest {
 
     @Test
     void testGetTimeAtDistance_acceleration() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         List<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
 
         TraversalSection traversalTimePart = parts.get(0);
@@ -52,7 +52,7 @@ class ConstantAccelerationTraversalTimeFactoryTest {
 
     @Test
     void testGetTimeAtDistance_deceleration() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-6, -1E-6, 1E-3, 1E-9, -1E-9, -1E-9, 1E-9);
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(1E-3, 1E-6, 1E-9, 0.01);
         List<TraversalSection> parts = ConstantAccelerationTraversalTimeCalculator.calcTraversalTime(15, 0, 0, vehicleMotionProperties);
 
         TraversalSection constantAccelerationTraversalSection = parts.get(2);
