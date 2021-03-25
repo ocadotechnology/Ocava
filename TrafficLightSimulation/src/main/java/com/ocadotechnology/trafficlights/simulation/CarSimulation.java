@@ -21,11 +21,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.eventbus.Subscribe;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.notification.Subscriber;
-import com.ocadotechnology.trafficlights.SchedulerLayerType;
+import com.ocadotechnology.notification.SimpleSubscriber;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.simulation.entities.SimulatedCar;
 import com.ocadotechnology.trafficlights.simulation.entities.SimulatedTrafficLight;
@@ -35,7 +33,7 @@ import com.ocadotechnology.trafficlights.simulation.notification.CarsCanMoveNoti
  * Simulates cars queuing at a junction and only passing through (one by one) when the traffic light is green.
  * Car arrival is handled by {@link com.ocadotechnology.trafficlights.simulation.CarSpawner}
  */
-public class CarSimulation implements Subscriber {
+public class CarSimulation implements SimpleSubscriber {
     private static final Logger logger = LoggerFactory.getLogger(CarSimulation.class);
 
     private final EventScheduler scheduler;
@@ -98,10 +96,5 @@ public class CarSimulation implements Subscriber {
                     logger.info("Car {} starts moving.", nextSimulatedCar.getId());
                     scheduler.doIn(timeToLeaveJunction, () -> carLeavesJunction(nextSimulatedCar.getId()), "Vehicle leaves junction");
                 });
-    }
-
-    @Override
-    public EventSchedulerType getSchedulerType() {
-        return SchedulerLayerType.SIMULATION;
     }
 }

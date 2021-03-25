@@ -30,6 +30,7 @@ import com.ocadotechnology.event.scheduling.BusyLoopEventScheduler;
 import com.ocadotechnology.event.scheduling.EventExecutor;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
+import com.ocadotechnology.event.scheduling.SimpleEventSchedulerType;
 import com.ocadotechnology.event.scheduling.SourceSchedulerTracker;
 import com.ocadotechnology.event.scheduling.SourceTrackingEventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
@@ -148,20 +149,20 @@ public class TrafficSimulation implements Simulation {
     private static EventScheduler createScheduler(Config<TrafficConfig> config) {
         SchedulerType schedulerType = config.getValue(TrafficConfig.SCHEDULER_TYPE).asEnum(SchedulerType.class);
         switch (schedulerType) {
-            case SIMULATION:
+            case DISCRETE:
                 SimpleDiscreteEventScheduler simpleDiscreteEventScheduler = new SimpleDiscreteEventScheduler(
                         new EventExecutor(),
                         Runnables::doNothing,
-                        SchedulerLayerType.SIMULATION,
+                        SimpleEventSchedulerType.SIMULATION,
                         new AdjustableTimeProvider(0),
                         true);
 
-                SourceTrackingEventScheduler eventScheduler = new SourceTrackingEventScheduler(new SourceSchedulerTracker(), SchedulerLayerType.SIMULATION, simpleDiscreteEventScheduler);
+                SourceTrackingEventScheduler eventScheduler = new SourceTrackingEventScheduler(new SourceSchedulerTracker(), SimpleEventSchedulerType.SIMULATION, simpleDiscreteEventScheduler);
                 NotificationRouter.get().registerExecutionLayer(eventScheduler, SimpleBus.create());
 
                 return eventScheduler;
             case REALTIME:
-                BusyLoopEventScheduler busyLoopEventScheduler = new BusyLoopEventScheduler(new UtcTimeProvider(TimeUnit.MILLISECONDS), "Realtime scheduler", SchedulerLayerType.SIMULATION);
+                BusyLoopEventScheduler busyLoopEventScheduler = new BusyLoopEventScheduler(new UtcTimeProvider(TimeUnit.MILLISECONDS), "Realtime scheduler", SimpleEventSchedulerType.SIMULATION);
                 NotificationRouter.get().registerExecutionLayer(busyLoopEventScheduler, SimpleBus.create());
                 busyLoopEventScheduler.start();
                 return busyLoopEventScheduler;

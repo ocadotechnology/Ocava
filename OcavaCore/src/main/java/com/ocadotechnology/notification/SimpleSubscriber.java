@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.trafficlights;
+package com.ocadotechnology.notification;
 
 import com.ocadotechnology.event.scheduling.EventSchedulerType;
+import com.ocadotechnology.event.scheduling.SimpleEventSchedulerType;
 
-public enum SchedulerLayerType implements EventSchedulerType {
-
-    SIMULATION,
+/**
+ * Convenience extension of Subscriber interface intended for use with a fully single-threaded simulation
+ * (that uses only one scheduler with the type {@link SimpleEventSchedulerType#SIMULATION}).
+ */
+public interface SimpleSubscriber extends Subscriber {
+    default EventSchedulerType getSchedulerType() {
+        return SimpleEventSchedulerType.SIMULATION;
+    }
 }

@@ -16,12 +16,10 @@
 package com.ocadotechnology.trafficlights.simulation.comms;
 
 import com.google.common.eventbus.Subscribe;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
-import com.ocadotechnology.notification.Subscriber;
-import com.ocadotechnology.trafficlights.SchedulerLayerType;
+import com.ocadotechnology.notification.SimpleSubscriber;
 import com.ocadotechnology.trafficlights.controller.RestHandler;
 
-public class SimulatedRestForwarder implements Subscriber {
+public class SimulatedRestForwarder implements SimpleSubscriber {
 
     private final RestHandler restHandler;
 
@@ -38,10 +36,5 @@ public class SimulatedRestForwarder implements Subscriber {
     @Subscribe
     public void pedestrianLightsButtonPressed(PedestrianCrossingRequestedNotification n) {
         restHandler.pedestrianLightsButtonPressed();
-    }
-
-    @Override
-    public EventSchedulerType getSchedulerType() {
-        return SchedulerLayerType.SIMULATION;
     }
 }

@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ocadotechnology.trafficlights;
+package com.ocadotechnology.event.scheduling;
 
-public enum SchedulerType {
+/**
+ * Simple implementation of EventSchedulerType with a single value.
+ */
+public enum SimpleEventSchedulerType implements EventSchedulerType {
 
-    DISCRETE,
-    REALTIME,
+    SIMULATION
 }

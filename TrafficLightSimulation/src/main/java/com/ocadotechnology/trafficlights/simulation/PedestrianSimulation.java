@@ -22,11 +22,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.eventbus.Subscribe;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.notification.Subscriber;
-import com.ocadotechnology.trafficlights.SchedulerLayerType;
+import com.ocadotechnology.notification.SimpleSubscriber;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.simulation.entities.SimulatedPedestrian;
 import com.ocadotechnology.trafficlights.simulation.entities.SimulatedTrafficLight;
@@ -36,7 +34,7 @@ import com.ocadotechnology.trafficlights.simulation.notification.PedestriansCanC
  * Simulates pedestrians queuing at a junction and only crossing when the pedestrian light is green.
  * Pedestrian arrival is handled by {@link com.ocadotechnology.trafficlights.simulation.PedestrianSpawner}
  */
-public class PedestrianSimulation implements Subscriber {
+public class PedestrianSimulation implements SimpleSubscriber {
 
     private static final Logger logger = LoggerFactory.getLogger(PedestrianSimulation.class);
 
@@ -102,10 +100,4 @@ public class PedestrianSimulation implements Subscriber {
         logger.info("Pedestrian {} has crossed the junction.", pedestrianId);
         NotificationRouter.get().broadcast(new PedestrianFinishesCrossingNotification());
     }
-
-    @Override
-    public EventSchedulerType getSchedulerType() {
-        return SchedulerLayerType.SIMULATION;
-    }
-
 }

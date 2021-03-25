@@ -20,11 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.eventbus.Subscribe;
-import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.notification.Subscriber;
-import com.ocadotechnology.trafficlights.SchedulerLayerType;
+import com.ocadotechnology.notification.SimpleSubscriber;
 import com.ocadotechnology.trafficlights.controller.LightColour;
 import com.ocadotechnology.trafficlights.controller.TrafficLightState;
 import com.ocadotechnology.trafficlights.simulation.comms.PedestrianCrossingRequestedNotification;
@@ -33,7 +31,7 @@ import com.ocadotechnology.trafficlights.simulation.comms.TrafficLightChangedNot
 import com.ocadotechnology.trafficlights.simulation.notification.CarsCanMoveNotification;
 import com.ocadotechnology.trafficlights.simulation.notification.PedestriansCanCrossNotification;
 
-public class SimulatedTrafficLight implements Subscriber {
+public class SimulatedTrafficLight implements SimpleSubscriber {
 
     private static final Logger logger = LoggerFactory.getLogger(SimulatedTrafficLight.class);
 
@@ -74,11 +72,6 @@ public class SimulatedTrafficLight implements Subscriber {
 
     public boolean canPedestrianCross() {
         return simulatedState.canPedestrianCross();
-    }
-
-    @Override
-    public EventSchedulerType getSchedulerType() {
-        return SchedulerLayerType.SIMULATION;
     }
 
     public void requestLightChange(Id<SimulatedPedestrian> pedestrianId) {

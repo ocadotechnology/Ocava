@@ -66,6 +66,10 @@ public interface EventScheduler {
 
     EventSchedulerType getType();
 
+    default Cancelable doIn(double delay, Runnable r) {
+        return doIn(delay, r, r.getClass().getName());
+    }
+
     default Cancelable doIn(double delay, Runnable r, String description) {
         return doIn(delay, t -> r.run(), description);
     }
@@ -73,6 +77,10 @@ public interface EventScheduler {
     default Cancelable doIn(double delay, Consumer<Double> eventTimeConsumingAction, String description) {
         double eventTime = getTimeProvider().getTime() + delay;
         return doAt(eventTime, () -> eventTimeConsumingAction.accept(eventTime), description);
+    }
+
+    default Cancelable doInDaemon(double delay, Runnable r) {
+        return doInDaemon(delay, r, r.getClass().getName());
     }
 
     default Cancelable doInDaemon(double delay, Runnable r, String description) {
