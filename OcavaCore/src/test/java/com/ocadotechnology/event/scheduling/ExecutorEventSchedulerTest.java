@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.util.concurrent.Runnables;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.notification.TestBus;
@@ -48,11 +48,31 @@ class ExecutorEventSchedulerTest {
 
     @Test
     @Disabled("Test seemingly randomly fails with queue size being 0 when it should be 1")
-    void testGetQueueSize() {
+    void testGetQueueSizeIncludesQueuedButNotExecutingEvents() throws InterruptedException {
         Assertions.assertEquals(0, scheduler.getQueueSize());
 
-        scheduler.doAt(1000, Runnables.doNothing());
+        Exchanger<Void> rendezvous = new Exchanger<>();
+        scheduler.doIn(500, () -> rendezvousRunnable(rendezvous));
+        scheduler.doIn(500, () -> rendezvousRunnable(rendezvous));
+
+        // An executing job is not on the queue:
+        rendezvous.exchange(null);  // wait for first event to start
         Assertions.assertEquals(1, scheduler.getQueueSize());
+        rendezvous.exchange(null);  // permit first event to complete
+
+        rendezvous.exchange(null);  // wait for second event to start
+        Assertions.assertEquals(0, scheduler.getQueueSize());
+        rendezvous.exchange(null);  // permit second event to complete
+    }
+
+    private static void rendezvousRunnable(Exchanger<Void> rendezvous) {
+        try {
+            rendezvous.exchange(null);
+            // wait for main thread to read queue size
+            rendezvous.exchange(null);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
