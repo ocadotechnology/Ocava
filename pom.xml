@@ -329,6 +329,8 @@
                         <email>Ocava</email>
                     </properties>
                     <excludes>
+                        <exclude>**/*.js</exclude>
+                        <exclude>**/*.css</exclude>
                         <exclude>**/*.repositories</exclude>
                         <exclude>**/*.pom</exclude>
                         <exclude>**/*.properties</exclude>
