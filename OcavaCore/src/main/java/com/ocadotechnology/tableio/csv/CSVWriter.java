@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.StringJoiner;
@@ -69,23 +70,22 @@ public class CSVWriter {
      * A {@link RuntimeException} is thrown if any {@link IOException} is caught writing to the file.
      *
      * @param supplier   which contains both the header data and the individual row data.
-     * @param pathToFile the path to the file to write to.
+     * @param filePath the path to the file to write to.
      */
-    public void write(Path pathToFile, WritableToTable supplier) {
+    public void write(Path filePath, WritableToTable supplier) {
         ImmutableSet<String> headers = supplier.getHeaders();
-        String filePath = pathToFile.toString();
 
         if (headers.isEmpty()) {
             return;
         }
 
-        String newFileName = enableCompression ?
-                filePath + ".gz" :
-                filePath;
+        if (shouldAppendExtension(filePath)) {
+            filePath = filePath.resolveSibling(filePath.getFileName() + ".gz");
+        }
 
-        boolean writeHeader = !pathToFile.toFile().exists() || !append;
+        boolean writeHeader = !Files.exists(filePath) || !append;
 
-        try (BufferedWriter bufferedWriter = getWriter(newFileName)) {
+        try (BufferedWriter bufferedWriter = getWriter(filePath)) {
             if (writeHeader) {
                 writeLine(bufferedWriter, headers);
             }
@@ -96,6 +96,10 @@ public class CSVWriter {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write file " + filePath, e);
         }
+    }
+
+    private boolean shouldAppendExtension(Path pathToFile) {
+        return enableCompression && !pathToFile.getFileSystem().getPathMatcher("glob:*.gz").matches(pathToFile.getFileName());
     }
 
     private ImmutableList<String> getObjectsToWrite(ImmutableSet<String> header, TableLine tableLine) {
@@ -115,20 +119,20 @@ public class CSVWriter {
         }
     }
 
-    private BufferedWriter getWriter(String fileName) throws IOException {
+    private BufferedWriter getWriter(Path fileName) throws IOException {
         return enableCompression ?
                 createCompressedWriter(fileName) :
                 createWriter(fileName);
     }
 
-    private BufferedWriter createWriter(String fileName) throws IOException {
-        return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName, append), StandardCharsets.UTF_8));
+    private BufferedWriter createWriter(Path fileName) throws IOException {
+        return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName.toFile(), append), StandardCharsets.UTF_8));
     }
 
-    private BufferedWriter createCompressedWriter(String fileName) throws IOException {
+    private BufferedWriter createCompressedWriter(Path fileName) throws IOException {
         return new BufferedWriter(
                 new OutputStreamWriter(
                         new GZIPOutputStream(
-                                new FileOutputStream(fileName, append)), StandardCharsets.UTF_8));
+                                new FileOutputStream(fileName.toFile(), append)), StandardCharsets.UTF_8));
     }
 }
