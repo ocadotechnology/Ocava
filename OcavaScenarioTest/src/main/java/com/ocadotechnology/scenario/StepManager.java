@@ -166,6 +166,10 @@ public class StepManager<S extends Simulation> {
                 return new NeverStep<>(testStep);
             case WITHIN:
                 return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
+            case AFTER_EXACTLY:
+                return new AfterExactlyStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
+            case AFTER_AT_LEAST:
+                return new AfterAtLeastStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
             default:
                 throw Failer.fail("Unhandled Check step type %s", checkStepExecutionType.type);
         }
@@ -227,7 +231,7 @@ public class StepManager<S extends Simulation> {
     }
 
     public static class CheckStepExecutionType {
-        enum Type {ORDERED, UNORDERED, NEVER, WITHIN}
+        enum Type {ORDERED, UNORDERED, NEVER, WITHIN, AFTER_EXACTLY, AFTER_AT_LEAST}
 
         private final String name;
         private final Type type;
@@ -307,6 +311,22 @@ public class StepManager<S extends Simulation> {
 
         public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, double duration) {
             return new CheckStepExecutionType(nextId(), Type.WITHIN, schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return new CheckStepExecutionType(name, Type.AFTER_EXACTLY, schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return afterExactly(nextId(), schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return new CheckStepExecutionType(name, Type.AFTER_AT_LEAST, schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return afterAtLeast(nextId(), schedulerSupplier, duration);
         }
 
         /**

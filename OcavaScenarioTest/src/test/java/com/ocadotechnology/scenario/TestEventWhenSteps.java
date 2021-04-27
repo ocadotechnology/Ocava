@@ -27,7 +27,7 @@ public class TestEventWhenSteps {
         this.simulationHolder = simulationHolder;
     }
 
-    public void scheduled(int time, String name) {
+    public void scheduled(double time, String name) {
         stepManager.addExecuteStep(() -> {
                 simulationHolder.getEventScheduler().doAt(
                         time,

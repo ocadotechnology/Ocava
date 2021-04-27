@@ -108,6 +108,94 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     }
 
     /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(double magnitude, TimeUnit timeUnit) {
+        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterExactly(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(String name, double magnitude, TimeUnit timeUnit) {
+        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterExactly(name, stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(Duration duration) {
+        return afterExactly(duration.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(String name, Duration duration) {
+        return afterExactly(name, duration.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(double magnitude, TimeUnit timeUnit) {
+        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterAtLeast(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(String name, double magnitude, TimeUnit timeUnit) {
+        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterAtLeast(name, stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(Duration duration) {
+        return afterAtLeast(duration.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(String name, Duration duration) {
+        return afterAtLeast(name, duration.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
+    /**
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates has the
      * {@code CheckStepExecutionType.isFailingStep} flag set to true. The failingStep flag is checked after the scenario test has completed
      * successfully or exceptionally and should be used in conjunction with {@link FixRequired}
