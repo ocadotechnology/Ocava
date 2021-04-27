@@ -73,10 +73,14 @@ public class CLISetup {
         return commandLine;
     }
 
-    public <E extends Enum<E>> String getRedactedArgs(Class<E> configClass) {
+    public String getRedactedArgs(Class<? extends Enum<?>> configClass) {
+        return getRedactedArgs(ImmutableSet.of(configClass));
+    }
+
+    public String getRedactedArgs(ImmutableSet<Class<? extends Enum<?>>> configClasses) {
         try {
             ConfigManager cm = new ConfigManager.Builder(commandLine.split(" (?=-O)"))
-                    .loadConfigFromEnvironmentVariables(ImmutableMap.of(), ImmutableSet.of(configClass))
+                    .loadConfigFromEnvironmentVariables(ImmutableMap.of(), configClasses)
                     .build();
             return cm.getAllConfig().stream()
                     .flatMap(config -> config.getKeyValueStringMapWithoutSecrets().entrySet().stream())
