@@ -85,7 +85,7 @@ public class ConfigParsers {
         } else if ("false".equalsIgnoreCase(value)) {
             return false;
         } else {
-            throw Failer.fail("Invalid boolean value %s.  Must be equal to true or false, case insensitive", value);
+            throw Failer.fail("Invalid boolean value (%s).  Must be equal to true or false, case insensitive", value);
         }
     }
 

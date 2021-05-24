@@ -28,6 +28,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,6 @@ import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
 public class OptionalValueParserTest {
-
     @Nested
     @DisplayName("for String values")
     class StringParserTests {
@@ -54,7 +54,7 @@ public class OptionalValueParserTest {
         @DisplayName("returns non-empty value")
         void returnsValue() {
             String testValue = "A TEST VALUE";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asString()).isEqualTo(Optional.of(testValue));
         }
 
@@ -62,7 +62,7 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asString().isPresent()).isFalse();
         }
     }
@@ -74,7 +74,7 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asBoolean().isPresent()).isFalse();
         }
 
@@ -82,7 +82,7 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"true", "True", "TRUE", "tRUe"})
         void allowsTrueValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asBoolean()).isEqualTo(Optional.of(true));
         }
 
@@ -90,7 +90,7 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"false", "False", "FALSE", "fAlSe"})
         void allowsFalseValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asBoolean()).isEqualTo(Optional.of(false));
         }
 
@@ -98,8 +98,8 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"fa lse", "ture", "yes", "0", "1"})
         void throwsExceptionForMisspelledValue(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
-            assertThatThrownBy(parser::asBoolean).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
+            assertThrowsWithKey(parser::asBoolean, IllegalStateException.class);
         }
     }
 
@@ -110,21 +110,21 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asInt().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the integer value")
         void returnIntegerValue() {
-            OptionalValueParser parser = new OptionalValueParser("42");
+            OptionalValueParser parser = new OptionalValueParser("42", TestConfig.FOO);
             assertThat(parser.asInt()).isEqualTo(OptionalInt.of(42));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2");
+            OptionalValueParser parser = new OptionalValueParser("-2", TestConfig.FOO);
             assertThat(parser.asInt()).isEqualTo(OptionalInt.of(-2));
         }
 
@@ -132,7 +132,7 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"max", "MAX", "mAx"})
         void testMaxValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asInt()).isEqualTo(OptionalInt.of(Integer.MAX_VALUE));
         }
 
@@ -140,37 +140,37 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"min", "MIN", "MiN"})
         void testMinValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asInt()).isEqualTo(OptionalInt.of(Integer.MIN_VALUE));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL");
-            assertThatThrownBy(parser::asInt).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL", TestConfig.FOO);
+            assertThrowsWithKey(parser::asInt, NumberFormatException.class);
         }
 
         @DisplayName("throws an exception for an invalid number format")
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"1e3", "1x10^3"})
         void throwsExceptionForInvalidNumberFormat(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
-            assertThatThrownBy(parser::asInt).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
+            assertThrowsWithKey(parser::asInt, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception for a non-integer number")
         void throwsExceptionForDecimalNumber() {
-            OptionalValueParser parser = new OptionalValueParser("2.7182");
-            assertThatThrownBy(parser::asInt).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.7182", TestConfig.FOO);
+            assertThrowsWithKey(parser::asInt, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception for an overly-large number")
         void throwsExceptionForLargeNumber() {
-            OptionalValueParser parser = new OptionalValueParser(String.valueOf(Long.MAX_VALUE));
-            assertThatThrownBy(parser::asInt).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser(String.valueOf(Long.MAX_VALUE), TestConfig.FOO);
+            assertThrowsWithKey(parser::asInt, NumberFormatException.class);
         }
     }
 
@@ -181,21 +181,21 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asLong().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the long value")
         void returnLongValue() {
-            OptionalValueParser parser = new OptionalValueParser("42");
+            OptionalValueParser parser = new OptionalValueParser("42", TestConfig.FOO);
             assertThat(parser.asLong()).isEqualTo(OptionalLong.of(42));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2");
+            OptionalValueParser parser = new OptionalValueParser("-2", TestConfig.FOO);
             assertThat(parser.asLong()).isEqualTo(OptionalLong.of(-2));
         }
 
@@ -203,7 +203,7 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"max", "MAX", "mAx"})
         void testMaxValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asLong()).isEqualTo(OptionalLong.of(Long.MAX_VALUE));
         }
 
@@ -211,37 +211,37 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"min", "MIN", "MiN"})
         void testMinValues(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asLong()).isEqualTo(OptionalLong.of(Long.MIN_VALUE));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL");
-            assertThatThrownBy(parser::asLong).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL", TestConfig.FOO);
+            assertThrowsWithKey(parser::asLong, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception for a non-integer number")
         void throwsExceptionForDecimalNumber() {
-            OptionalValueParser parser = new OptionalValueParser("2.7182");
-            assertThatThrownBy(parser::asLong).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.7182", TestConfig.FOO);
+            assertThrowsWithKey(parser::asLong, NumberFormatException.class);
         }
 
         @DisplayName("throws an exception for an invalid number format")
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"1e3", "1x10^3"})
         void throwsExceptionForInvalidNumberFormat(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
-            assertThatThrownBy(parser::asLong).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
+            assertThrowsWithKey(parser::asLong, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception for an overly-large number")
         void throwsExceptionForLargeNumber() {
-            OptionalValueParser parser = new OptionalValueParser(Long.MAX_VALUE + "00");
-            assertThatThrownBy(parser::asLong).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser(Long.MAX_VALUE + "00", TestConfig.FOO);
+            assertThrowsWithKey(parser::asLong, NumberFormatException.class);
         }
     }
 
@@ -252,21 +252,21 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asDouble().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the double value")
         void returnDoubleValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.7182");
+            OptionalValueParser parser = new OptionalValueParser("2.7182", TestConfig.FOO);
             assertThat(parser.asDouble()).isEqualTo(OptionalDouble.of(2.7182));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.7182");
+            OptionalValueParser parser = new OptionalValueParser("-2.7182", TestConfig.FOO);
             assertThat(parser.asDouble()).isEqualTo(OptionalDouble.of(-2.7182));
         }
 
@@ -274,23 +274,23 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"1.3e3"})
         void allowsValidNumberFormat(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asDouble()).isEqualTo(OptionalDouble.of(1300));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL");
-            assertThatThrownBy(parser::asDouble).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL", TestConfig.FOO);
+            assertThrowsWithKey(parser::asDouble, NumberFormatException.class);
         }
 
         @DisplayName("throws an exception for an invalid number format")
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"1x10^3"})
         void throwsExceptionForInvalidNumberFormat(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
-            assertThatThrownBy(parser::asDouble).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
+            assertThrowsWithKey(parser::asDouble, NumberFormatException.class);
         }
     }
 
@@ -301,24 +301,22 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asEnum(TestConfig.Colours.class).isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("parses correct config")
         void parseCorrectConfig() {
-            OptionalValueParser parser = new OptionalValueParser("RED");
+            OptionalValueParser parser = new OptionalValueParser("RED", TestConfig.FOO);
             assertThat(parser.asEnum(TestConfig.Colours.class)).isEqualTo(Optional.of(TestConfig.Colours.RED));
         }
 
         @Test
         @DisplayName("throws IllegalArgumentException for incorrect value")
         void throwsException() {
-            OptionalValueParser parser = new OptionalValueParser("REDDER");
-            assertThatThrownBy(() -> parser.asEnum(TestConfig.Colours.class))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("No enum constant");
+            OptionalValueParser parser = new OptionalValueParser("REDDER", TestConfig.FOO);
+            assertThrowsWithKey(() -> parser.asEnum(TestConfig.Colours.class), IllegalArgumentException.class);
         }
     }
 
@@ -329,7 +327,7 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asTime().isPresent()).isFalse();
             assertThat(parser.asFractionalTime().isPresent()).isFalse();
         }
@@ -337,7 +335,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the long value")
         void returnTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, SECONDS", TimeUnit.SECONDS, null);
+            OptionalValueParser parser = new OptionalValueParser("2.3, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
         }
@@ -345,7 +343,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the long value when units are not specified")
         void returnTimeValueWithNoSpecifiedUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, null);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO, TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
         }
@@ -353,7 +351,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the scaled value")
         void returnScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.11, MINUTES", TimeUnit.SECONDS, null);
+            OptionalValueParser parser = new OptionalValueParser("2.11, MINUTES", TestConfig.FOO, TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(127));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(126.6));
         }
@@ -361,7 +359,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, SECONDS", TimeUnit.SECONDS, null);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(-2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(-2.3));
         }
@@ -369,33 +367,33 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asTime).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asTime, NumberFormatException.class);
+            assertThrowsWithKey(parser::asFractionalTime, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalStateException.class);
-            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asTime, IllegalStateException.class);
+            assertThrowsWithKey(parser::asFractionalTime, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asTime).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asTime, IllegalArgumentException.class);
+            assertThrowsWithKey(parser::asFractionalTime, IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if time unit not set")
         void throwsExceptionWhenUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2, SECONDS", null, null);
-            assertThatThrownBy(parser::asTime).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(parser::asFractionalTime).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS", TestConfig.FOO, null, null);
+            assertThrowsWithKey(parser::asTime, NullPointerException.class);
+            assertThrowsWithKey(parser::asFractionalTime, NullPointerException.class);
         }
     }
 
@@ -406,78 +404,78 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.asDuration().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns a Duration for an integer value")
         void returnDurationForInt() {
-            OptionalValueParser parser = new OptionalValueParser("2, MILLISECONDS");
+            OptionalValueParser parser = new OptionalValueParser("2, MILLISECONDS", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
         }
 
         @Test
         @DisplayName("returns a Duration for a fractional value")
         void returnDurationForFraction() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, MILLISECONDS");
+            OptionalValueParser parser = new OptionalValueParser("2.3, MILLISECONDS", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(2_300_000)));
         }
 
         @Test
         @DisplayName("returns a Duration with units of seconds when units are not specified")
         void returnDurationInSecondsWhenNoSpecifiedUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3");
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2_300)));
         }
 
         @Test
         @DisplayName("handles a 0 value")
         void zeroValue() {
-            OptionalValueParser parser = new OptionalValueParser("0");
+            OptionalValueParser parser = new OptionalValueParser("0", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofSeconds(0)));
         }
 
         @Test
         @DisplayName("rounds to the nearest nanosecond - below")
         void roundToNanoBelow() {
-            OptionalValueParser parser = new OptionalValueParser("0.1,NANOSECONDS");
+            OptionalValueParser parser = new OptionalValueParser("0.1,NANOSECONDS", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(0)));
         }
 
         @Test
         @DisplayName("rounds to the nearest nanosecond - above")
         void roundToNanoAbove() {
-            OptionalValueParser parser = new OptionalValueParser("0.6,NANOSECONDS");
+            OptionalValueParser parser = new OptionalValueParser("0.6,NANOSECONDS", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofNanos(1)));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2, SECONDS");
+            OptionalValueParser parser = new OptionalValueParser("-2, SECONDS", TestConfig.FOO);
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofSeconds(-2)));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS");
-            assertThatThrownBy(parser::asDuration).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, SECONDS", TestConfig.FOO);
+            assertThrowsWithKey(parser::asDuration, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS");
-            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, SECONDS, SECONDS", TestConfig.FOO);
+            assertThrowsWithKey(parser::asDuration, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, ORANGES");
-            assertThatThrownBy(parser::asDuration).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TestConfig.FOO);
+            assertThrowsWithKey(parser::asDuration, IllegalArgumentException.class);
         }
     }
 
@@ -487,71 +485,71 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asLength().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the double value")
         void returnValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", null, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", TestConfig.FOO, null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the double value when units are not specified")
         void returnValueWithNoSpecifiedUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", null, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO, null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the scaled value km -> m")
         void returnInputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS", null, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS", TestConfig.FOO, null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
         @DisplayName("returns the scaled value m -> km")
         void returnOutputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", null, LengthUnit.KILOMETERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS", TestConfig.FOO, null, LengthUnit.KILOMETERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(0.0023));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS", null, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS", TestConfig.FOO, null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(-2.3));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asLength).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asLength, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS, METERS", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asLength).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, METERS", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asLength, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asLength).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, ORANGES", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asLength, IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", null, null);
-            assertThatThrownBy(parser::asLength).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS", TestConfig.FOO, null, null);
+            assertThrowsWithKey(parser::asLength, NullPointerException.class);
         }
     }
 
@@ -561,92 +559,92 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asSpeed().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the double value when units are specified")
         void returnValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the double value when units are not specified")
         void returnValueWithDefaultUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the scaled value ms -> s")
         void returnTimeInputScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
         @DisplayName("returns the scaled value s -> ms")
         void returnTimeOutputScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.MILLISECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(0.0023));
         }
 
         @Test
         @DisplayName("returns the scaled value km -> m")
         void returnLengthInputScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
         @DisplayName("returns the scaled value m -> km")
         void returnLengthOutputScaledTimeValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.KILOMETERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(0.0023));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(-2.3));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asSpeed).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asSpeed).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asSpeed).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenLengthUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asSpeed).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asSpeed, NullPointerException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if time unit not set")
         void throwsExceptionWhenTimeUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asSpeed).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, NullPointerException.class);
         }
     }
 
@@ -656,92 +654,92 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asAcceleration().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the double value with units specified")
         void returnValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the double value with no units specified")
         void returnValueWithDefaultUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the scaled value ms -> s")
         void returnTimeInputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300_000));
         }
 
         @Test
         @DisplayName("returns the scaled value s -> ms")
         void returnTimeOutputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.MILLISECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(0.0000023));
         }
 
         @Test
         @DisplayName("returns the scaled value km -> m")
         void returnLengthInputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
         @DisplayName("returns the scaled value m -> km")
         void returnLengthOutputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.KILOMETERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(0.0023));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(-2.3));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asAcceleration).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asAcceleration).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenLengthUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asAcceleration, NullPointerException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if time unit not set")
         void throwsExceptionWhenTimeUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asAcceleration).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, NullPointerException.class);
         }
     }
 
@@ -751,28 +749,28 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asJerk().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("returns the double value with units specified")
         void returnValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the double value with no units specified")
         void returnValueWithDefaultUnits() {
-            OptionalValueParser parser = new OptionalValueParser("2.3", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
         @DisplayName("returns the scaled value ms -> s")
         void returnTimeInputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, MILLISECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             OptionalDouble result = parser.asJerk();
             assertThat(result).isPresent();
             assertThat(DoubleMath.fuzzyEquals(result.getAsDouble(), 2.3e9, 1e-3));
@@ -781,64 +779,64 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("returns the scaled value s -> ms")
         void returnTimeOutputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.MILLISECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.MILLISECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2.3e-9));
         }
 
         @Test
         @DisplayName("returns the scaled value km -> m")
         void returnLengthInputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, KILOMETERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
         @DisplayName("returns the scaled value m -> km")
         void returnLengthOutputScaledValue() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.KILOMETERS);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.KILOMETERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(0.0023));
         }
 
         @Test
         @DisplayName("allows negative values")
         void allowsNegativeValues() {
-            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            OptionalValueParser parser = new OptionalValueParser("-2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(-2.3));
         }
 
         @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
-            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asJerk).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("FAIL, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, NumberFormatException.class);
         }
 
         @Test
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asJerk).isInstanceOf(IllegalStateException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, IllegalStateException.class);
         }
 
         @Test
         @DisplayName("throws an exception for invalid enum value")
         void throwsExceptionForInvalidEnumValue() {
-            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TimeUnit.SECONDS, LengthUnit.METERS);
-            assertThatThrownBy(parser::asJerk).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("2, METERS, ORANGES", TestConfig.FOO, TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenLengthUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TimeUnit.SECONDS, null);
-            assertThatThrownBy(parser::asJerk).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, TimeUnit.SECONDS, null);
+            assertThrowsWithKey(parser::asJerk, NullPointerException.class);
         }
 
         @Test
         @DisplayName("Throws an exception if time unit not set")
         void throwsExceptionWhenTimeUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", null, LengthUnit.METERS);
-            assertThatThrownBy(parser::asJerk).isInstanceOf(NullPointerException.class);
+            OptionalValueParser parser = new OptionalValueParser("2.3, METERS, SECONDS", TestConfig.FOO, null, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, NullPointerException.class);
         }
     }
 
@@ -849,14 +847,14 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("Empty string case returns optional empty")
         void testEmptyString() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asList().ofStrings().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("Single case returns singleton list")
         void testSingleElement() {
-            OptionalValueParser parser = new OptionalValueParser("RED");
+            OptionalValueParser parser = new OptionalValueParser("RED", TestConfig.FOO);
             assertThat(parser.asList().ofStrings()).isEqualTo(Optional.of(ImmutableList.of("RED")));
         }
 
@@ -864,28 +862,28 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"RED:YELLOW:APPLE", "RED,YELLOW,APPLE"})
         void testColonSeparated(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asList().ofStrings()).isEqualTo(Optional.of(ImmutableList.of("RED", "YELLOW", "APPLE")));
         }
 
         @Test
         @DisplayName("List of strings with space is trimmed")
         void testSpaceIsTrimmed() {
-            OptionalValueParser parser = new OptionalValueParser("RED,YELLOW, APPLE");
+            OptionalValueParser parser = new OptionalValueParser("RED,YELLOW, APPLE", TestConfig.FOO);
             assertThat(parser.asList().ofStrings()).isEqualTo(Optional.of(ImmutableList.of("RED", "YELLOW", "APPLE")));
         }
 
         @Test
         @DisplayName("Comma-separated string can contain colons")
         void testCommaSeparatedStringsWithColons() {
-            OptionalValueParser parser = new OptionalValueParser("key1:value1,key2:value2");
+            OptionalValueParser parser = new OptionalValueParser("key1:value1,key2:value2", TestConfig.FOO);
             assertThat(parser.asList().ofStrings()).isEqualTo(Optional.of(ImmutableList.of("key1:value1", "key2:value2")));
         }
 
         @Test
         @DisplayName("numerical methods with numbers")
         void testNumericalLists() {
-            OptionalValueParser parser = new OptionalValueParser("1,5,10,3");
+            OptionalValueParser parser = new OptionalValueParser("1,5,10,3", TestConfig.FOO);
             assertThat(parser.asList().ofIntegers()).isEqualTo(Optional.of(ImmutableList.of(1, 5, 10, 3)));
             assertThat(parser.asList().ofLongs()).isEqualTo(Optional.of(ImmutableList.of(1L, 5L, 10L, 3L)));
             assertThat(parser.asList().ofDoubles()).isEqualTo(Optional.of(ImmutableList.of(1D, 5D, 10D, 3D)));
@@ -895,17 +893,17 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("numerical methods with non-numbers throw exceptions")
         void testNumericalListsThrow() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
-            assertThatThrownBy(() -> parser.asList().ofIntegers()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asList().ofLongs()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asList().ofDoubles()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asList().ofIds()).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
+            assertThrowsWithKey(() -> parser.asList().ofIntegers(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asList().ofLongs(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asList().ofDoubles(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asList().ofIds(), NumberFormatException.class);
         }
 
         @Test
         @DisplayName("enum values are parsed")
         void testEnumLists() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,BLUE,RED");
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,BLUE,RED", TestConfig.FOO);
             ImmutableList<Colours> expected = ImmutableList.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
             assertThat(parser.asList().ofEnums(TestConfig.Colours.class)).isEqualTo(Optional.of(expected));
         }
@@ -913,14 +911,14 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("incorrect enum values throw exception")
         void testEnumListsThrow() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
-            assertThatThrownBy(() -> parser.asList().ofEnums(TestConfig.Colours.class)).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
+            assertThrowsWithKey(() -> parser.asList().ofEnums(TestConfig.Colours.class), IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("string Ids are conveted")
         void testStringIdLists() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
             ImmutableList<StringId<Object>> expected = ImmutableList.of(
                     StringId.create("RED"),
                     StringId.create("BLUE"),
@@ -934,7 +932,7 @@ public class OptionalValueParserTest {
         @DisplayName("custom parser is used as expected")
         void callsParser() {
             String testValue = "ANOTHER TEST VALUE";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
 
             List<String> arguments = new ArrayList<>();
             TestClass testClass = new TestClass();
@@ -955,14 +953,14 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("Empty string case returns optional empty")
         void testEmptyString() {
-            OptionalValueParser parser = new OptionalValueParser("");
+            OptionalValueParser parser = new OptionalValueParser("", TestConfig.FOO);
             assertThat(parser.asSet().ofStrings().isPresent()).isFalse();
         }
 
         @Test
         @DisplayName("Single case returns singleton set")
         void testSingleElement() {
-            OptionalValueParser parser = new OptionalValueParser("RED");
+            OptionalValueParser parser = new OptionalValueParser("RED", TestConfig.FOO);
             assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED")));
         }
 
@@ -970,28 +968,28 @@ public class OptionalValueParserTest {
         @ParameterizedTest(name = "for config value \"{0}\"")
         @ValueSource(strings = {"RED:YELLOW:APPLE", "RED,YELLOW,APPLE"})
         void testColonSeparated(String value) {
-            OptionalValueParser parser = new OptionalValueParser(value);
+            OptionalValueParser parser = new OptionalValueParser(value, TestConfig.FOO);
             assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED", "YELLOW", "APPLE")));
         }
 
         @Test
         @DisplayName("Set of strings with space is trimmed")
         void testSpaceIsTrimmed() {
-            OptionalValueParser parser = new OptionalValueParser("RED,YELLOW, APPLE");
+            OptionalValueParser parser = new OptionalValueParser("RED,YELLOW, APPLE", TestConfig.FOO);
             assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED", "YELLOW", "APPLE")));
         }
 
         @Test
         @DisplayName("Comma-separated string can contain colons")
         void testCommaSeparatedStringsWithColons() {
-            OptionalValueParser parser = new OptionalValueParser("key1:value1,key2:value2");
+            OptionalValueParser parser = new OptionalValueParser("key1:value1,key2:value2", TestConfig.FOO);
             assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("key1:value1", "key2:value2")));
         }
 
         @Test
         @DisplayName("numerical methods with numbers")
         void testNumericalSets() {
-            OptionalValueParser parser = new OptionalValueParser("1,5,10,3");
+            OptionalValueParser parser = new OptionalValueParser("1,5,10,3", TestConfig.FOO);
             assertThat(parser.asSet().ofIntegers()).isEqualTo(Optional.of(ImmutableSet.of(1, 5, 10, 3)));
             assertThat(parser.asSet().ofLongs()).isEqualTo(Optional.of(ImmutableSet.of(1L, 5L, 10L, 3L)));
             assertThat(parser.asSet().ofDoubles()).isEqualTo(Optional.of(ImmutableSet.of(1D, 5D, 10D, 3D)));
@@ -1001,17 +999,17 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("numerical methods with non-numbers throw exceptions")
         void testNumericalSetsThrow() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
-            assertThatThrownBy(() -> parser.asSet().ofIntegers()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asSet().ofLongs()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asSet().ofDoubles()).isInstanceOf(NumberFormatException.class);
-            assertThatThrownBy(() -> parser.asSet().ofIds()).isInstanceOf(NumberFormatException.class);
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
+            assertThrowsWithKey(() -> parser.asSet().ofIntegers(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asSet().ofLongs(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asSet().ofDoubles(), NumberFormatException.class);
+            assertThrowsWithKey(() -> parser.asSet().ofIds(), NumberFormatException.class);
         }
 
         @Test
         @DisplayName("enum values are parsed")
         void testEnumSets() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,BLUE,RED");
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,BLUE,RED", TestConfig.FOO);
             ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
             assertThat(parser.asSet().ofEnums(TestConfig.Colours.class)).isEqualTo(Optional.of(expected));
         }
@@ -1019,14 +1017,14 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("incorrect enum values throw exception")
         void testEnumSetsThrow() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
-            assertThatThrownBy(() -> parser.asSet().ofEnums(TestConfig.Colours.class)).isInstanceOf(IllegalArgumentException.class);
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
+            assertThrowsWithKey(() -> parser.asSet().ofEnums(TestConfig.Colours.class), IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("string Ids are conveted")
         void testStringIdSets() {
-            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR");
+            OptionalValueParser parser = new OptionalValueParser("RED,BLUE,APPLE,PEAR", TestConfig.FOO);
             ImmutableSet<StringId<Object>> expected = ImmutableSet.of(
                     StringId.create("RED"),
                     StringId.create("BLUE"),
@@ -1040,7 +1038,7 @@ public class OptionalValueParserTest {
         @DisplayName("custom parser is used as expected")
         void callsParser() {
             String testValue = "ANOTHER TEST VALUE";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
 
             List<String> arguments = new ArrayList<>();
             TestClass testClass = new TestClass();
@@ -1110,7 +1108,7 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("throws exception for duplicate keys")
             void duplicateKeysThrows() {
-                assertThatThrownBy(() -> readMap("1=False;1=True")).isInstanceOf(IllegalArgumentException.class);
+                assertThrowsWithKey(() -> readMap("1=False;1=True"), IllegalArgumentException.class);
             }
         }
 
@@ -1119,7 +1117,7 @@ public class OptionalValueParserTest {
         class StringMapTests extends CommonMapTests<String, String> {
             @Override
             Optional<ImmutableMap<String, String>> readMap(String configValue) {
-                OptionalValueParser parser = new OptionalValueParser(configValue);
+                OptionalValueParser parser = new OptionalValueParser(configValue, TestConfig.FOO);
                 return parser.asMap().ofStrings();
             }
 
@@ -1147,7 +1145,7 @@ public class OptionalValueParserTest {
 
             @Override
             Optional<ImmutableMap<Integer, Boolean>> readMap(String configValue) {
-                OptionalValueParser parser = new OptionalValueParser(configValue);
+                OptionalValueParser parser = new OptionalValueParser(configValue, TestConfig.FOO);
                 return parser.asMap().withKeyAndValueParsers(ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
@@ -1164,7 +1162,7 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("uses listParser as valueParser")
             void mapOfLists() {
-                OptionalValueParser parser = new OptionalValueParser("1=4,5;2=6,7");
+                OptionalValueParser parser = new OptionalValueParser("1=4,5;2=6,7", TestConfig.FOO);
                 Optional<ImmutableMap<Object, ImmutableList<Integer>>> mapOptional = parser.asMap().withKeyAndValueParsers(Integer::parseInt, ConfigParsers.getListOfIntegers());
                 assertThat(mapOptional).isPresent();
                 ImmutableMap<Object, ImmutableList<Integer>> map = mapOptional.get();
@@ -1176,7 +1174,7 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("applies valueParser to empty string for missing values")
             void handlesMissingValues() {
-                OptionalValueParser parser = new OptionalValueParser("1;2=");
+                OptionalValueParser parser = new OptionalValueParser("1;2=", TestConfig.FOO);
 
                 Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
                     assertThat(v).isEmpty();
@@ -1189,19 +1187,21 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("throws exceptions generated by key parser function")
             void throwsKeyParserExceptions() {
-                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE, TestConfig.FOO);
 
                 assertThatThrownBy(() -> parser.asMap().withKeyAndValueParsers(s -> Failer.fail("Boom"), Boolean::parseBoolean))
-                        .hasMessageContaining("Boom");
+                        .hasRootCauseMessage("Boom")
+                        .hasMessageContaining("TestConfig.FOO");
             }
 
             @Test
             @DisplayName("throws exceptions generated by value parser function")
             void throwsValueParserExceptions() {
-                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE, TestConfig.FOO);
 
                 assertThatThrownBy(() -> parser.asMap().withKeyAndValueParsers(Integer::valueOf, s -> Failer.fail("Boom")))
-                        .hasMessageContaining("Boom");
+                        .hasRootCauseMessage("Boom")
+                        .hasMessageContaining("TestConfig.FOO");
             }
         }
     }
@@ -1273,7 +1273,7 @@ public class OptionalValueParserTest {
 
             @Override
             Optional<ImmutableSetMultimap<String, String>> readMultimap(String configValue) {
-                return new OptionalValueParser(configValue).asSetMultimap().ofStrings();
+                return new OptionalValueParser(configValue, TestConfig.FOO).asSetMultimap().ofStrings();
             }
 
             @Override
@@ -1304,7 +1304,7 @@ public class OptionalValueParserTest {
 
             @Override
             Optional<ImmutableSetMultimap<Integer, Boolean>> readMultimap(String configValue) {
-                return new OptionalValueParser(configValue).asSetMultimap().withKeyAndValueParsers(ConfigParsers::parseInt, ConfigParsers::parseBoolean);
+                return new OptionalValueParser(configValue, TestConfig.FOO).asSetMultimap().withKeyAndValueParsers(ConfigParsers::parseInt, ConfigParsers::parseBoolean);
             }
 
             @Override
@@ -1321,7 +1321,7 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("can use listParser as valueParser")
             void multimapOfLists() {
-                OptionalValueParser parser = new OptionalValueParser("1=4,5;1=8,9;2=6,7");
+                OptionalValueParser parser = new OptionalValueParser("1=4,5;1=8,9;2=6,7", TestConfig.FOO);
                 Optional<ImmutableSetMultimap<Object, ImmutableSet<Integer>>> optionalMultimap = parser.asSetMultimap()
                         .withKeyAndValueParsers(Integer::parseInt, ConfigParsers.getSetOfIntegers());
                 assertThat(optionalMultimap.isPresent());
@@ -1334,7 +1334,7 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("applies valueParser to empty string for missing values")
             void handlesMissingValues() {
-                OptionalValueParser parser = new OptionalValueParser("1;2=");
+                OptionalValueParser parser = new OptionalValueParser("1;2=", TestConfig.FOO);
                 Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
                     assertThat(v).isEmpty();
                     return v;
@@ -1352,19 +1352,21 @@ public class OptionalValueParserTest {
             @Test
             @DisplayName("throws exceptions generated by key parser function")
             void throwsKeyParserExceptions() {
-                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE, TestConfig.FOO);
 
                 assertThatThrownBy(() -> parser.asSetMultimap().withKeyAndValueParsers(s -> Failer.fail("Boom"), Boolean::parseBoolean))
-                        .hasMessageContaining("Boom");
+                        .hasRootCauseMessage("Boom")
+                        .hasMessageContaining("TestConfig.FOO");
             }
 
             @Test
-            @DisplayName("throws exceptions generated by key parser function")
+            @DisplayName("throws exceptions generated by value parser function")
             void throwsValueParserExceptions() {
-                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE);
+                OptionalValueParser parser = new OptionalValueParser(SIMPLE_CONFIG_VALUE, TestConfig.FOO);
 
                 assertThatThrownBy(() -> parser.asSetMultimap().withKeyAndValueParsers(Integer::valueOf, s -> Failer.fail("Boom")))
-                        .hasMessageContaining("Boom");
+                        .hasRootCauseMessage("Boom")
+                        .hasMessageContaining("TestConfig.FOO");
             }
         }
     }
@@ -1376,7 +1378,7 @@ public class OptionalValueParserTest {
         @DisplayName("returns empty for empty value")
         void returnsEmptyValue() {
             String testValue = "";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
             assertThat(parser.withCustomParser(Function.identity()).isPresent()).isFalse();
         }
 
@@ -1384,7 +1386,7 @@ public class OptionalValueParserTest {
         @DisplayName("passes value into parser and returns exact object")
         void callsParser() {
             String testValue = "ANOTHER TEST VALUE";
-            OptionalValueParser parser = new OptionalValueParser(testValue);
+            OptionalValueParser parser = new OptionalValueParser(testValue, TestConfig.FOO);
 
             List<String> arguments = new ArrayList<>();
             TestClass testClass = new TestClass();
@@ -1400,6 +1402,13 @@ public class OptionalValueParserTest {
             assertThat(arguments.size()).isEqualTo(1);
             assertThat(arguments.get(0)).isSameAs(testValue);
         }
+    }
+
+    private static void assertThrowsWithKey(ThrowingCallable throwingRunnable, Class<? extends Exception> causingClass) {
+        assertThatThrownBy(throwingRunnable)
+                .isInstanceOf(IllegalStateException.class)
+                .hasCauseInstanceOf(causingClass)
+                .hasMessageContaining("TestConfig.FOO");
     }
 
     private static final class TestClass {

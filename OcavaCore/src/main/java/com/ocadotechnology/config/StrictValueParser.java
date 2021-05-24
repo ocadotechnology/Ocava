@@ -31,6 +31,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * Parser class to convert a config value into a typed result.
  */
 public class StrictValueParser {
+    private final Enum<?> key;
     private final String value;
     @CheckForNull
     private final TimeUnit timeUnit;
@@ -38,12 +39,13 @@ public class StrictValueParser {
     private final LengthUnit lengthUnit;
 
     @VisibleForTesting
-    StrictValueParser(String value) {
-        this(value, null, null);
+    StrictValueParser(String value, Enum<?> key) {
+        this(value, key, null, null);
     }
 
-    StrictValueParser(String value, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
+    StrictValueParser(String value, Enum<?> key, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
         this.value = value;
+        this.key = key;
         this.timeUnit = timeUnit;
         this.lengthUnit = lengthUnit;
     }
@@ -60,7 +62,11 @@ public class StrictValueParser {
      * @throws IllegalStateException if the config value does not strictly equal "true" or "false", case insensitive.
      */
     public boolean asBoolean() {
-        return ConfigParsers.parseBoolean(value);
+        try {
+            return ConfigParsers.parseBoolean(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -70,7 +76,11 @@ public class StrictValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to an integer.
      */
     public int asInt() {
-        return ConfigParsers.parseInt(value);
+        try {
+            return ConfigParsers.parseInt(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -80,7 +90,11 @@ public class StrictValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a long.
      */
     public long asLong() {
-        return ConfigParsers.parseLong(value);
+        try {
+            return ConfigParsers.parseLong(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -88,7 +102,11 @@ public class StrictValueParser {
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */
     public double asDouble() {
-        return ConfigParsers.parseDouble(value);
+        try {
+            return ConfigParsers.parseDouble(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -96,7 +114,11 @@ public class StrictValueParser {
      * @throws IllegalArgumentException if the string config value does not match a defined enum value.
      */
     public <T extends Enum<T>> T asEnum(Class<T> enumClass) {
-        return Enum.valueOf(enumClass, value);
+        try {
+            return Enum.valueOf(enumClass, value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -112,7 +134,11 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double.
      */
     public double asFractionalTime() {
-        return ConfigParsers.parseFractionalTime(value, getTimeUnit());
+        try {
+            return ConfigParsers.parseFractionalTime(value, getTimeUnit());
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -144,7 +170,11 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double.
      */
     public Duration asDuration() {
-        return ConfigParsers.parseDuration(value);
+        try {
+            return ConfigParsers.parseDuration(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -160,7 +190,11 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double.
      */
     public double asLength() {
-        return ConfigParsers.parseLength(value, getLengthUnit());
+        try {
+            return ConfigParsers.parseLength(value, getLengthUnit());
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -176,7 +210,11 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double asSpeed() {
-        return ConfigParsers.parseSpeed(value, getLengthUnit(), getTimeUnit());
+        try {
+            return ConfigParsers.parseSpeed(value, getLengthUnit(), getTimeUnit());
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -192,7 +230,11 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double asAcceleration() {
-        return ConfigParsers.parseAcceleration(value, getLengthUnit(), getTimeUnit());
+        try {
+            return ConfigParsers.parseAcceleration(value, getLengthUnit(), getTimeUnit());
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
@@ -208,42 +250,50 @@ public class StrictValueParser {
      * @throws NumberFormatException      if the value given cannot be parsed as a double
      */
     public double asJerk() {
-        return ConfigParsers.parseJerk(value, getLengthUnit(), getTimeUnit());
+        try {
+            return ConfigParsers.parseJerk(value, getLengthUnit(), getTimeUnit());
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**
      * @return a {@link ListValueParser} operating on the String config value.
      */
     public ListValueParser asList() {
-        return new ListValueParser(value);
+        return new ListValueParser(value, key);
     }
 
     /**
      * @return a {@link SetValueParser} operating on the String config value.
      */
     public SetValueParser asSet() {
-        return new SetValueParser(value);
+        return new SetValueParser(value, key);
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public MapValueParser asMap() {
-        return new MapValueParser(value);
+        return new MapValueParser(value, key);
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public SetMultimapValueParser asSetMultimap() {
-        return new SetMultimapValueParser(value);
+        return new SetMultimapValueParser(value, key);
     }
 
     /**
      * @return the String config value parsed using the provided custom parser.
      */
     public <T> T withCustomParser(Function<String, T> parser) {
-        return parser.apply(value);
+        try {
+            return parser.apply(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 
     /**

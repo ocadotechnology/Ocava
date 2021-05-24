@@ -26,10 +26,12 @@ import com.ocadotechnology.id.StringId;
  * colon (":") separated set. If both separators are present, elements will be separated on commas only.
  */
 public class SetValueParser {
+    private final Enum<?> key;
     private final String value;
 
-    public SetValueParser(String value) {
+    public SetValueParser(String value, Enum<?> key) {
         this.value = value;
+        this.key = key;
     }
 
     /**
@@ -111,6 +113,10 @@ public class SetValueParser {
      *          elements will be separated on commas only.
      */
     public <T> ImmutableSet<T> withElementParser(Function<String, T> elementParser) {
-        return ConfigParsers.getSetOf(elementParser).apply(value);
+        try {
+            return ConfigParsers.getSetOf(elementParser).apply(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 }

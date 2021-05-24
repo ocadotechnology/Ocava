@@ -24,10 +24,12 @@ import com.google.common.collect.ImmutableSetMultimap;
  * (";") separated list of equals ("=") separated key-value pairs.
  */
 public class SetMultimapValueParser {
+    private final Enum<?> key;
     private final String value;
 
-    public SetMultimapValueParser(String value) {
+    public SetMultimapValueParser(String value, Enum<?> key) {
         this.value = value;
+        this.key = key;
     }
 
     /**
@@ -58,6 +60,10 @@ public class SetMultimapValueParser {
      * @throws IllegalArgumentException   if duplicate keys are specified
      */
     public <K, V> ImmutableSetMultimap<K, V> withKeyAndValueParsers(Function<String, K> keyParser, Function<String, V> valueParser) {
-        return ConfigParsers.parseSetMultimap(value, keyParser, valueParser);
+        try {
+            return ConfigParsers.parseSetMultimap(value, keyParser, valueParser);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 }

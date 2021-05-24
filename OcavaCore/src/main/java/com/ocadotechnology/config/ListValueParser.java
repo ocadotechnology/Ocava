@@ -26,10 +26,12 @@ import com.ocadotechnology.id.StringId;
  * colon (":") separated list. If both separators are present, elements will be separated on commas only.
  */
 public class ListValueParser {
+    private final Enum<?> key;
     private final String value;
 
-    public ListValueParser(String value) {
+    public ListValueParser(String value, Enum<?> key) {
         this.value = value;
+        this.key = key;
     }
 
     /**
@@ -111,6 +113,10 @@ public class ListValueParser {
      *          elements will be separated on commas only.
      */
     public <T> ImmutableList<T> withElementParser(Function<String, T> elementParser) {
-        return ConfigParsers.getListOf(elementParser).apply(value);
+        try {
+            return ConfigParsers.getListOf(elementParser).apply(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
     }
 }
