@@ -53,7 +53,7 @@
         <junit-jupiter.version>5.7.2</junit-jupiter.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <assertj.version>3.19.0</assertj.version>
-        <mockito.version>3.10.0</mockito.version>
+        <mockito.version>3.11.0</mockito.version>
         <jfreechart.version>1.5.3</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.11.1034</aws-java-sdk-s3.version>
