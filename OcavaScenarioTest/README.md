@@ -6,6 +6,7 @@ The framework enables scenario tests to be written in code rather than in text w
 ## Step creation
 
 Steps are created together during the execution of the Test method, but before any of the simulation objects have been created or run.  This means that some care must be taken to ensure any lookups or queries must be done inside the runnable method passed into the step.
+See See [here](EXAMPLE_SCENARIO_TEST.md) for some worked examples of what that means.
 
 All ordered (default) steps are queued to be executed sequentially.
 
@@ -62,6 +63,8 @@ then.eventOccurs()
 then.never().eventOccurs()
 ```
 would validate that the event happens exactly once.
+
+(See the [worked examples](EXAMPLE_UNORDERED_STEPS.md) for a step-by-step example of how this works)
 
 ### Propagation of notifications between unordered steps
 
