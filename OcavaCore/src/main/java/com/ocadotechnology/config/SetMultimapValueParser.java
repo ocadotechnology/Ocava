@@ -27,7 +27,7 @@ public class SetMultimapValueParser {
     private final Enum<?> key;
     private final String value;
 
-    public SetMultimapValueParser(String value, Enum<?> key) {
+    public SetMultimapValueParser(Enum<?> key, String value) {
         this.value = value;
         this.key = key;
     }

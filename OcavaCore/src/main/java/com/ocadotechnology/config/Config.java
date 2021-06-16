@@ -275,7 +275,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public StrictValueParser getValue(Enum<?> key) {
         String value = getIfKeyDefined(key)
                 .orElseThrow(() -> new ConfigKeyNotFoundException(key));
-        return new StrictValueParser(value, key, timeUnit, lengthUnit);
+        return new StrictValueParser(key, value, timeUnit, lengthUnit);
     }
 
     /**
@@ -289,7 +289,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public OptionalValueParser getIfValueDefined(Enum<?> key) {
         String value = getIfKeyDefined(key)
                 .orElseThrow(() -> new ConfigKeyNotFoundException(key));
-        return new OptionalValueParser(value, key, timeUnit, lengthUnit);
+        return new OptionalValueParser(key, value, timeUnit, lengthUnit);
     }
 
     /**
@@ -303,7 +303,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     public OptionalValueParser getIfKeyAndValueDefined(Enum<?> key) {
         String value = getIfKeyDefined(key).orElse("");
 
-        return new OptionalValueParser(value, key, timeUnit, lengthUnit);
+        return new OptionalValueParser(key, value, timeUnit, lengthUnit);
     }
 
     public String getQualifiedKeyName(E key) {

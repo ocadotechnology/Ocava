@@ -29,7 +29,7 @@ public class ListValueParser {
     private final Enum<?> key;
     private final String value;
 
-    public ListValueParser(String value, Enum<?> key) {
+    public ListValueParser(Enum<?> key, String value) {
         this.value = value;
         this.key = key;
     }

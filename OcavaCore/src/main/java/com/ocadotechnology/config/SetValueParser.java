@@ -29,7 +29,7 @@ public class SetValueParser {
     private final Enum<?> key;
     private final String value;
 
-    public SetValueParser(String value, Enum<?> key) {
+    public SetValueParser(Enum<?> key, String value) {
         this.value = value;
         this.key = key;
     }

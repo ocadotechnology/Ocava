@@ -27,7 +27,7 @@ public class MapValueParser {
     private final Enum<?> key;
     private final String value;
 
-    public MapValueParser(String value, Enum<?> key) {
+    public MapValueParser(Enum<?> key, String value) {
         this.value = value;
         this.key = key;
     }

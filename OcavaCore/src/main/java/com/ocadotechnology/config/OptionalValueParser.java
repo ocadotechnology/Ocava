@@ -37,15 +37,15 @@ public class OptionalValueParser {
     private final Optional<StrictValueParser> parser;
 
     @VisibleForTesting
-    OptionalValueParser(String value, Enum<?> key) {
-        this(value, key, null, null);
+    OptionalValueParser(Enum<?> key, String value) {
+        this(key, value, null, null);
     }
 
-    OptionalValueParser(String value, Enum<?> key, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
+    OptionalValueParser(Enum<?> key, String value, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
         if (value.isEmpty()) {
             parser = Optional.empty();
         } else {
-            parser = Optional.of(new StrictValueParser(value, key, timeUnit, lengthUnit));
+            parser = Optional.of(new StrictValueParser(key, value, timeUnit, lengthUnit));
         }
     }
 

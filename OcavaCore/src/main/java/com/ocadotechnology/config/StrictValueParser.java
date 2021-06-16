@@ -39,11 +39,11 @@ public class StrictValueParser {
     private final LengthUnit lengthUnit;
 
     @VisibleForTesting
-    StrictValueParser(String value, Enum<?> key) {
-        this(value, key, null, null);
+    StrictValueParser(Enum<?> key, String value) {
+        this(key, value, null, null);
     }
 
-    StrictValueParser(String value, Enum<?> key, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
+    StrictValueParser(Enum<?> key, String value, @Nullable TimeUnit timeUnit, @Nullable LengthUnit lengthUnit) {
         this.value = value;
         this.key = key;
         this.timeUnit = timeUnit;
@@ -261,28 +261,28 @@ public class StrictValueParser {
      * @return a {@link ListValueParser} operating on the String config value.
      */
     public ListValueParser asList() {
-        return new ListValueParser(value, key);
+        return new ListValueParser(key, value);
     }
 
     /**
      * @return a {@link SetValueParser} operating on the String config value.
      */
     public SetValueParser asSet() {
-        return new SetValueParser(value, key);
+        return new SetValueParser(key, value);
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public MapValueParser asMap() {
-        return new MapValueParser(value, key);
+        return new MapValueParser(key, value);
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public SetMultimapValueParser asSetMultimap() {
-        return new SetMultimapValueParser(value, key);
+        return new SetMultimapValueParser(key, value);
     }
 
     /**
