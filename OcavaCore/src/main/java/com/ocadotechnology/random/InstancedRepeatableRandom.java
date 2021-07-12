@@ -38,7 +38,7 @@ import com.google.common.base.Preconditions;
  * applications which use concepts such as Stream.parallelStream to retain deterministic behaviour, but each thread must
  * be passed an independent instance, created from a deterministic seed.
  */
-@SuppressFBWarnings(value = "DMI_RANDOM_USED_ONLY_ONCE", justification = "Random object is store in the instantiated class")
+@SuppressFBWarnings(value = "DMI_RANDOM_USED_ONLY_ONCE", justification = "Random object is stored in the instantiated class")
 public class InstancedRepeatableRandom {
     private final Random randomInstance;
 
