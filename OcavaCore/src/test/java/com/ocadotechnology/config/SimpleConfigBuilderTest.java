@@ -157,4 +157,54 @@ class SimpleConfigBuilderTest {
                 .hasCauseInstanceOf(ConfigKeysNotRecognisedException.class)
                 .hasMessageContaining("Error caught building Config object.");
     }
+
+    @Test
+    @DisplayName("can be built using an existing config")
+    void testSimpleConfig_canBeBuiltWithExistingConfig() {
+        Config<TestConfig> originalConfig = configBuilder
+                .put(TestConfig.FOO, "42")
+                .put(TestConfig.BAR, "43")
+                .buildWrapped();
+
+        Config<TestConfig> fromConfig = SimpleConfigBuilder.createFromConfig(originalConfig)
+                .put(TestConfig.BAR, "24") // overridden default
+                .put(TestConfig.BAZ, "44") // added new value
+                .buildWrapped();
+
+        assertThat(fromConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(42); // default
+        assertThat(fromConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(24); // overridden default
+        assertThat(fromConfig.getValue(TestConfig.BAZ).asInt()).isEqualTo(44); // added
+    }
+
+    @Test
+    @DisplayName("can be built using an existing config and prefixes")
+    void testSimpleConfig_canBeBuiltWithExistingConfigAndPrefixes() {
+        final String prefix1 = "Prefix1";
+        final String prefix2 = "Prefix2";
+
+        Config<TestConfig> originalConfig = configBuilder
+                .put(TestConfig.FOO, "42")
+                .put(TestConfig.FOO, "123", prefix1, prefix2)
+                .put(TestConfig.FOO, "122", prefix1)
+                .put(TestConfig.BAR, "22")
+                .put(TestConfig.BAR, "43", prefix1, prefix2)
+                .buildWrapped();
+
+        Config<TestConfig> fromConfig = SimpleConfigBuilder.createFromConfig(originalConfig)
+                .put(TestConfig.BAR, "24") // added
+                .put(TestConfig.BAR, "12", prefix1, prefix2) // overridden
+                .put(TestConfig.BAZ, "44") // added
+                .put(TestConfig.BAZ, "90", prefix1)
+                .buildWrapped();
+
+        assertThat(fromConfig.getValue(TestConfig.FOO).asInt()).isEqualTo(42); // default
+        assertThat(fromConfig.getValue(TestConfig.BAR).asInt()).isEqualTo(24); // overridden
+        assertThat(fromConfig.getValue(TestConfig.BAZ).asInt()).isEqualTo(44); // added
+
+        Config<TestConfig> configForPrefix1 = fromConfig.getPrefixedConfigItems(prefix1);
+        assertThat(configForPrefix1.getValue(TestConfig.FOO).asInt()).isEqualTo(122); // default prefixed
+        assertThat(configForPrefix1.getValue(TestConfig.BAZ).asInt()).isEqualTo(90); // added prefixed
+        Config<TestConfig> configForPrefix2 = configForPrefix1.getPrefixedConfigItems(prefix2);
+        assertThat(configForPrefix2.getValue(TestConfig.BAR).asInt()).isEqualTo(12); // overridden prefixed
+    }
 }

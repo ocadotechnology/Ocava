@@ -40,7 +40,7 @@ class ConfigValue implements Serializable {
 
     ConfigValue getPrefix(String prefix) {
         ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues = getFilteredPrefixedValues(prefix);
-        String currentValue = getPrefixValue(prefix, filteredPrefixedValues);
+        String currentValue = getPrefixValue(filteredPrefixedValues);
 
         ImmutableMap.Builder<ImmutableSet<String>, String> prefixedValues = ImmutableMap.builder();
         filteredPrefixedValues.forEach((prefixes, value) -> {
@@ -59,7 +59,7 @@ class ConfigValue implements Serializable {
      * @return A new ConfigValue with the currentValue set to the given prefix' value if it is present.
      */
     ConfigValue getWithPrefixBias(String prefix) {
-        return new ConfigValue(getPrefixValue(prefix, getFilteredPrefixedValues(prefix)), prefixedValues);
+        return new ConfigValue(getPrefixValue(getFilteredPrefixedValues(prefix)), prefixedValues);
     }
 
     private ImmutableMap<ImmutableSet<String>, String> getFilteredPrefixedValues(String prefix) {
@@ -69,7 +69,7 @@ class ConfigValue implements Serializable {
                 .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
     }
 
-    private String getPrefixValue(String prefix, ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues) {
+    private String getPrefixValue(ImmutableMap<ImmutableSet<String>, String> filteredPrefixedValues) {
         return filteredPrefixedValues.entrySet()
                 .stream()
                 .filter(e -> hasSinglePrefix(e.getKey()))

@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -32,18 +34,43 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * for use with tests and small utilities with hard-coded config.
  */
 public class SimpleConfigBuilder<E extends Enum<E>> {
-    private Class<E> configType;
-    private Map<String, String> configMap; // Not used ImmutableMap.Builder to allow entries to be changed
+    private final Class<E> configType;
+    private @CheckForNull final Config<E> initialConfig;
+    private final Map<String, String> configMap = new HashMap<>(); // Not used ImmutableMap.Builder to allow entries to be changed
     private TimeUnit timeUnit;
     private LengthUnit lengthUnit;
 
     private SimpleConfigBuilder(Class<E> configType) {
         this.configType = configType;
-        this.configMap = new HashMap<>();
+        this.initialConfig = null;
     }
 
+    private SimpleConfigBuilder(Config<E> config) {
+        configType = config.cls;
+        initialConfig = config;
+    }
+
+    /**
+     * Create a configuration builder based on the given Enum
+     * @param configType Enum class reference
+     * @param <E> Enum on which to base the configuration
+     * @return New builder to create a configuration
+     */
     public static <E extends Enum<E>> SimpleConfigBuilder<E> create(Class<E> configType) {
         return new SimpleConfigBuilder<>(configType);
+    }
+
+    /**
+     * Create a configuration builder based on an existing configuration of the target type.
+     * The initial values set in the initial configuration will serve as default values in the configuration built from
+     * this builder
+     *
+     * @param config The initial configuration
+     * @param <E> The enum type on which the configuration is based, should match the enum type of the config
+     * @return New builder to create a configuration
+     */
+    public static <E extends Enum<E>> SimpleConfigBuilder<E> createFromConfig(Config<E> config) {
+        return new SimpleConfigBuilder<>(config);
     }
 
     /**
@@ -156,7 +183,9 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      *              recognised within the specified {@code configType} class.
      */
     public Config<E> build() throws ConfigKeysNotRecognisedException {
-        ConfigManager.Builder configManagerBuilder = new ConfigManager.Builder(new String[] {});
+        ConfigManager.Builder configManagerBuilder = (this.initialConfig == null)
+                ? new ConfigManager.Builder(new String[]{})
+                : new ConfigManager.Builder(initialConfig);
         configManagerBuilder.loadConfigFromMap(ImmutableMap.copyOf(configMap), ImmutableSet.of(configType));
         if (timeUnit != null) {
             configManagerBuilder.setTimeUnit(timeUnit);
