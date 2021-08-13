@@ -29,6 +29,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
@@ -68,6 +71,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * {@code "SystemConfig.SystemSubConfig.VALUE_3"}
  * {@code "SystemConfig.SystemSubConfig.HighlyNestedConfig.VALUE_4"}
  */
+@ParametersAreNonnullByDefault
 public class ConfigManager {
     public final CLISetup commandLineArgs;
     private final ImmutableMap<Class<? extends Enum<?>>, Config<?>> config;
@@ -120,7 +124,7 @@ public class ConfigManager {
 
             if (cli.hasResourceLocations()) {
                 Map<String, String> overrides = new LinkedHashMap<>();
-                cli.streamResourceLocations().forEach(loc -> readResource(loc).forEach((k, v) -> overrides.put((String) k, (String) v)));
+                cli.streamResourceLocations().forEach(loc -> ConfigDataSource.readResource(loc).forEach((k, v) -> overrides.put((String) k, (String) v)));
                 overrides.putAll(cli.getOverrides());
 
                 this.commandLineArgs = new CLISetup(cli.getOriginalArgs(), ImmutableMap.copyOf(overrides));
@@ -162,7 +166,7 @@ public class ConfigManager {
                 if (this.getClass().getClassLoader().getResource(location) == null) {
                     builder.add(ConfigDataSource.fromFile(location));
                 } else {
-                    builder.add(new ConfigDataSource(null, location));
+                    builder.add(new ConfigDataSource(location));
                 }
             }
             return loadConfig(builder.build(), configKeys);
@@ -199,9 +203,7 @@ public class ConfigManager {
         public Builder loadConfig(ImmutableList<ConfigDataSource> dataSources, ImmutableSet<Class<? extends Enum<?>>> configKeys) throws IOException {
             Properties props = new Properties();
             for (ConfigDataSource dataSource : dataSources) {
-                Properties sourceProps = dataSource.fileSource != null
-                        ? readFromFile(dataSource.fileSource)
-                        : readFromResource(dataSource.resourceLocation);
+                Properties sourceProps = dataSource.readAsProperties();
                 props.putAll(sourceProps);
             }
 
@@ -373,6 +375,60 @@ public class ConfigManager {
         public ConfigManager build() throws ConfigKeysNotRecognisedException {
             return build(true);
         }
+    }
+
+    public static class ConfigDataSource {
+        private final @CheckForNull File fileSource;
+        private final @CheckForNull String resourceLocation;
+        private final @CheckForNull InputStream inputStream;
+
+        private ConfigDataSource(File fileSource) {
+            this.fileSource = fileSource;
+            this.resourceLocation = null;
+            this.inputStream = null;
+        }
+
+        private ConfigDataSource(String resourceLocation) {
+            this.fileSource = null;
+            this.resourceLocation = resourceLocation;
+            this.inputStream = null;
+        }
+
+        private ConfigDataSource(InputStream inputStream) {
+            this.fileSource = null;
+            this.resourceLocation = null;
+            this.inputStream = inputStream;
+        }
+
+        public static ConfigDataSource fromFile(String fileLocation) throws IOException {
+            File file = new File(fileLocation);
+            if (!file.isFile()) {
+                throw new IOException("unable to load file " + fileLocation);
+            }
+            return new ConfigDataSource(file);
+        }
+
+        public static ConfigDataSource fromFile(File fileLocation) {
+            return new ConfigDataSource(fileLocation);
+        }
+
+        public static ConfigDataSource fromInputStream(InputStream inputStream) {
+            return new ConfigDataSource(inputStream);
+        }
+
+        public static ConfigDataSource fromLocalResource(String localResource) {
+            return new ConfigDataSource(localResource);
+        }
+
+        private Properties readAsProperties() throws IOException {
+            if (fileSource != null) {
+                return readFromFile(fileSource);
+            } else if (resourceLocation != null) {
+                return readFromResource(resourceLocation);
+            } else {
+                return readProperties(Preconditions.checkNotNull(inputStream));
+            }
+        }
 
         private static Properties readResource(String resourceLocation) {
             try {
@@ -414,32 +470,6 @@ public class ConfigManager {
             props.load(in);
             in.close();
             return props;
-        }
-    }
-
-    public static class ConfigDataSource {
-        private final File fileSource;
-        private final String resourceLocation;
-
-        private ConfigDataSource(File fileSource, String resourceLocation) {
-            this.fileSource = fileSource;
-            this.resourceLocation = resourceLocation;
-        }
-
-        public static ConfigDataSource fromFile(String fileLocation) throws IOException {
-            File file = new File(fileLocation);
-            if (!file.isFile()) {
-                throw new IOException("unable to load file " + fileLocation);
-            }
-            return new ConfigDataSource(Preconditions.checkNotNull(file), null);
-        }
-
-        public static ConfigDataSource fromFile(File fileLocation) {
-            return new ConfigDataSource(Preconditions.checkNotNull(fileLocation), null);
-        }
-
-        public static ConfigDataSource fromLocalResource(String localResource) {
-            return new ConfigDataSource(null, Preconditions.checkNotNull(localResource));
         }
     }
 

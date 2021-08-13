@@ -18,7 +18,9 @@ package com.ocadotechnology.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
@@ -28,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.ConfigManager.Builder;
+import com.ocadotechnology.config.ConfigManager.ConfigDataSource;
 import com.ocadotechnology.config.ConfigManager.PrefixedProperty;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.config.TestConfig.FirstSubConfig;
@@ -97,6 +100,23 @@ class ConfigManagerTest {
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(2);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void loadConfigFromInputStream_testGenericIdsParsing() throws IOException, ConfigKeysNotRecognisedException {
+        InputStream inputStream = new FileInputStream("src/test/resources/test-config-resource.properties");
+        Builder builder = new Builder(new String[]{});
+
+        ConfigManager configManager = builder.loadConfig(ImmutableList.of(ConfigDataSource.fromInputStream(inputStream)), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        ImmutableList<Id<Double>> listOfIds = config.getValue(FirstSubConfig.WOO).asList().ofIds();
+
+        assertThat(listOfIds.get(0)).isEqualTo(Id.create(1));
+        assertThat(listOfIds.get(1)).isEqualTo(Id.create(2));
+        assertThat(listOfIds.get(2)).isEqualTo(Id.create(3));
+        assertThat(listOfIds.get(3)).isEqualTo(Id.create(4));
     }
 
     @Test
