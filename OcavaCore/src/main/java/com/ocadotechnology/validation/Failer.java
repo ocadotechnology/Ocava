@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.validation;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 
 public final class Failer {
@@ -43,6 +45,7 @@ public final class Failer {
      *
      * @throws IllegalStateException    Guaranteed
      */
+    @SuppressFBWarnings(value = "MS_EXPOSE_REP", justification = "By the definition of this method the static field can never actually be returned")
     public static RuntimeException fail(String errorMessage, Object... stringArgs) {
         Preconditions.checkState(false, errorMessage, stringArgs);
         return exceptionThatWillNeverBeThrown;
