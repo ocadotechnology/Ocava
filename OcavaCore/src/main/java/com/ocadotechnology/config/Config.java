@@ -320,6 +320,19 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return map.build();
     }
 
+    /**
+     * Return the full config object as a map.
+     * This includes prefixes and secrets
+     * This is a package only function
+     *
+     * @return {@link ImmutableMap} of config pairs
+     */
+    ImmutableMap<String, String> getFullMap() {
+        ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
+        consumeConfigValues((k, v, isSecret) -> map.put(k, v), true);
+        return map.build();
+    }
+
     public ImmutableMap<String, String> getKeyValueStringMapWithoutSecrets() {
         ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
         consumeConfigValues((k, v, isSecret) -> {

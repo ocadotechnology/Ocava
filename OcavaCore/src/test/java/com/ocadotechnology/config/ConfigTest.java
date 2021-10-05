@@ -18,10 +18,15 @@ package com.ocadotechnology.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 
 @DisplayName("A Config object")
@@ -334,6 +339,30 @@ class ConfigTest {
                     .contains("prefix@TestConfig.FOO=bar")
                     .contains("TestConfig.FOO=foo");
         }
+    }
+
+    @Test
+    void fullMap_includesPrefixes() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = new ConfigManager.Builder().loadConfigFromResourceOrFile(
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                .build();
+        final ImmutableMap<String, String> fullMap = configManager.getConfig(TestConfig.class).getFullMap();
+
+        assertThat(fullMap.size()).isEqualTo(14); // 14 TestConfig lines in file
+        assertThat(Integer.parseInt(fullMap.get("Prefix1@TestConfig.BAR"))).isEqualTo(4);
+    }
+
+    @Test
+    void fullMap_includesSecrets() {
+        Config<TestConfig> config = SimpleConfigBuilder.create(TestConfig.class)
+                .put("TestConfig.SECRET_1", "secret1")
+                .put("TestConfig.FirstSubConfig.SECRET_2", "s2")
+                .buildWrapped();
+        final ImmutableMap<String, String> fullMap = config.getFullMap();
+
+        assertThat(fullMap.get("TestConfig.SECRET_1")).isEqualTo("secret1");
+        assertThat(fullMap.get("TestConfig.FirstSubConfig.SECRET_2")).isEqualTo("s2");
     }
 
     private static Config<TestConfig> generateConfigWithEntry(Enum<?> key, String value) {

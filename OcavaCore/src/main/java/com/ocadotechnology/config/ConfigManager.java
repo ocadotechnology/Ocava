@@ -119,7 +119,7 @@ public class ConfigManager {
         /**
          * @param args command line argument overrides for config values.  (@see {@link CLISetup})
          */
-        public Builder(String[] args) {
+        public Builder(String... args) {
             CLISetup cli = CLISetup.parseCommandLineArguments(args);
 
             if (cli.hasResourceLocations()) {
@@ -136,6 +136,8 @@ public class ConfigManager {
         /**
          * Construct ConfigManager.Builder with initial config values from a {@link com.ocadotechnology.config.Config}
          * @param initialConfig initial config
+         *
+         * @deprecated Use {@link #Builder(String...)} and {@link ConfigManager.Builder#withConfigFromExisting}
          */
         public Builder(Config<? extends Enum<?>> initialConfig) {
             this.commandLineArgs = CLISetup.parseCommandLineArguments(new String[]{});
@@ -146,9 +148,31 @@ public class ConfigManager {
          * Loads the config (for <em>configKey</em>) using command-line parameters.<br>
          * Command-line parameters are automatically included when calling any of the <em>loadConfig</em> methods,
          * but if they are not called for a key, then this is the only way to pull the values from the command-line
+         *
+         * @deprecated Use {@link ConfigManager.Builder#withConfigFromCommandLine} instead (renamed for clarity)
          */
         public Builder withConfig(Class<? extends Enum<?>> configKey) {
+            return withConfigFromCommandLine(configKey);
+        }
+
+        /**
+         * Loads the config (for <em>configKey</em>) using command-line parameters.<br>
+         * Command-line parameters are automatically included when calling any of the <em>loadConfig</em> methods,
+         * but if they are not called for a key, then this is the only way to pull the values from the command-line
+         */
+        public Builder withConfigFromCommandLine(Class<? extends Enum<?>> configKey) {
             return mergePropertiesWithCommandLineOverrides(new Properties(), ImmutableSet.of(configKey));
+        }
+
+        /**
+         * Loads the config from the existing config, and applies command0line parameters as overrides
+         * @param config the existing config object
+         * @return ConfigManagerBuilder object
+         */
+        public Builder withConfigFromExisting(Config<?> config) {
+            Properties properties = new Properties();
+            properties.putAll(config.getFullMap());
+            return mergePropertiesWithCommandLineOverrides(properties, ImmutableSet.of(config.cls));
         }
 
         /**
