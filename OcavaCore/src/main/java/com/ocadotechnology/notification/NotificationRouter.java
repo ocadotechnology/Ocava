@@ -33,8 +33,25 @@ public interface NotificationRouter {
     <T extends Notification> void broadcast(T notification);
 
     /**
+     * Sends the provided notifications to all registered handlers, equivalent to calling:
+     *
+     * broadcast(notification1);
+     * broadcast(notification2);
+     * broadcast(notification3);
+     * ...
+     *
+     * Note: if the Notifications are expensive to create, and may not have any subscribers, consider using the lazy
+     * implementation.
+     */
+    default void broadcast(Notification... notifications) {
+        for (Notification notification : notifications) {
+            broadcast(notification);
+        }
+    }
+
+    /**
      * Lazily sends the notification provided by the supplier to all registered handlers.  The supplier will not be
-     * invoked if nothing subscribes to the declated notificationClass
+     * invoked if nothing subscribes to the declared notificationClass
      */
     <T extends Notification> void broadcast(Supplier<T> concreteMessageNotificationSupplier, Class<T> notificationClass);
 

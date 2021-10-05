@@ -63,7 +63,7 @@ class NotificationRouterTest {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
-        Assertions.assertTrue(notificationRememberingService.getReceivedNotifications().size() == 1);
+        Assertions.assertEquals(1, notificationRememberingService.getReceivedNotifications().size());
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0) );
     }
     @Test
@@ -73,7 +73,7 @@ class NotificationRouterTest {
         RememberingConsumer<Notification> eavesdropper = new RememberingConsumer<>();
         CrossAppNotificationRouter.get().setEavesDropper(eavesdropper);
         NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
-        Assertions.assertTrue(eavesdropper.get().size() == 1);
+        Assertions.assertEquals(1, eavesdropper.get().size());
         Assertions.assertEquals(concreteMessageNotification, eavesdropper.get().get(0));
     }
 
@@ -83,7 +83,7 @@ class NotificationRouterTest {
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
         CrossAppNotificationRouter.get().setShouldSuppressBroadcast(true);
         NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
-        Assertions.assertTrue(notificationRememberingService.getReceivedNotifications().size() == 0);
+        Assertions.assertEquals(0, notificationRememberingService.getReceivedNotifications().size());
     }
 
     @Test
@@ -93,10 +93,27 @@ class NotificationRouterTest {
     }
 
     @Test
+    void whenNoNotifications_ThenNoNotificationsBroadcast() {
+        NotificationRouter.get().broadcast();
+        Assertions.assertEquals(0, notificationRememberingService.getReceivedNotifications().size());
+    }
+
+    @Test
+    void whenNNotifications_ThenNNotificationsBroadcast() {
+        ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
+        ConcreteMessageNotification concreteMessageNotification2 = new ConcreteMessageNotification("Goodbye!");
+
+        NotificationRouter.get().broadcast(concreteMessageNotification, concreteMessageNotification2);
+        Assertions.assertEquals(2, notificationRememberingService.getReceivedNotifications().size());
+        Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0));
+        Assertions.assertEquals(concreteMessageNotification2, notificationRememberingService.getReceivedNotifications().get(1));
+    }
+
+    @Test
     void IfMessageBroadcastViaUnLazyBroadcastMethod_thenSupplierIsCalledAndNotificationIsReceivedByService(){
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         NotificationRouter.get().broadcast(concreteMessageNotification);
-        Assertions.assertTrue(notificationRememberingService.getReceivedNotifications().size() == 1);
+        Assertions.assertEquals(1, notificationRememberingService.getReceivedNotifications().size());
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0) );
     }
 
