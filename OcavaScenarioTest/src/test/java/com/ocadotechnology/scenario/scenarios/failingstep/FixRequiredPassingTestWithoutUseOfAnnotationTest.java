@@ -23,9 +23,22 @@ import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.FixRequired;
 import com.ocadotechnology.scenario.Story;
 
-@FixRequired("Testing failing step chaining")
+/**
+ * Validate that a passing test that is marked as fix required by the {@link com.ocadotechnology.scenario.AbstractStory#isFixRequired}
+ * function, as opposed to the {@link FixRequired} annotation, is designated as failing.
+ */
 @Story
-class FailingStepChainedTest extends AbstractFrameworkTestStory {
+class FixRequiredPassingTestWithoutUseOfAnnotationTest extends AbstractFrameworkTestStory {
+
+    // This assertion cannot be in the scenario as the test is marked as fix required, meaning if this step failed the test would still pass.
+    static {
+        Assertions.assertFalse(FixRequiredPassingTestWithoutUseOfAnnotationTest.class.isAnnotationPresent(FixRequired.class));
+    }
+
+    @Override
+    public boolean isFixRequired() {
+        return true;
+    }
 
     @Override
     public void executeTestSteps() {
@@ -33,17 +46,11 @@ class FailingStepChainedTest extends AbstractFrameworkTestStory {
                 AssertionFailedError.class,
                 super::executeTestSteps,
                 "No error thrown");
-        Assertions.assertTrue(e.getMessage().contains("Test is successful but it is marked as fix required:"));
+        Assertions.assertTrue(e.getMessage().contains("Test is successful but it is marked as fix required"));
     }
 
-    /**
-     * Test that chaining failing steps doesn't negate the failingStep flag, or lead to the wrong CheckStep being
-     * stored as the failing step.
-     */
     @Test
     void scenario() {
         when.simStarts();
-        when.testEvent.scheduled(1, "first");
-        then.testEvent.failingStep().failingStep().occurs("first");
     }
 }

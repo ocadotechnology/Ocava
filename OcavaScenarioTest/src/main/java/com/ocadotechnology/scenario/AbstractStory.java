@@ -32,7 +32,7 @@ import com.ocadotechnology.validation.Failer;
 @ExtendWith(ScenarioTestWrapper.class)
 @DefaultStory
 public abstract class AbstractStory<S extends Simulation> {
-    public static final String TEST_PASSES_WITH_FIX_REQUIRED = "Test is successful but it is annotated with FixRequired:%n\t%s%nMarked failing steps:%n\t%s";
+    public static final String TEST_PASSES_WITH_FIX_REQUIRED = "Test is successful but it is marked as fix required:%n\t%s%nMarked failing steps:%n\t%s";
     private static Logger logger = LoggerFactory.getLogger(AbstractStory.class);
 
     protected final StepsRunner stepsRunner;
@@ -117,7 +117,16 @@ public abstract class AbstractStory<S extends Simulation> {
         Assertions.assertFalse(isFixRequired(), String.format(TEST_PASSES_WITH_FIX_REQUIRED, getFixRequiredText(), stepCache.getFailingSteps()));
     }
 
-    boolean isFixRequired() {
+    /**
+     * Returns true if the test is currently expected to fail. In this case, tests that fail are considered "passed" in the test suite and vice versa.
+     * This allows still valid, yet failing, tests to be highlighted so that the test/implementation can be updated as required.
+     *
+     * The default implementation of this method returns true if the class is annotated with the {@link FixRequired} annotation.
+     * A test which is failing intermittently (e.g. due to random seed instability) should be {@link Disabled} instead.
+     *
+     * It is expected that most users will not require this overriding functionality and instead should rely on Ocava's {@link FixRequired} annotation.
+     **/
+    public boolean isFixRequired() {
         return this.getClass().isAnnotationPresent(FixRequired.class);
     }
 

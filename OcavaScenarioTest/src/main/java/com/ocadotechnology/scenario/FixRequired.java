@@ -20,6 +20,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.junit.jupiter.api.Disabled;
+
+/**
+ * This annotation can be used to identify tests that are currently expected to fail. In this case, tests that fail are considered "passed" in the test suite and vice versa.
+ * This allows still valid, yet failing, tests to be highlighted so that the test/implementation can be updated as required.
+ *
+ * A test which is failing intermittently (e.g. due to random seed instability) should be {@link Disabled} instead.
+ **/
 @Target(value = {ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface FixRequired {

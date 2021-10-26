@@ -38,7 +38,7 @@ public class FixRequiredWithFailingStepWithNoFailure extends AbstractFrameworkTe
                 AssertionFailedError.class,
                 super::executeTestSteps,
                 "No error thrown");
-        Assertions.assertTrue(e.getMessage().contains("Test is successful but it is annotated with FixRequired"));
+        Assertions.assertTrue(e.getMessage().contains("Test is successful but it is marked as fix required"));
     }
 
     /**
