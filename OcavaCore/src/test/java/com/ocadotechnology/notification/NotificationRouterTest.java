@@ -99,7 +99,7 @@ class NotificationRouterTest {
     }
 
     @Test
-    void whenNNotifications_ThenNNotificationsBroadcast() {
+    void whenNotifications_ThenNotificationsBroadcast() {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         ConcreteMessageNotification concreteMessageNotification2 = new ConcreteMessageNotification("Goodbye!");
 

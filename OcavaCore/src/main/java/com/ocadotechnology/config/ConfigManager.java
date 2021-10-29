@@ -165,7 +165,7 @@ public class ConfigManager {
         }
 
         /**
-         * Loads the config from the existing config, and applies command0line parameters as overrides
+         * Loads the config from the existing config, and applies command-line parameters as overrides
          * @param config the existing config object
          * @return ConfigManagerBuilder object
          */
