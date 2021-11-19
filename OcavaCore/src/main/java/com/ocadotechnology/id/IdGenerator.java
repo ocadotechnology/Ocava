@@ -73,7 +73,29 @@ public final class IdGenerator {
         getRawIdGenerator(classForId).set(lastId);
     }
 
-    /** Sets all cached entries to zero. Should be used only by tests as it does not guarantee atomicity */
+    /**
+     * <b>Discouraged use</b>, see notes<br><br>
+     *
+     * Sets all cached entries to zero.
+     * <br><br>
+     *
+     * <p>
+     *     <b>Note 1:</b>
+     *     Should be used only by tests as it does not guarantee atomicity
+     * </p>
+     * <p>
+     *     <b>Note 2:</b>
+     *     This class provides globally available ids, based on classes. Extra care needs to be taken when using the
+     *     reset method, so as not to lead to unwanted id collisions.
+     *     This is particularly important with test engines, and test suite.
+     * <br><br>
+     *     Test suites usually are composed by some one-time code (constructors, @BeforeAll/@AfterAll callbacks),
+     *     and a test loop(@BeforeEach/@AfterEach callback, test itself).
+     * <br><br>
+     *     <b>Do not use reset</b> in your tests, if the IdGenerator is used outside of the test loop.
+     *     Tests using this class should rather be id-agnostic, and not rely on the generator providing specific ids.
+     * </p>
+     * */
     public static void clear() {
         idCounters.values().forEach(c -> c.set(0));
     }

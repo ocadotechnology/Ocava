@@ -51,13 +51,13 @@ public class IdGeneratorTest {
         Assertions.assertNotNull(rawIdGenerator);
 
         rawIdGenerator.set(100);
-        Assertions.assertEquals(IdGenerator.getId(A.class).id, 100);
+        Assertions.assertEquals(100, IdGenerator.getId(A.class).id);
     }
 
     @Test
     public void initialiseIdCounter() {
         IdGenerator.initialiseIdCounter(A.class, 100);
-        Assertions.assertEquals(IdGenerator.getId(A.class).id, 100);
+        Assertions.assertEquals(100, IdGenerator.getId(A.class).id);
     }
 
     @Test
@@ -68,9 +68,8 @@ public class IdGeneratorTest {
 
         IdGenerator.clear();
 
-        Assertions.assertEquals(rawIdGenerator.get(), 0);
-        Assertions.assertEquals(IdGenerator.getId(A.class).id, 0);
-        Assertions.assertEquals(IdGenerator.getId(B.class).id, 0);
+        Assertions.assertEquals(0, rawIdGenerator.get());
+        Assertions.assertEquals(0, IdGenerator.getId(A.class).id);
+        Assertions.assertEquals(0, IdGenerator.getId(B.class).id);
     }
-
 }
