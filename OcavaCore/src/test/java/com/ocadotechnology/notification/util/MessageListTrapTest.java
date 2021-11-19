@@ -50,4 +50,17 @@ public class MessageListTrapTest {
         Assertions.assertEquals(3, trap.getCapturedNotifications().size(), "Expected 3 Notifications");
     }
 
+    @Test
+    public void whenResetCalled_thenIsEmpty() {
+        MessageListTrap<TestNotification> trap = MessageListTrap.createAndSubscribe(
+                TestNotification.class,
+                false,
+                TestSchedulerType.TEST_SCHEDULER_TYPE);
+        NotificationRouter.get().broadcast(new TestNotification());
+        NotificationRouter.get().broadcast(new TestNotification());
+        NotificationRouter.get().broadcast(new TestNotification());
+        trap.reset();
+        Assertions.assertEquals(0, trap.getCapturedNotifications().size(), "Expected no notifications");
+    }
+
 }

@@ -24,6 +24,10 @@ import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.Subscriber;
 
+/**
+ * Subscribe to the notification bus to capture a list of notification
+ * @param <T> Type of the captured notification
+ */
 public class MessageListTrap<T extends Notification> implements Subscriber {
     private final Class<T> type;
     private final boolean acceptSubclasses;
@@ -37,19 +41,35 @@ public class MessageListTrap<T extends Notification> implements Subscriber {
         this.schedulerType = schedulerType;
     }
 
+    /**
+     * Create the trap and subscribe to the event bus
+     * @param type Class to listen for on the Notification bus
+     * @param acceptSubclasses set to true to capture subclasses
+     * @param schedulerType type of Scheduler to subscribe to
+     * @param <T> Type of the captured notification
+     * @return new {@link MessageListTrap}
+     */
     public static <T extends Notification> MessageListTrap<T> createAndSubscribe(Class<T> type, boolean acceptSubclasses, EventSchedulerType schedulerType) {
         MessageListTrap<T> messageListTrap = new MessageListTrap<>(type, acceptSubclasses, schedulerType);
         messageListTrap.subscribeForNotifications();
         return messageListTrap;
     }
-    
+
+    /**
+     * Capture notifications from the event bus, and store notifications matching the captured class
+     * @param n Notification
+     */
     @Subscribe
     public void anyNotificationOfType(T n) {
         if (n.getClass() == type || (acceptSubclasses && type.isAssignableFrom(n.getClass()))) {
             trappedNotifications.add(n);
         }
     }
-    
+
+    /**
+     * Returns an immutable copy of the trapped notifications
+     * @return {@link ImmutableList} of the trapped notifications
+     */
     public ImmutableList<T> getCapturedNotifications() {
         return ImmutableList.copyOf(trappedNotifications);
     }
@@ -57,5 +77,12 @@ public class MessageListTrap<T extends Notification> implements Subscriber {
     @Override
     public EventSchedulerType getSchedulerType() {
         return schedulerType;
+    }
+
+    /**
+     * Clears the captured list of notifications
+     */
+    public void reset() {
+        trappedNotifications.clear();
     }
 }
