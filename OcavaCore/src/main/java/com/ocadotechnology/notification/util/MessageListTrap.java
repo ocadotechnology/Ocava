@@ -25,8 +25,8 @@ import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.Subscriber;
 
 /**
- * Subscribe to the notification bus to capture a list of notification
- * @param <T> Type of the captured notification
+ * Subscribe to the notification bus to capture a list of notifications
+ * @param <T> Type of the captured notifications
  */
 public class MessageListTrap<T extends Notification> implements Subscriber {
     private final Class<T> type;

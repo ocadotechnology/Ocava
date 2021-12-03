@@ -87,7 +87,7 @@ public final class IdGenerator {
      *     <b>Note 2:</b>
      *     This class provides globally available ids, based on classes. Extra care needs to be taken when using the
      *     reset method, so as not to lead to unwanted id collisions.
-     *     This is particularly important with test engines, and test suite.
+     *     This is particularly important with test engines, and test suites.
      * <br><br>
      *     Test suites usually are composed by some one-time code (constructors, @BeforeAll/@AfterAll callbacks),
      *     and a test loop(@BeforeEach/@AfterEach callback, test itself).
