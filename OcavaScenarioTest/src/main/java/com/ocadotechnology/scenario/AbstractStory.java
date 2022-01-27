@@ -109,6 +109,7 @@ public abstract class AbstractStory<S extends Simulation> {
             if (isFixRequired()) {
                 Executable unfinishedStep = stepsRunner.getUnfinishedStep();
                 if (stepCache.getFailingSteps().isEmpty() || stepCache.getFailingSteps().contains(unfinishedStep)) {
+                    logger.info("Test failed, however, test marked as passed due being annotated with fix required: {}", this.getClass().getSimpleName());
                     return;
                 }
             }
