@@ -51,6 +51,7 @@ public class ByTypeConsumerTest {
         stringConsumer = new TestConsumer<>();
         exceptionConsumer = new TestConsumer<>();
 
+        // Do not add Double.class or Exception.class -- used in test
         byTypeConsumer = ByTypeConsumer.builder()
                 .withConsumerFor(Integer.class, integerConsumer)
                 .withConsumerFor(String.class, stringConsumer)
@@ -79,7 +80,7 @@ public class ByTypeConsumerTest {
         assertEquals(TEST_STRING, stringConsumer.heldObject);
 
         byTypeConsumer.accept(TEST_INT);
-        assertEquals(TEST_INT, (int)integerConsumer.heldObject);
+        assertEquals(TEST_INT, integerConsumer.heldObject);
 
         byTypeConsumer.accept(TEST_IO_EXCEPTION);
         assertEquals(TEST_IO_EXCEPTION, exceptionConsumer.heldObject);
@@ -118,7 +119,7 @@ public class ByTypeConsumerTest {
         assertEquals(TEST_STRING, stringConsumer.heldObject);
 
         byTypeAllConsumers.accept(TEST_INT);
-        assertEquals(TEST_INT, (int)integerConsumer.heldObject);
+        assertEquals(TEST_INT, integerConsumer.heldObject);
 
         byTypeAllConsumers.accept(TEST_IO_EXCEPTION);
         assertEquals(TEST_IO_EXCEPTION, exceptionConsumer.heldObject);

@@ -30,6 +30,7 @@ class ByTypeFunctionTest {
     public static final String INTEGER_PREFIX = "This is an integer: ";
     public static final String IOEXCEPTION_PREFIX = "This is an IOException ";
 
+    // Do not add Double.class or Exception.class -- used in test
     private static final Function<Object, String> STRICT_BY_TYPE_FUNCTION = ByTypeFunction.<Object, String>builder()
             .withFunctionFor(String.class, s -> STRING_PREFIX + s)
             .withFunctionFor(Integer.class, i -> INTEGER_PREFIX + i)

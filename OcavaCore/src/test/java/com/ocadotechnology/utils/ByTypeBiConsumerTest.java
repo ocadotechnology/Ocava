@@ -51,7 +51,7 @@ public class ByTypeBiConsumerTest {
         byTypeConsumerWithFailingDeadLetter = ByTypeBiConsumer.<Object, String>builder()
                 .withBiConsumerFor(Integer.class, integerConsumer)
                 .withBiConsumerFor(String.class, stringConsumer)
-                // Do not add Double.class -- used in test
+                // Do not add Double.class or Exception.class -- used in test
                 .withBiConsumerFor(IOException.class, exceptionConsumer)
                 .withBiConsumerFor(RuntimeException.class, exceptionConsumer)
                 .withDeadLetterConsumer(FAILING_CONSUMER)
@@ -101,7 +101,7 @@ public class ByTypeBiConsumerTest {
         assertEquals(TEST_STRING, stringConsumer.heldObject);
 
         byTypeConsumerWithFailingDeadLetter.accept(TEST_INT, ANY_STRING);
-        assertEquals(TEST_INT, (int)integerConsumer.heldObject);
+        assertEquals(TEST_INT, integerConsumer.heldObject);
 
         byTypeConsumerWithFailingDeadLetter.accept(TEST_IO_EXCEPTION, ANY_STRING);
         assertEquals(TEST_IO_EXCEPTION, exceptionConsumer.heldObject);
@@ -137,7 +137,7 @@ public class ByTypeBiConsumerTest {
     @Test
     public void testPartialConsumerConsumes() {
         byTypePartialConsumer.accept(TEST_INT, ANY_STRING);
-        assertEquals(TEST_INT, (int)integerConsumer.heldObject);
+        assertEquals(TEST_INT, integerConsumer.heldObject);
 
         byTypePartialConsumer.accept(TEST_STRING, ANY_STRING);
         assertEquals(TEST_STRING, stringConsumer.heldObject);

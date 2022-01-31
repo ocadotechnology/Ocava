@@ -32,6 +32,7 @@ class ByTypeBiFunctionTest {
 
     public static final String ANY_STRING = "Some input string";
 
+    // Do not add Double.class or Exception.class -- used in test
     private static final BiFunction<Object, String, String> STRICT_BY_TYPE_FUNCTION = ByTypeBiFunction.<Object, String, String>builder()
             .withBiFunctionFor(String.class, (s, s2) -> STRING_PREFIX + s)
             .withBiFunctionFor(Integer.class, (i, s2) -> INTEGER_PREFIX + i)

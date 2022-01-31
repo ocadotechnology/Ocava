@@ -74,6 +74,14 @@ public class ByTypeConsumer<T> implements Consumer<T> {
         return (Consumer<Q>) consumers.getOrDefault(q.getClass(), defaultConsumer);
     }
 
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("consumers", consumers)
+                .add("defaultConsumer", defaultConsumer)
+                .toString();
+    }
+
     public static class ByTypeConsumerBuilder<T> {
         private static final Consumer PARTIAL_COVERAGE_CONSUMER = t -> {};
 
@@ -150,13 +158,5 @@ public class ByTypeConsumer<T> implements Consumer<T> {
         public ByTypeConsumer<T> build() {
             return new ByTypeConsumer<>(consumersBuilder.build(), defaultConsumer);
         }
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("consumers", consumers)
-                .add("defaultConsumer", defaultConsumer)
-                .toString();
     }
 }
