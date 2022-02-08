@@ -249,6 +249,10 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
         failureListeners.add(failureListener);
     }
 
+    public void registerRecoverableFailureListener(Consumer<RecoverableException> failureListener) {
+        recoverableFailureListeners.add(failureListener);
+    }
+
     public void registerOnShutDown(Runnable onShutDown) {
         onShutDowns.add(onShutDown);
     }
