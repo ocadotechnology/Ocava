@@ -29,7 +29,7 @@ stages:
     - shared-aws-m-large
 
 default:
-  image: maven:3.6.3-openjdk-8
+  image: maven:3.8.4-openjdk-11
   tags: *linux-runner-tags
 
 full-build:
