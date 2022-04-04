@@ -57,7 +57,8 @@
         <jfreechart.version>1.5.3</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.191</aws-java-sdk-s3.version>
-        <jackson.version>2.13.2</jackson.version>
+        <jackson-databind.version>2.13.2.2</jackson-databind.version>
+        <jackson-dataformat-cbor.version>2.13.2</jackson-dataformat-cbor.version>
         <disruptor.version>3.4.4</disruptor.version>
         <logback-classic.version>1.2.11</logback-classic.version>
         <!-- EE dependency required for s3 to work -->
@@ -169,12 +170,12 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-databind.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-cbor</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-dataformat-cbor.version}</version>
             </dependency>
             <dependency>
                 <groupId>javax.xml.bind</groupId>
