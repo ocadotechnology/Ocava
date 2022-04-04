@@ -94,6 +94,19 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
     }
 
     /**
+     * @param timeUnit The {@link TimeUnit} that this scheduler will run in
+     * @param name A name to be associated with the thread used by this scheduler
+     * @param daemon whether the executor thread should be created as a daemon thread
+     * @param type the type of this scheduler (for use with execution layers
+     *             - see {@link com.ocadotechnology.notification.NotificationRouter})
+     * @param removeOnCancel whether cancelled tasks should be immediately removed from the work queue
+     *                       - see {@link ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy}
+     */
+    public ExecutorEventScheduler(TimeUnit timeUnit, String name, boolean daemon, EventSchedulerType type, boolean removeOnCancel) {
+        this(new UtcTimeProvider(timeUnit), name, daemon, type, removeOnCancel);
+    }
+
+    /**
      * @param timeProvider The {@link TimeProvider} that this scheduler will be based on
      * @param name A name to be associated with the thread used by this scheduler
      * @param daemon whether the executor thread should be created as a daemon thread
@@ -101,6 +114,19 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
      *             - see {@link com.ocadotechnology.notification.NotificationRouter})
      */
     public ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
+        this(timeProvider, name, daemon, type, false);
+    }
+
+    /**
+     * @param timeProvider The {@link TimeProvider} that this scheduler will be based on
+     * @param name A name to be associated with the thread used by this scheduler
+     * @param daemon whether the executor thread should be created as a daemon thread
+     * @param type the type of this scheduler (for use with execution layers
+     *             - see {@link com.ocadotechnology.notification.NotificationRouter})
+     * @param removeOnCancel whether cancelled tasks should be immediately removed from the work queue
+     *                       - see {@link ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy}
+     */
+    public ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type, boolean removeOnCancel) {
         super(type);
         this.timeProvider = timeProvider;
 
@@ -110,6 +136,8 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
                         .setNameFormat("ExecutorEventScheduler-" + name + "-%d")
                         .setDaemon(daemon)
                         .build());
+
+        executor.setRemoveOnCancelPolicy(removeOnCancel);
 
         //The delay is 0 so the TimeUnit is irrelevant.
         ScheduledFuture<Long> future = executor.schedule(() -> Thread.currentThread().getId(), 0, TimeUnit.MILLISECONDS);

@@ -47,4 +47,16 @@ class BusyLoopEventSchedulerTest {
         scheduler.doAt(1000, Runnables.doNothing());
         Assertions.assertEquals(1, scheduler.getQueueSize());
     }
+
+    @Test
+    void testCancelledEventIsImmediatelyRemovedFromQueue() {
+        Assertions.assertEquals(0, scheduler.getQueueSize());
+
+        Cancelable event = scheduler.doIn(Double.MAX_VALUE, Runnables.doNothing());
+        Assertions.assertEquals(1, scheduler.getQueueSize());
+
+        event.cancel();
+
+        Assertions.assertEquals(0, scheduler.getQueueSize());
+    }
 }

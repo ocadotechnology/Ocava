@@ -23,18 +23,26 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import com.google.common.util.concurrent.Runnables;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
 import com.ocadotechnology.notification.TestBus;
 import com.ocadotechnology.notification.TestSchedulerType;
 
 class ExecutorEventSchedulerTest {
+    private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
+    private static final String NAME = "ExecutorEventSchedulerTest";
+    private static final boolean DAEMON_THREADS = true;
+    private static final EventSchedulerType SCHEDULER_TYPE = TestSchedulerType.TEST_SCHEDULER_TYPE;
+
     private ExecutorEventScheduler scheduler;
 
     @BeforeEach
     void setUp() {
-        scheduler = new ExecutorEventScheduler(TimeUnit.MILLISECONDS, "ExecutorEventSchedulerTest", true, TestSchedulerType.TEST_SCHEDULER_TYPE);
+        scheduler = new ExecutorEventScheduler(TIME_UNIT, NAME, DAEMON_THREADS, SCHEDULER_TYPE);
     }
 
     @AfterEach
@@ -94,5 +102,25 @@ class ExecutorEventSchedulerTest {
 
         Assertions.assertFalse(failedWasCalled.get());
         Assertions.assertFalse(taskWasRun.get());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testCancelledEventIsImmediatelyRemovedFromQueueIfEnabled(boolean removeOnCancel) {
+        ExecutorEventScheduler scheduler = new ExecutorEventScheduler(TIME_UNIT, NAME, DAEMON_THREADS, SCHEDULER_TYPE, removeOnCancel);
+
+        try {
+            Assertions.assertEquals(0, scheduler.getQueueSize());
+
+            Cancelable event = scheduler.doIn(Double.MAX_VALUE, Runnables.doNothing());
+            Assertions.assertEquals(1, scheduler.getQueueSize());
+
+            event.cancel();
+
+            int expectedFinalQueueSize = removeOnCancel ? 0 : 1;
+            Assertions.assertEquals(expectedFinalQueueSize, scheduler.getQueueSize());
+        } finally {
+            scheduler.stop();
+        }
     }
 }
