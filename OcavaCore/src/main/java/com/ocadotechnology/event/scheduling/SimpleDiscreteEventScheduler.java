@@ -18,6 +18,8 @@ package com.ocadotechnology.event.scheduling;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import javax.annotation.CheckForNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +42,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     private final EventsQueue discreteEventsQueue;
     private final EventSchedulerType type;
 
-    private boolean isPaused = false;
-    private boolean isExecuting = false;
-    private boolean isStopped = false;
+    private final RunState runState = new RunState();
 
     private boolean shouldLogExceptions = true;
 
@@ -76,7 +76,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     public void pause() {
-        isPaused = true;
+        runState.setPause();
     }
 
     public void unPause() {
@@ -84,14 +84,22 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     public void unPause(BooleanSupplier exitCondition) {
-        if (isPaused) {
-            isPaused = false;
+        if (runState.clearPause()) {
             startExecutingEvents(exitCondition);
         }
     }
 
-    public Cancelable scheduleDoNowDontStart(Runnable r, String description) {
-        if (isStopped) {
+    @Override
+    public Cancelable doNow(Runnable r, String description) {
+        Cancelable event = scheduleDoNowDontStart(r, description);
+        if (event != null) {
+            startExecutingEvents(() -> false);
+        }
+        return event;
+    }
+
+    public @CheckForNull Cancelable scheduleDoNowDontStart(Runnable r, String description) {
+        if (!runState.canDoNow()) {
             return null;
         }
         Event event = new Event(timeProvider.getTime(), description, r, this, false);
@@ -100,31 +108,16 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     @Override
-    public Cancelable doNow(Runnable r, String description) {
-        if (isStopped) {
-            return null;
-        }
-        Cancelable event = scheduleDoNowDontStart(r, description);
-        if (!isExecuting && !isPaused) {
-            startExecutingEvents(() -> false);
-        }
-        return event;
-    }
-
-    @Override
-    public final Cancelable doAt(double time, Runnable r, String description, boolean isDaemon) {
-        if (isStopped) {
-            return null;
-        }
+    public Cancelable doAt(double time, Runnable r, String description, boolean isDaemon) {
         Cancelable event = scheduleDoAtDontStart(time, r, description, isDaemon);
-        if (!isExecuting && !isPaused) {
+        if (event != null) {
             startExecutingEvents(() -> false);
         }
         return event;
     }
 
     public Cancelable scheduleDoAtDontStart(double time, Runnable r, String description, boolean isDaemon) {
-        if (isStopped) {
+        if (!runState.canDoAt()) {
             return null;
         }
         double now = timeProvider.getTime();
@@ -138,14 +131,15 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     private void startExecutingEvents(BooleanSupplier exitCondition) {
-        executeEvents(exitCondition);
-        isExecuting = false;
+        if (runState.setExecuting()) {
+            executeEvents(exitCondition);
+            runState.setIdle();
+        }
     }
 
     private void executeEvents(BooleanSupplier exitCondition) {
         Event nextEvent;
-        while (!isStopped && !isPaused && !exitCondition.getAsBoolean() && (nextEvent = discreteEventsQueue.getNextEvent()) != null) {
-            isExecuting = true;
+        while (runState.canExecute() && !exitCondition.getAsBoolean() && (nextEvent = discreteEventsQueue.getNextEvent()) != null) {
             timeProvider.setTime(nextEvent.time);
             try {
                 simpleEventExecutor.execute(nextEvent, timeProvider.getTime());
@@ -180,18 +174,50 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     @Override
+    public void prepareToStop() {
+        if (runState.setStopping()) {
+            discreteEventsQueue.clearScheduledEvents();
+        }
+    }
+
+    @Override
     public void stop() {
         stop(null);
     }
 
+    @Override
+    public boolean isStopping() {
+        return runState.isStopping;
+    }
+
     public void stop(Throwable t) {
-        isStopped = true;
-        discreteEventsQueue.clear();
-        endCallBack.accept(t);
+        if (runState.isStopping) {
+            flushExistingDoNowEvents();
+        }
+        if (runState.setStopped()) {
+            discreteEventsQueue.clear();
+            endCallBack.accept(t);
+        }
+    }
+
+    private void flushExistingDoNowEvents() {
+        double now = timeProvider.getTime();
+
+        Event nextEvent;
+        while ((nextEvent = discreteEventsQueue.getNextEvent()) != null) {
+            try {
+                simpleEventExecutor.execute(nextEvent, now);
+            } catch (Throwable t) {
+                if (shouldLogExceptions) {
+                    logger.error("Throwable caught at {} whilst processing {}", EventUtil.logTime(now), nextEvent, t);
+                }
+                throw t;
+            }
+        }
     }
 
     public boolean isStopped() {
-        return isStopped;
+        return runState.isStopped;
     }
 
     @Override
@@ -219,5 +245,73 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
 
     public double timeToNextEvent() {
         return getNextScheduledEventTime() - timeProvider.getTime();
+    }
+
+    private static class RunState {
+        private boolean isPaused = false;
+        private boolean isExecuting = false;
+        private boolean isStopped = false;
+        private boolean isStopping = false;
+
+        public boolean isIdle() {
+            return !isPaused && !isExecuting && !isStopped && !isStopping;
+        }
+
+        public void setPause() {
+            if (!isStopped && !isStopping) {
+                isPaused = true;
+            }
+        }
+
+        public boolean clearPause() {
+            if (isPaused) {
+                isPaused = false;
+                return true;
+            }
+            return false;
+        }
+
+        public boolean canDoNow() {
+            return !isStopped;
+        }
+
+        public boolean canDoAt() {
+            return !isStopped && !isStopping;
+        }
+
+        public boolean canExecute() {
+            return !isStopped && !isPaused;
+        }
+
+        public boolean setExecuting() {
+            if (!isExecuting && !isPaused) {
+                isExecuting = true;
+                return true;
+            }
+            return false;
+        }
+
+        public void setIdle() {
+            if (!isStopped && !isStopping && !isPaused) {
+                isExecuting = false;
+            }
+        }
+
+        public boolean setStopping() {
+            if (!isStopped && !isPaused && !isStopping) {
+                isStopping = true;
+                return true;
+            }
+            return false;
+        }
+
+        public boolean setStopped() {
+            if (!isStopped) {
+                isStopped = true;
+                isStopping = false;
+                return true;
+            }
+            return false;
+        }
     }
 }

@@ -252,6 +252,12 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
     }
 
     @Override
+    public void prepareToStop() {
+        // We could add 'graceful' stop to this scheduler as a future improvement (see SimpleDiscreteEventScheduler)
+        // nop
+    }
+
+    @Override
     public void stop() {
         // Defensive programming required: Who know why we've called stop.  Could be because the logger has failed...
         try {
@@ -274,6 +280,10 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
         } finally {
             shouldStop = true;
         }
+    }
+
+    public boolean isStopping() {
+        return false;
     }
 
     @Override

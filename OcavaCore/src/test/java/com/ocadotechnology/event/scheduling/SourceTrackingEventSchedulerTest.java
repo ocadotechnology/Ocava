@@ -16,6 +16,7 @@
 package com.ocadotechnology.event.scheduling;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
@@ -67,6 +68,92 @@ public class SourceTrackingEventSchedulerTest {
         threadOneScheduler.doAt(25d, cancelable::cancel, "");
         backingScheduler.unPause();
         Assertions.assertFalse(executed.get(0), "event executed after cancellation");
+    }
+
+    @Test
+    void whenSchedulerIsStopping_thenSchedulerShutsDownGracefullyByRunningAllDoNowsOnly() {
+        List<Integer> completedEventNotifications = new ArrayList<>();
+
+        threadOneScheduler.doAt(50,
+                () -> Assertions.fail("prepareToStop should be called first, and we don't run doAt while stopping"),
+                "doAt before prepareToStop");
+        threadOneScheduler.doNow(
+                () -> completedEventNotifications.add(1),
+                "doNow before prepareToStop");
+        threadOneScheduler.doNow(
+                threadOneScheduler::prepareToStop,
+                "Calling prepareToStop");
+        threadOneScheduler.doNow(() -> {
+                    completedEventNotifications.add(2);  // make sure we've been called
+                    Cancelable ev = threadOneScheduler.doAt(100, () -> Assertions.fail("Should never be scheduled"), "fail(1)");
+                    Assertions.assertNull(ev, "If stopping, then calling doAt should be rejected");
+                },
+                "doNow to add doAt after call to prepareToStop");
+        threadOneScheduler.doNow(() -> {
+                    completedEventNotifications.add(3);  // make sure we've been called
+                    Cancelable ev = threadOneScheduler.doNow(() -> completedEventNotifications.add(30), "success(30)");
+                    Assertions.assertNotNull(ev, "If stopping, then calling doNow should be fine");
+                },
+                "doNow to add doNow after call to prepareToStop");
+        threadOneScheduler.doNow(() -> {
+                    completedEventNotifications.add(4);  // make sure we've been called
+                    threadOneScheduler.stop();
+                },
+                "Calling stop");
+        threadOneScheduler.doNow(() -> {
+                    // At this point, we've called prepareToStop, then Stop, so we're flushing out existing
+                    // doNow events.  This event was already scheduled, so we're ok to run it, and because
+                    // we're still flushing, we're ok to add more doNow events:
+                    completedEventNotifications.add(5);  // make sure we've been called
+                    Cancelable ev = threadOneScheduler.doNow(() -> completedEventNotifications.add(50), "success(50)");
+                    Assertions.assertNotNull(ev, "If stopping, then calling doNow should be fine");
+                },
+                "doNow to add doNow after call to stop");
+        backingScheduler.unPause();
+
+        // Now that we've stopped, all events are rejected
+        Cancelable nowEvent = threadOneScheduler.doNow(() -> Assertions.fail("Should not be called after a stop"), "Post-stop event");
+        Assertions.assertNull(nowEvent, "Can't add doNow events once stopped");
+        Cancelable atEvent = threadOneScheduler.doAt(50, () -> Assertions.fail("Should not be called after a stop"), "Post-stop event");
+        Assertions.assertNull(atEvent, "Can't add doAt events once stopped");
+
+        Assertions.assertEquals(Arrays.asList(1, 2, 3, 4, 5, 30, 50), completedEventNotifications);
+    }
+
+    @Test
+    void whenSchedulerStopped_thenSchedulerJustShutsDown() {
+        List<Integer> completedEventsNotifications = new ArrayList<>();
+
+        threadOneScheduler.doAt(50, () -> Assertions.fail("Should never be run"), "Stop before we run any doAt");
+        threadOneScheduler.doNow(() -> {
+                    completedEventsNotifications.add(1);
+                },
+                "doNow before call to stop");
+        threadOneScheduler.doNow(() -> {
+                    // This is executed before we call stop, but scheduled to run after we call stop
+                    completedEventsNotifications.add(2);  // make sure we've been called
+                    Cancelable ev = threadOneScheduler.doNow(() -> Assertions.fail("Nothing runs after stop called"), "After stopped event");
+                    Assertions.assertNotNull(ev, "Adding doNow before calling stop is fine");
+                },
+                "doNow for a later doNow");
+        threadOneScheduler.doNow(() -> {
+                    completedEventsNotifications.add(3);  // make sure we've been called
+                    threadOneScheduler.stop();
+                },
+                "Stop");
+        threadOneScheduler.doNow(() -> {
+                    Assertions.fail("Executed after stop called, so should not be called");
+                },
+                "doNow after call to stop");
+        backingScheduler.unPause();
+
+        // Now that we've stopped, all events are rejected
+        Cancelable nowEvent = threadOneScheduler.doNow(() -> Assertions.fail("Should not be called after a stop"), "Post-stop event");
+        Assertions.assertNull(nowEvent, "Can't add doNow events once stopped");
+        Cancelable atEvent = threadOneScheduler.doAt(50, () -> Assertions.fail("Should not be called after a stop"), "Post-stop event");
+        Assertions.assertNull(atEvent, "Can't add doAt events once stopped");
+
+        Assertions.assertEquals(Arrays.asList(1, 2, 3), completedEventsNotifications);
     }
 
     /**

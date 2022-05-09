@@ -66,8 +66,16 @@ public class NonExecutingEventScheduler extends TypedEventScheduler {
     }
 
     @Override
+    public void prepareToStop() {}
+
+    @Override
     public void stop() {
         // Don't clear pending events as this is a test class (use reset() instead)
+    }
+
+    @Override
+    public boolean isStopping() {
+        return false;
     }
 
     public void executeAllEvents() {

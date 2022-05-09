@@ -210,6 +210,11 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
         }
     }
 
+    @Override
+    public void prepareToStop() {
+        // nop
+    }
+
     /**
      * Stop the EventScheduler. This method will attempt to stop any actively executing tasks, and will stop any
      * scheduled tasks. It will wait for 1 second to allow any currently executing tasks to complete before returning.
@@ -224,6 +229,11 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
             logger.error("Interrupted while waiting for tasks to complete after a shutdown");
         }
         eventsMap.clear();
+    }
+
+    @Override
+    public boolean isStopping() {
+        return false;
     }
 
     public boolean isStopped() {

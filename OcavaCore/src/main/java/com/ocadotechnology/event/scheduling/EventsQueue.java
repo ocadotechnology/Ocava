@@ -46,6 +46,11 @@ public interface EventsQueue {
     void clear();
 
     /**
+     * Clear the content of DoAt queue (for gentle shutdown).
+     */
+    void clearScheduledEvents();
+
+    /**
      * Cancel selected event.
      */
     void cancel(Event event);

@@ -71,6 +71,7 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
             }
             startSimulation();
         });
+        exitSimulation();
     }
 
     /**
@@ -93,7 +94,11 @@ public abstract class AbstractScenarioSimulationApi<S extends Simulation> extend
      */
     protected abstract EventScheduler createScheduler();
 
+    /** Start and run simulation to completion. */
     protected abstract void startSimulation();
+
+    /** Simulate exiting the simulation (eg, System.exit), for tidy-up, shutdown sequences. */
+    protected abstract void exitSimulation();
 
     @Override
     public void clean() {

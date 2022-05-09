@@ -47,6 +47,11 @@ public class DiscreteEventsQueue implements EventsQueue {
     }
 
     @Override
+    public void clearScheduledEvents() {
+        scheduledEvents.clear();
+    }
+
+    @Override
     public void cancel(Event event) {
         Preconditions.checkNotNull(event, "Null event cannot be cancelled");
         doNowEvents.remove(event);

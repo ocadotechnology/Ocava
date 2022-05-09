@@ -25,7 +25,38 @@ public interface EventScheduler {
 
     boolean hasOnlyDaemonEvents();
 
+    /**
+     * Signal to the scheduler that a "safe shutdown" should be started.
+     *
+     * Once called, doAt events will be rejected (return null) and existing doAt events will NOT be executed.
+     * doNow events are unaffected (will continue to execute and can be scheduled).
+     * This allows existing events to 'flush' through (including scheduling more doNow events),
+     * and other processes to schedule doNow events as part of the shutdown sequence.
+     *
+     * The scheduler will continue to run like this until {@link #stop()} is called, at which point
+     * when the doNow queue becomes empty, the scheduler will actually stop.
+     *
+     * Calling prepareToStop more than once has no additional effect.
+     */
+    void prepareToStop();
+
+    /**
+     * Default (previous) behaviour: calling stop will prevent any more "now" or "at" events from starting.
+     * Calls to doNow and doAt will return null until the scheduler is set to idle.
+     *
+     * New behaviour: if {@link #prepareToStop()} has been called (and {@link #isStopping()} returns true,
+     * then existing "now" events will be called until the "now" queue is empty (flushing phase).
+     * If more "now" events are added during this time, they will also run.
+     * Calls to doNow will (obviously) succeed, but calls to doAt will return null.
+     * Once the "now" queue is empty, the scheduler will stop (and doNow calls will also return null).
+     * The new behaviour is intended as a "safe shutdown".
+     *
+     * Calling stop more than once has no additional effect.
+     */
     void stop();
+
+    /** @return true if {@link #prepareToStop()} has been called, but {@link #stop()} has not (yet). */
+    boolean isStopping();
 
     TimeProvider getTimeProvider();
 

@@ -139,8 +139,18 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
     }
 
     @Override
+    public void prepareToStop() {
+        backingScheduler.prepareToStop();
+    }
+
+    @Override
     public void stop() {
         backingScheduler.stop();
+    }
+
+    @Override
+    public boolean isStopping() {
+        return backingScheduler.isStopping();
     }
 
     @Override
@@ -161,26 +171,25 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
     @Override
     public Cancelable doNow(Runnable r, String description) {
         MutableCancelableHolder cancelableHolder = new MutableCancelableHolder(r, description);
-        doNow(cancelableHolder);
-        return cancelableHolder;
+        return doNow(cancelableHolder);
     }
 
-    private void doNow(MutableCancelableHolder cancelableHolder) {
+    private Cancelable doNow(MutableCancelableHolder cancelableHolder) {
         Runnable newRunnable = wrappedForDoNow(cancelableHolder);
-        cancelableHolder.setCancelable(backingScheduler.doNow(newRunnable, cancelableHolder.description));
+        Cancelable inner = backingScheduler.doNow(newRunnable, cancelableHolder.description);
+        return inner == null ? null : cancelableHolder.setCancelable(inner);
     }
 
     @Override
     public Cancelable doAt(double time, Runnable r, String description, boolean isDaemon) {
         MutableCancelableHolder cancelableHolder = new MutableCancelableHolder(r, description);
-        doAt(time, isDaemon, cancelableHolder);
-        return cancelableHolder;
+        return doAt(time, isDaemon, cancelableHolder);
     }
 
-    private void doAt(double time, boolean isDaemon, MutableCancelableHolder cancelableHolder) {
+    private Cancelable doAt(double time, boolean isDaemon, MutableCancelableHolder cancelableHolder) {
         Runnable newRunnable = wrappedForDoAt(cancelableHolder, isDaemon);
-        Cancelable cancelable = backingScheduler.doAt(time, newRunnable, cancelableHolder.description, isDaemon);
-        cancelableHolder.setCancelable(cancelable);
+        Cancelable inner = backingScheduler.doAt(time, newRunnable, cancelableHolder.description, isDaemon);
+        return inner == null ? null : cancelableHolder.setCancelable(inner);
     }
 
     @Override
@@ -221,8 +230,9 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
             this.description = description;
         }
 
-        public void setCancelable(Cancelable cancelable) {
+        public Cancelable setCancelable(Cancelable cancelable) {
             this.cancelable = cancelable;
+            return this;
         }
 
         @Override

@@ -59,6 +59,11 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
     }
 
     @Override
+    protected void exitSimulation() {
+        // nop
+    }
+
+    @Override
     protected EventScheduler createScheduler() {
         createCleanScheduler();
         return eventScheduler;

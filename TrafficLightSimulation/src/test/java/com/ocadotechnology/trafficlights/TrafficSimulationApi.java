@@ -63,6 +63,11 @@ public class TrafficSimulationApi extends AbstractScenarioSimulationApi<TrafficS
     }
 
     @Override
+    protected void exitSimulation() {
+        eventScheduler.stop();
+    }
+
+    @Override
     public double getSchedulerStartTime() {
         return 0.0;
     }

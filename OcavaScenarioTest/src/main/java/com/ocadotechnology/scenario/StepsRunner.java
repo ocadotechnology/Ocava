@@ -115,6 +115,9 @@ public class StepsRunner extends Cleanable {
             simulation.getEventScheduler().doIn(
                     postStepsRunTime,
                     () -> {
+                        // The scenario test hasn't included "end simulation" step(s),
+                        // so we're effectively hard-stopping at a (random) point in time.
+                        // We can/should leave "proper" shutdown to post-test cleanup.
                         logger.info("Scenario test complete");
                         simulation.getEventScheduler().stop();
                     },
