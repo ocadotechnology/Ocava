@@ -50,6 +50,14 @@ public class CredentialsProvider {
     }
 
     /**
+     * @return the location of the credentials file which this object will try to read from. Does not perform any
+     *          checks as to whether the file exists etc.
+     */
+    public File getCredentialsFileUnchecked() {
+        return new File(new File(homeDir, CREDENTIALS_DIRECTORY), CREDENTIALS_FILE_NAME);
+    }
+
+    /**
      * Looks for Credentials to be located in $HomeDir/.ocava-credentials/credentials file
      *
      * @return an ImmutableMap of all the key-value pairs present in the file
