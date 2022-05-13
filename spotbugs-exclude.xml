@@ -9,4 +9,33 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
 
+    <!--  Introduced by spotbugs 4.7.0 and OpenSourceOcava intentionally does this in many places -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+    </Match>
+
+    <!--  Introduced by spotbugs 4.7.0 and the code in BlockingEventBus and ScenarioTestWrapper deliberately propagates exceptions -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_THROWABLE"/>
+        <Or>
+            <Class name="com.google.common.eventbus.BlockingEventBus"/>
+            <Class name="com.ocadotechnology.scenario.ScenarioTestWrapper"/>
+        </Or>
+    </Match>
+
+    <!--  Introduced by spotbugs 4.7.0 and the code in ExceptionSwallower and Id seems to be getting a false positive -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+        <Or>
+            <Class name="com.ocadotechnology.event.scheduling.ExecutorEventScheduler"/>
+            <Class name="com.ocadotechnology.id.Id$1"/>
+        </Or>
+    </Match>
+
+    <!--  Introduced by spotbugs 4.7.0 and the code in BinarySearch incorrectly triggers this error -->
+    <Match>
+        <Bug pattern="FL_FLOATS_AS_LOOP_COUNTERS"/>
+        <Class name="com.ocadotechnology.physics.utils.BinarySearch"/>
+    </Match>
+
 </FindBugsFilter>
