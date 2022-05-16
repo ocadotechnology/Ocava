@@ -85,7 +85,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
 
     public void unPause(BooleanSupplier exitCondition) {
         if (runState.clearPause()) {
-            startExecutingEvents(exitCondition);
+            startExecutingEvents(false, exitCondition);
         }
     }
 
@@ -93,7 +93,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     public Cancelable doNow(Runnable r, String description) {
         Cancelable event = scheduleDoNowDontStart(r, description);
         if (event != null) {
-            startExecutingEvents(() -> false);
+            startExecutingEvents(true, () -> false);
         }
         return event;
     }
@@ -111,7 +111,7 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     public Cancelable doAt(double time, Runnable r, String description, boolean isDaemon) {
         Cancelable event = scheduleDoAtDontStart(time, r, description, isDaemon);
         if (event != null) {
-            startExecutingEvents(() -> false);
+            startExecutingEvents(true, () -> false);
         }
         return event;
     }
@@ -130,8 +130,8 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
         return event;
     }
 
-    private void startExecutingEvents(BooleanSupplier exitCondition) {
-        if (runState.setExecuting()) {
+    private void startExecutingEvents(boolean isReentrant, BooleanSupplier exitCondition) {
+        if (runState.setExecuting(isReentrant)) {
             executeEvents(exitCondition);
             runState.setIdle();
         }
@@ -283,8 +283,8 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
             return !isStopped && !isPaused;
         }
 
-        public boolean setExecuting() {
-            if (!isExecuting && !isPaused) {
+        public boolean setExecuting(boolean isReentrant) {
+            if (!isPaused && (!isReentrant || !isExecuting)) {
                 isExecuting = true;
                 return true;
             }
