@@ -38,6 +38,7 @@ public class EventUtil {
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private static final DateTimeFormatter isoDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final DateTimeFormatter dateTimeWithoutMsFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter bigQueryDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
 
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final long MIN_TIMESTAMP = -62135596800000L;  // 0001-01-01 00:00:00.000
@@ -169,6 +170,10 @@ public class EventUtil {
 
     public static String eventTimeToStringWithoutMs(double eventTime) {
         return eventTimeToFormat(eventTime, dateTimeWithoutMsFormatter);
+    }
+
+    public static String eventTimeToBigQueryString(double eventTime) {
+        return eventTimeToFormat(eventTime, bigQueryDateTimeFormatter);
     }
 
     /**

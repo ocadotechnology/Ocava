@@ -64,6 +64,17 @@ class EventUtilTest {
         assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString(Long.MIN_VALUE));
     }
 
+    @Test
+    void eventTimeToBigQueryString_fromDayUnit() {
+        EventUtil.setSimulationTimeUnit(TimeUnit.DAYS);
+        assertEquals("1970-01-02 12:00:00.000000", EventUtil.eventTimeToBigQueryString(1.5d));
+    }
+
+    @Test
+    void eventTimeToBigQueryString_fromNanoUnit() {
+        EventUtil.setSimulationTimeUnit(TimeUnit.NANOSECONDS);
+        assertEquals("1970-01-01 00:25:00.000000", EventUtil.eventTimeToBigQueryString(1.5e12d));
+    }
     //endregion
 
     // region eventTimeToString(double time)
@@ -313,4 +324,5 @@ class EventUtilTest {
         assertEquals("+10000-01-01 00:00:00.000", EventUtil.eventTimeToString(Long.valueOf(253402300800L)));
     }
     // endregion
+
 }
