@@ -124,7 +124,7 @@ public class ConfigManager {
 
             if (cli.hasResourceLocations()) {
                 Map<String, String> overrides = new LinkedHashMap<>();
-                cli.streamResourceLocations().forEach(loc -> ConfigDataSource.readResource(loc).forEach((k, v) -> overrides.put((String) k, (String) v)));
+                cli.streamResourceLocations().forEach(loc -> ConfigDataSource.readResource(loc, ImmutableSet.of()).forEach((k, v) -> overrides.put((String) k, (String) v)));
                 overrides.putAll(cli.getOverrides());
 
                 this.commandLineArgs = new CLISetup(cli.getOriginalArgs(), ImmutableMap.copyOf(overrides));
@@ -446,22 +446,27 @@ public class ConfigManager {
 
         private Properties readAsProperties() throws IOException {
             if (fileSource != null) {
-                return readFromFile(fileSource);
+                return readFromFile(fileSource, ImmutableSet.of());
             } else if (resourceLocation != null) {
-                return readFromResource(resourceLocation);
+                return readFromResource(resourceLocation, ImmutableSet.of());
             } else {
-                return readProperties(Preconditions.checkNotNull(inputStream));
+                return readProperties(Preconditions.checkNotNull(inputStream), ImmutableSet.of());
             }
         }
 
-        private static Properties readResource(String resourceLocation) {
+        private static Properties readResource(String resourceLocation, ImmutableSet<String> alreadyVisitedInputs) {
+            ImmutableSet<String> newVisitedInputs = ImmutableSet.<String>builder()
+                    .addAll(alreadyVisitedInputs)
+                    .add(resourceLocation)
+                    .build();
+
             try {
-                return readFromResource(resourceLocation);
+                return readFromResource(resourceLocation, newVisitedInputs);
             } catch (IOException resourceEx) {
                 try {
                     File file = new File(resourceLocation);
                     if (file.isFile() && file.canRead()) {
-                        return readFromFile(new File(resourceLocation));
+                        return readFromFile(new File(resourceLocation), newVisitedInputs);
                     }
                 } catch (IOException fileEx) {
                     throw new RuntimeException("Unable to read as resource (message:" + resourceEx.getMessage() + ") or as file", fileEx);
@@ -470,7 +475,7 @@ public class ConfigManager {
             }
         }
 
-        private static Properties readFromResource(String resourceLocation) throws IOException {
+        private static Properties readFromResource(String resourceLocation, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
             if (resourceLocation.startsWith("/")) {
                 resourceLocation = resourceLocation.substring(1);
             }
@@ -482,18 +487,41 @@ public class ConfigManager {
             if (in == null) {
                 throw new IOException("unable to load resource " + resourceLocation);
             }
-            return readProperties(in);
+
+            return readProperties(in, alreadyVisitedInputs);
         }
 
-        private static Properties readFromFile(File fileLocation) throws IOException {
-            return readProperties(new FileInputStream(fileLocation));
+        private static Properties readFromFile(File fileLocation, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
+            return readProperties(new FileInputStream(fileLocation), alreadyVisitedInputs);
         }
 
-        private static Properties readProperties(InputStream in) throws IOException {
-            Properties props = new Properties();
-            props.load(in);
+        private static Properties readProperties(InputStream in, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
+            Properties childProperties = new Properties();
+            childProperties.load(in);
             in.close();
-            return props;
+
+            ImmutableCollection<String> filesExtended = ModularConfigUtils.getAllFilesExtended(childProperties);
+            childProperties.remove(ModularConfigUtils.EXTENDS);
+
+            Properties accumulatedParentProperties = new Properties();
+
+            for (String fileName : filesExtended) {
+                if (alreadyVisitedInputs.contains(fileName)) {
+                    throw new ModularConfigException("Properties files in a loop! Already visited: " + alreadyVisitedInputs);
+                }
+
+                Properties parentProperties = readResource(fileName, alreadyVisitedInputs);
+
+                // Anything defined by the child overrides the parent. We look for conflicts in the parent
+                // only for properties that are not in the child overrides.
+                childProperties.keySet().forEach(parentProperties::remove);
+                ModularConfigUtils.checkForConflicts(accumulatedParentProperties, parentProperties);
+
+                accumulatedParentProperties.putAll(parentProperties);
+            }
+
+            accumulatedParentProperties.putAll(childProperties);
+            return accumulatedParentProperties;
         }
     }
 

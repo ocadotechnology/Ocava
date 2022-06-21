@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -48,11 +49,16 @@ class ConfigManagerTest {
     private enum TestConfigThree {
         QUACK
     }
+    
+    private Builder builder;
+    
+    @BeforeEach
+    void setUp() {
+        builder = new Builder();
+    }
 
     @Test
     void loadConfigFromResourceOrFile_testGenericIdsParsing() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("test-config-resource.properties"), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -67,8 +73,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenGenericIdsListIsEmpty() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("test-config-resource.properties"), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -80,8 +84,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenResourceOnClassPath_usesResource() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("test-config-resource.properties"), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -92,8 +94,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenResourceNotOnClassPath_usesFile() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/test-config-file.properties"), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -103,10 +103,118 @@ class ConfigManagerTest {
     }
 
     @Test
+    void loadConfigFromResourceOrFile_whenExtendsOtherFiles_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+        assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(5);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendsNonResource_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-non-resource.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(2);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendsNestedFile_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-nested.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(12);
+        assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(13);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtensionIsNestedFile_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/nested/extending.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+        assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(34);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendsMissingFile_thenThrows() {
+        String invalidFileName = "nonsense";
+
+        assertThatThrownBy(
+                () -> builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-invalid-file.properties"), ImmutableSet.of(TestConfig.class)).build())
+                .cause()
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining(invalidFileName);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendsInALoop_thenThrows() {
+        assertThatThrownBy(
+                () -> builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/loop-1.properties"), ImmutableSet.of(TestConfig.class)).build())
+                .isInstanceOf(ModularConfigException.class)
+                .hasMessageContaining("loop");
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenFileExtensionConflictsResolved_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-resolved-conflicts.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(3);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenFileExtensionsDefineSameKeyAndValue_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-matches.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenFileExtensionConflictsNotResolved_thenThrows() {
+        assertThatThrownBy(
+                () -> builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-conflicts.properties"), ImmutableSet.of(TestConfig.class)).build())
+                .isInstanceOf(ModularConfigException.class)
+                .hasMessageContaining("Unresolved conflict");
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendingFileEmpty_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-empty.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenSameFileExtendedOnDifferentPaths_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-base-two-ways.properties"), ImmutableSet.of(TestConfig.class))
+                .build();
+
+        Config<TestConfig> config = configManager.getConfig(TestConfig.class);
+        assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+    }
+
+    @Test
     void loadConfigFromInputStream_testGenericIdsParsing() throws IOException, ConfigKeysNotRecognisedException {
         InputStream inputStream = new FileInputStream("src/test/resources/test-config-resource.properties");
-        Builder builder = new Builder();
-
+        
         ConfigManager configManager = builder.loadConfig(ImmutableList.of(ConfigDataSource.fromInputStream(inputStream)), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -128,7 +236,6 @@ class ConfigManagerTest {
                 "TestConfig.BAR", "2",
                 "TestConfig.BAZ", "1");
 
-        Builder builder = new Builder();
         builder.loadConfigFromMap(map1, ImmutableSet.of(TestConfig.class));
         Config<TestConfig> config = builder.build().getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(0);
@@ -143,7 +250,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsTopLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -152,7 +259,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsSubLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -161,7 +268,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsSubSubLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -170,7 +277,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsExplicitlySetToEmpty_thenReturnsEmptyString() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -179,7 +286,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsNotExplicitlySet_thenThrowsConfigKeyNotFoundException() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -188,7 +295,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigUnchecked_whenKeyIsFromWrongConfig_thenThrowsIllegalArgumentException() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -197,7 +304,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsTopLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -206,7 +313,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsSubLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -215,7 +322,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsSubSubLevel_thenReturnsValue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -224,7 +331,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsExplicitlySetToEmpty_thenReturnsOptionalEmpty() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -233,7 +340,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsNotExplicitlySet_thenReturnsOptionalEmpty() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -242,7 +349,7 @@ class ConfigManagerTest {
 
     @Test
     void builderGetConfigIfKeyAndValueDefinedUnchecked_whenKeyIsFromWrongConfig_thenThrowsIllegalArgumentException() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -251,7 +358,7 @@ class ConfigManagerTest {
 
     @Test
     void builderAreKeyAndValueDefinedUnchecked_whenValueIsNonEmpty_thenReturnsTrue() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -260,7 +367,7 @@ class ConfigManagerTest {
 
     @Test
     void builderAreKeyAndValueDefinedUnchecked_whenValueIsExplicitlySetEmpty_thenReturnsFalse() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -269,7 +376,7 @@ class ConfigManagerTest {
 
     @Test
     void builderAreKeyAndValueDefinedUnchecked_whenValueIsNotExplicitlySet_thenReturnsFalse() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -278,7 +385,7 @@ class ConfigManagerTest {
 
     @Test
     void builderAreKeyAndValueDefinedUnchecked_whenKeyIsFromWrongConfig_thenReturnsFalse() throws IOException {
-        Builder builder = new Builder().loadConfigFromResourceOrFile(
+        builder = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class));
 
@@ -287,8 +394,6 @@ class ConfigManagerTest {
 
     @Test
     void getPrefixes() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/prefixes-test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
@@ -308,8 +413,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_singlePrefix() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/prefixes-test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
@@ -337,8 +440,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_clashingNames() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/prefixes-test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
@@ -355,8 +456,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_noUnprefixedEquivalent() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/prefixes-test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
@@ -369,8 +468,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_prefixNotFound() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
                 ImmutableList.of("src/test/prefixes-test-config-file.properties"),
                 ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
@@ -389,8 +486,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_multiplePrefixes_callFirstPrefix() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -408,8 +503,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_multiplePrefixes_callSecondPrefix() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -427,8 +520,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_multiplePrefixes_callBothPrefixes() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -444,8 +535,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_testCallOrder() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -461,8 +550,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_testDefaultCurrentValue() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -478,8 +565,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_singlePrefix_testSubConfigs() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -493,8 +578,6 @@ class ConfigManagerTest {
 
     @Test
     void loadPrefixedConfigItems_testSubConfigPenetration() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/prefixes-test-config-file.properties"), ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
@@ -535,8 +618,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenFileInBothLocations_thenDefaultToTheClasspath() throws IOException, ConfigKeysNotRecognisedException {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("src/test/potentially-overridden-file.properties"), ImmutableSet.of(TestConfig.class))
                 .build();
 
@@ -547,15 +628,12 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenFileDoesNotExist_thenThrow() {
-        Builder builder = new Builder();
         assertThatThrownBy(() -> builder.loadConfigFromResourceOrFile(ImmutableList.of("not-a-file.properties"), ImmutableSet.of(TestConfig.class)))
                 .isInstanceOf(IOException.class);
     }
 
     @Test
     void loadConfigFromEnvVarsSingleClass() throws Exception {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
                 ImmutableMap.of("FOO", "1", "BAR", "2"), ImmutableSet.of(TestConfig.class)
         ).build();
@@ -567,8 +645,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromEnvVarsMultipleClassesNoOverlappingEnums() throws Exception {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
                 ImmutableMap.of("MOO", "5", "QUACK", "4"),
                 ImmutableSet.of(TestConfigTwo.class, TestConfigThree.class)
@@ -580,8 +656,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromEnvVarsMultipleClassesOverlappingEnumsNotSet() throws Exception {
-        Builder builder = new Builder();
-
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
                 ImmutableMap.of("BAR", "4", "MOO", "5"),
                 ImmutableSet.of(TestConfig.class, TestConfigTwo.class)
@@ -593,7 +667,6 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromEnvVarsUnrecognisedValuesNoException() throws Exception {
-        Builder builder = new Builder();
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
                 ImmutableMap.of("UNKNOWN-KEY", "5"), ImmutableSet.of(TestConfig.class)
         ).build();
@@ -615,7 +688,6 @@ class ConfigManagerTest {
 
     @Test
     void environmentVariableMatchesEnumInSubclass() throws Exception {
-        Builder builder = new Builder();
         ConfigManager configManager = builder.loadConfigFromEnvironmentVariables(
                 ImmutableMap.of("HOO", "1"), ImmutableSet.of(TestConfig.class)
         ).build();
@@ -626,7 +698,6 @@ class ConfigManagerTest {
 
     @Test
     void environmentVariableMatchesEnumInMultipleSubclassFails() {
-        Builder builder = new Builder();
         ImmutableMap<String, String> envVars = ImmutableMap.of("FOO", "1", "DUPLICATED_KEY", "2");
 
         assertThatThrownBy(() -> builder.loadConfigFromEnvironmentVariables(envVars, ImmutableSet.of(TestConfig.class)))
@@ -635,8 +706,6 @@ class ConfigManagerTest {
 
     @Test
     void environmentVariableMatchesEnumAcrossMultipleClassesFails() {
-        Builder builder = new Builder();
-
         ImmutableMap<String, String> envVars = ImmutableMap.of("FOO", "1", "BAR", "2");
         assertThatThrownBy(() -> builder.loadConfigFromEnvironmentVariables(envVars, ImmutableSet.of(TestConfig.class, TestConfigTwo.class)).build())
                 .isInstanceOf(DuplicateMatchingEnvironmentVariableException.class);

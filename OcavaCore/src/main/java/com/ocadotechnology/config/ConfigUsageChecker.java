@@ -15,14 +15,19 @@
  */
 package com.ocadotechnology.config;
 
+import static com.ocadotechnology.config.ModularConfigUtils.EXTENDS;
+
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 class ConfigUsageChecker {
+    private static final Predicate<String> IS_STANDARD_PROPERTY = property -> !property.contains("@") && !property.contains(EXTENDS);
+
     private final HashSet<String> accessedProperties = new HashSet<>();
     private final HashSet<String> definedProperties = new HashSet<>();
 
@@ -40,11 +45,11 @@ class ConfigUsageChecker {
 
     private Set<String> getUnrecognisedNonPrefixedProperties() {
         ImmutableSet<String> definedNonPrefixedProperties = definedProperties.stream()
-                .filter(p -> !p.contains("@"))
+                .filter(IS_STANDARD_PROPERTY)
                 .collect(ImmutableSet.toImmutableSet());
 
         ImmutableSet<String> accessedNonPrefixedProperties = accessedProperties.stream()
-                .filter(p -> !p.contains("@"))
+                .filter(IS_STANDARD_PROPERTY)
                 .collect(ImmutableSet.toImmutableSet());
 
         return Sets.difference(definedNonPrefixedProperties, accessedNonPrefixedProperties);
@@ -52,7 +57,7 @@ class ConfigUsageChecker {
 
     private Set<String> getUnrecognisedPrefixedProperties() {
         ImmutableSet<String> definedNonPrefixedProperties = accessedProperties.stream()
-                .filter(p -> !p.contains("@"))
+                .filter(IS_STANDARD_PROPERTY)
                 .collect(ImmutableSet.toImmutableSet());
         return definedProperties.stream()
                 .filter(p -> unrecognisedPrefixedProperty(p, definedNonPrefixedProperties))

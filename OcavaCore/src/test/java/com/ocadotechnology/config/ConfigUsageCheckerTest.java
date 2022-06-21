@@ -44,7 +44,18 @@ class ConfigUsageCheckerTest implements InternalClassTest {
     }
 
     @Test
-    void whenExtraPrefixedConfigIsPresent_thenCehckerReturnsUnrecognisedProperties() {
+    void whenExtensionIsPresent_thenCheckerReturnsOk() {
+        Properties props = fullySpecifiedProperties();
+        props.setProperty(ModularConfigUtils.EXTENDS, "some-file");
+
+        ConfigUsageChecker checker = new ConfigUsageChecker();
+        ConfigFactory.read(TestConfig.class, checker.checkAccessTo(props), ImmutableSet.of());
+
+        assertThat(checker.getUnrecognisedProperties()).isEmpty();
+    }
+
+    @Test
+    void whenExtraPrefixedConfigIsPresent_thenCheckerReturnsUnrecognisedProperties() {
         Properties props = fullySpecifiedPropertiesWithPrefixedProperties();
         props.setProperty("Prefix1@TestConfig.Unknown.ITEM", "2");
 
@@ -59,7 +70,6 @@ class ConfigUsageCheckerTest implements InternalClassTest {
         Properties props = new Properties();
         props.setProperty("TestConfig.FOO", "1");
         props.setProperty("TestConfig.BAR", "2");
-        props.setProperty("TestConfig.VAL_3", "3");
         props.setProperty("TestConfig.FirstSubConfig.WOO", "4");
         props.setProperty("TestConfig.FirstSubConfig.HOO", "5");
         props.setProperty("TestConfig.FirstSubConfig.SubSubConfig.X", "6");
