@@ -44,12 +44,12 @@ public final class OneToOneIndex<R, C extends Identified<?>> extends AbstractInd
     }
 
     @Override
-    protected void add(C newObject) {
+    protected void add(C newObject) throws IndexUpdateException {
         optionalOneToOneIndex.add(newObject);
     }
 
     @Override
-    protected void remove(C object) {
+    protected void remove(C object) throws IndexUpdateException {
         optionalOneToOneIndex.remove(object);
     }
 

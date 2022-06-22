@@ -152,8 +152,8 @@ class MappedPredicateIndexTest {
                 cache.delete(testState1.getId());
                 cache.delete(testState3.getId());
 
-                assertThat(mappedPredicateIndex.getDistinctWhere()).containsOnly(testState2.longProperty);
-                assertThat(mappedPredicateIndex.getDistinctWhereNot()).containsOnly(testState4.longProperty);
+                assertThat(mappedPredicateIndex.getDistinctWhere()).containsOnly(testState2.getValue());
+                assertThat(mappedPredicateIndex.getDistinctWhereNot()).containsOnly(testState4.getValue());
             }
         }
         

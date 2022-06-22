@@ -98,6 +98,13 @@ public class Change<C extends Identified<?>> implements Serializable {
     }
 
     /**
+     * Create a Change which is the inverse of the original object
+     */
+    public Change<C> inverse() {
+        return new Change<>(newObject, originalObject);
+    }
+
+    /**
      * Create a no-action Change from and to the supplied object.
      *
      * This method is useful when using the map API

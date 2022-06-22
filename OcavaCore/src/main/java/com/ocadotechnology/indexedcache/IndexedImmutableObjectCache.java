@@ -491,7 +491,12 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
 
             //Do not collect to an ImmutableSet - Guava's default collector does not infer the stream size
             //which results in a lot of collisions and array extensions.
-            castedIndex.updateAll(objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+            ImmutableList<Change<C>> allStates = objectStore.stream().map(Change::add).collect(ImmutableList.toImmutableList());
+            try {
+                castedIndex.updateAll(allStates);
+            } catch (IndexUpdateException e) {
+                throw new IllegalStateException("Failed to add new index", e);
+            }
             return index;
         } finally {
             updateComplete();
@@ -499,7 +504,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     private void updateIndexes(C newValue, C oldValue) {
-        indexes.forEach(i -> i.update(newValue, oldValue));
+        for (int i = 0; i < indexes.size(); ++i) {
+            try {
+                indexes.get(i).update(newValue, oldValue);
+            } catch (IndexUpdateException e) {
+                rollbackSingleUpdate(newValue, oldValue, i, e);
+                throw new CacheUpdateException("Failed to update indices", e);
+            }
+        }
         updateStateChangeListeners(oldValue, newValue);
         updateAtomicStateChangeListeners(oldValue, newValue);
     }
@@ -514,7 +526,14 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     private void updateIndexes(ImmutableCollection<Change<C>> changes) {
-        indexes.forEach(i -> i.updateAll(changes));
+        for (int i = 0; i < indexes.size(); ++i) {
+            try {
+                indexes.get(i).updateAll(changes);
+            } catch (IndexUpdateException e) {
+                rollbackBatchUpdate(changes, i, e);
+                throw new CacheUpdateException("Failed to update indices", e);
+            }
+        }
         changes.forEach(update -> updateStateChangeListeners(update.originalObject, update.newObject));
         if (!atomicStateChangeListeners.isEmpty()) {
             atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
@@ -523,6 +542,32 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
 
     private void updateStateChangeListeners(@Nullable C oldState, @Nullable C newState) {
         stateChangeListeners.forEach(s -> s.stateChanged(oldState, newState));
+    }
+
+    private void rollbackSingleUpdate(C newValue, C oldValue, int failedIndexNumber, IndexUpdateException cause) {
+        try {
+            for (int i = 0; i < failedIndexNumber; ++i) {
+                indexes.get(i).update(oldValue, newValue);
+            }
+            objectStore.update(newValue, oldValue);
+        } catch (IndexUpdateException | CacheUpdateException e) {
+            throw new IllegalStateException("Failed to rollback changes after index failure: " + cause.getMessage(), e);
+        }
+    }
+
+    private void rollbackBatchUpdate(ImmutableCollection<Change<C>> changes, int failedIndexNumber, IndexUpdateException cause) {
+        ImmutableList<Change<C>> reverseChanges = changes.stream()
+                .map(Change::inverse)
+                .collect(ImmutableList.toImmutableList());
+
+        try {
+            for (int i = 0; i < failedIndexNumber; ++i) {
+                indexes.get(i).updateAll(reverseChanges);
+            }
+            objectStore.updateAll(reverseChanges);
+        } catch (IndexUpdateException | CacheUpdateException e) {
+            throw new IllegalStateException("Failed to rollback changes after index failure: " + cause.getMessage(), e);
+        }
     }
 
     public void clear() {

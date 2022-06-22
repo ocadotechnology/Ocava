@@ -117,18 +117,18 @@ class ChangeTest {
     @Test
     void map_onChangingUpdate_thenReturnsExpected() {
         Change<TestState> update = Change.update(OBJECT1_V1, OBJECT1_V2);
-        Change<TestState> mapped = update.map(s -> new TestState(s.getId(), s.isSomething(), s.longProperty + 5));
+        Change<TestState> mapped = update.map(s -> new TestState(s.getId(), s.isSomething(), s.getValue() + 5));
         Assertions.assertNotNull(mapped.newObject, "New object unset unexpectedly");
-        Assertions.assertEquals(6, mapped.newObject.longProperty, "New object not updated as expected");
+        Assertions.assertEquals(6, mapped.newObject.getValue(), "New object not updated as expected");
         Assertions.assertEquals(OBJECT1_V1.getId(), mapped.newObject.getId(), "New object not updated as expected");
     }
 
     @Test
     void map_onChangingAdd_thenReturnsExpected() {
         Change<TestState> update = Change.add(OBJECT1_V1);
-        Change<TestState> mapped = update.map(s -> new TestState(s.getId(), s.isSomething(), s.longProperty + 5));
+        Change<TestState> mapped = update.map(s -> new TestState(s.getId(), s.isSomething(), s.getValue() + 5));
         Assertions.assertNotNull(mapped.newObject, "New object unset unexpectedly");
-        Assertions.assertEquals(5, mapped.newObject.longProperty, "New object not updated as expected");
+        Assertions.assertEquals(5, mapped.newObject.getValue(), "New object not updated as expected");
         Assertions.assertEquals(OBJECT1_V1.getId(), mapped.newObject.getId(), "New object not updated as expected");
     }
 

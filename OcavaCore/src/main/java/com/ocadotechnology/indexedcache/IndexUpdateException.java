@@ -16,15 +16,11 @@
 package com.ocadotechnology.indexedcache;
 
 /**
- * Indicates that an exception occurred while updating the IndexedImmutableObjectCache and that no changes should have
- * resulted to the cache or indices as a result of the bad method call.
+ * Indicates that an exception occurred while updating an index. All changes caused by the throwing method should be
+ * rolled back before propagating this exception.
  */
-public class CacheUpdateException extends RuntimeException {
-    public CacheUpdateException(String message) {
+public class IndexUpdateException extends Exception {
+    public IndexUpdateException(String message) {
         super(message);
-    }
-
-    public CacheUpdateException(String message, IndexUpdateException cause) {
-        super(message, cause);
     }
 }

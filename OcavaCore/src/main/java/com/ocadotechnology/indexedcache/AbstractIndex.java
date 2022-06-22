@@ -22,37 +22,93 @@ import com.ocadotechnology.id.Identified;
 public abstract class AbstractIndex<C extends Identified<?>> extends Index<C> {
 
     @Override
-    protected void update(C newObject, C oldObject) {
-        removeIfNotNull(oldObject);
-        addIfNotNull(newObject);
-        afterUpdate();
+    protected void update(C newObject, C oldObject) throws IndexUpdateException {
+        boolean removed = false;
+        boolean added = false;
+        try {
+            removeIfNotNull(oldObject);
+            removed = true;
+            addIfNotNull(newObject);
+            added = true;
+            afterUpdate();
+        } catch (IndexUpdateException e) {
+            rollbackUpdateAndThrow(oldObject, newObject, added, removed, e);
+        }
+    }
+
+    private void rollbackUpdateAndThrow(C oldObject, C newObject, boolean added, boolean removed, IndexUpdateException cause) throws IndexUpdateException {
+        try {
+            if (added) {
+                removeIfNotNull(newObject);
+            }
+            if (removed) {
+                addIfNotNull(oldObject);
+            }
+        } catch (IndexUpdateException rollbackFailure) {
+            throw new IllegalStateException("Failed to rollback after error: " + cause.getMessage(), rollbackFailure);
+        }
+        throw cause;
     }
 
     @Override
-    protected final void updateAll(Iterable<Change<C>> changes) {
-        changes.forEach(c -> removeIfNotNull(c.originalObject));
-        changes.forEach(c -> addIfNotNull(c.newObject));
-        afterUpdate();
+    protected final void updateAll(Iterable<Change<C>> changes) throws IndexUpdateException {
+        int removed = 0;
+        int added = 0;
+        try {
+            for (Change<C> change : changes) {
+                removeIfNotNull(change.originalObject);
+                removed++;
+            }
+            for (Change<C> change : changes) {
+                addIfNotNull(change.newObject);
+                added++;
+            }
+            afterUpdate();
+        } catch (IndexUpdateException e) {
+            rollbackUpdateAllAndThrow(changes, added, removed, e);
+        }
     }
 
-    private void removeIfNotNull(@Nullable C object) {
+    private void rollbackUpdateAllAndThrow(Iterable<Change<C>> changes, int added, int removed, IndexUpdateException cause) throws IndexUpdateException {
+        try {
+            for (Change<C> change : changes) {
+                if (added <= 0) {
+                    break;
+                }
+                removeIfNotNull(change.newObject);
+                added--;
+            }
+            for (Change<C> change : changes) {
+                if (removed <= 0) {
+                    break;
+                }
+                addIfNotNull(change.originalObject);
+                removed--;
+            }
+        } catch (IndexUpdateException e) {
+            throw new IllegalStateException("Failed to rollback after error: " + cause.getMessage(), e);
+        }
+        throw cause;
+    }
+
+    private void removeIfNotNull(@Nullable C object) throws IndexUpdateException {
         if (object == null) {
             return;
         }
         remove(object);
     }
 
-    private void addIfNotNull(@Nullable C object) {
+    private void addIfNotNull(@Nullable C object) throws IndexUpdateException {
         if (object == null) {
             return;
         }
         add(object);
     }
 
-    protected abstract void remove(C object);
+    protected abstract void remove(C object) throws IndexUpdateException;
 
-    protected abstract void add(C object);
+    protected abstract void add(C object) throws IndexUpdateException;
 
-    protected void afterUpdate() {
+    protected void afterUpdate() throws IndexUpdateException {
     }
 }

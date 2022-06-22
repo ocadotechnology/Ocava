@@ -23,7 +23,18 @@ import com.ocadotechnology.id.Identified;
  * An abstract class rather than an interface so that access to modification can be hidden for the implementations.
  */
 public abstract class Index<C extends Identified<?>> {
-    protected abstract void update(@Nullable C newObject, @Nullable C oldObject);
+    /**
+     * Update the index with a single change.
+     * @param newObject - the new value of an object.  Null if the object is being removed
+     * @param oldObject - the old value of an object.  Null if the object is being added.
+     * @throws IndexUpdateException - if the update fails and has been successfully rolled back.
+     */
+    protected abstract void update(@Nullable C newObject, @Nullable C oldObject) throws IndexUpdateException;
 
-    protected abstract void updateAll(Iterable<Change<C>> changes);
+    /**
+     * Update the index with a single change.
+     * @param changes - the collection of changes to be applied to the index
+     * @throws IndexUpdateException - if the update fails and has been successfully rolled back.
+     */
+    protected abstract void updateAll(Iterable<Change<C>> changes) throws IndexUpdateException;
 }

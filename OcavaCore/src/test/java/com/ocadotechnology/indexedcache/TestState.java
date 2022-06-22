@@ -15,12 +15,13 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import com.google.common.base.MoreObjects;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
 class TestState extends SimpleLongIdentified<TestState> implements TestThing {
     private final boolean isSomething;
-    public final long longProperty;
+    private final long longProperty;
 
     TestState(Id<TestState> id, boolean isSomething, long longProperty) {
         super(id);
@@ -36,5 +37,14 @@ class TestState extends SimpleLongIdentified<TestState> implements TestThing {
     @Override
     public long getValue() {
         return longProperty;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("id", getId())
+                .add("isSomething", isSomething)
+                .add("longProperty", longProperty)
+                .toString();
     }
 }

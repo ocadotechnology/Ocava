@@ -43,7 +43,7 @@ public class IdCachedPredicateIndex<C extends Identified<? extends I>, I> extend
     }
 
     @Override
-    protected void update(C newObject, C oldObject) {
+    protected void update(C newObject, C oldObject) throws IndexUpdateException {
         if (newObject == null) {
             remove(oldObject);
             return;
@@ -58,7 +58,20 @@ public class IdCachedPredicateIndex<C extends Identified<? extends I>, I> extend
             remove(!newTest, newObject.getId());
             add(newTest, newObject.getId());
         }
-        this.afterUpdate();
+        try {
+            this.afterUpdate();
+        } catch (IndexUpdateException e) {
+            rollbackAndThrow(newObject, oldObject, e);
+        }
+    }
+
+    private void rollbackAndThrow(C newObject, C oldObject, IndexUpdateException cause) throws IndexUpdateException {
+        try {
+            update(oldObject, newObject);
+        } catch (IndexUpdateException rollbackFailure) {
+            throw new IllegalStateException("Failed to rollback after error: " + cause.getMessage(), rollbackFailure);
+        }
+        throw cause;
     }
 
     @SuppressWarnings("unchecked")

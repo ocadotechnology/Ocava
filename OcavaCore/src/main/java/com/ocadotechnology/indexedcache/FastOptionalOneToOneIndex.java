@@ -33,7 +33,7 @@ import com.ocadotechnology.id.Identified;
  *  This implementation is fine if used with IndexedImmutableObjectCache
  *  and is around 10% faster for an update-biased workload.
  */
-public final class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends AbstractOptionalOneToOneIndex<R, C> {
+public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends AbstractOptionalOneToOneIndex<R, C> {
 
     private final Function<? super C, Optional<R>> indexingFunction;
 
@@ -104,7 +104,7 @@ public final class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends
     // Current code timing: 980ms
 
     @Override
-    protected void update(@Nullable C newObject, @Nullable C oldObject) {
+    protected void update(@Nullable C newObject, @Nullable C oldObject) throws IndexUpdateException {
         Optional<R> maybeOldKey = null;
         Optional<R> maybeNewKey = null;
         C oldValue = oldObject;
@@ -138,7 +138,20 @@ public final class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends
         Preconditions.checkState(replacedValue == null, "Unexpected value %s at new index %s.  old index is %s", replacedValue, maybeNewKey, maybeOldKey);
 
         snapshot = null;
-        afterUpdate();
+        try {
+            afterUpdate();
+        } catch (IndexUpdateException e) {
+            rollbackAndThrow(newObject, oldObject, e);
+        }
+    }
+
+    private void rollbackAndThrow(C newObject, C oldObject, IndexUpdateException cause) throws IndexUpdateException {
+        try {
+            update(oldObject, newObject);
+        } catch (IndexUpdateException rollbackFailure) {
+            throw new IllegalStateException("Failed to rollback after error: " + cause.getMessage(), rollbackFailure);
+        }
+        throw cause;
     }
 
     @Override
