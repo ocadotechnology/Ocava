@@ -15,10 +15,10 @@
  */
 package com.ocadotechnology.indexedcache;
 
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import javax.annotation.CheckForNull;
 
 import com.ocadotechnology.id.Identified;
 
@@ -26,13 +26,12 @@ public final class DefaultPredicateIndex<C extends Identified<?>> extends Abstra
     private final OneToManyIndex<Boolean, C> index;
 
     public DefaultPredicateIndex(Predicate<? super C> predicate) {
-        this.index = new OneToManyIndex<>(wrap(predicate));
+        this(null, predicate);
     }
 
-    private static <C extends Identified<?>> Function<C, Optional<Boolean>> wrap(Predicate<? super C> predicate) {
-        Optional<Boolean> valueTrue = Optional.of(Boolean.TRUE);
-        Optional<Boolean> valueFalse = Optional.of(Boolean.FALSE);
-        return c -> predicate.test(c) ? valueTrue : valueFalse;
+    public DefaultPredicateIndex(@CheckForNull String name, Predicate<? super C> predicate) {
+        super(name);
+        this.index = OneToManyIndex.create(name, predicate::test);
     }
 
     @Override

@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -39,6 +41,11 @@ public final class OptionalOneToManyIndex<R, C extends Identified<?>> extends Ab
     private ImmutableMultimap<R, C> snapshot;
 
     OptionalOneToManyIndex(Function<? super C, Optional<R>> function) {
+        this(null, function);
+    }
+
+    OptionalOneToManyIndex(@CheckForNull String name, Function<? super C, Optional<R>> function) {
+        super(name);
         this.function = function;
     }
 

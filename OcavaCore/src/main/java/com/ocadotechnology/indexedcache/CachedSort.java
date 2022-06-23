@@ -20,6 +20,8 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.function.Function;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -37,6 +39,19 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
      *        and leave the cache in an inconsistent state.
      */
     public CachedSort(Comparator<? super C> comparator) {
+        this(null, comparator);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param comparator - A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public CachedSort(@CheckForNull String name, Comparator<? super C> comparator) {
+        super(name);
         this.values = new TreeSet<>(comparator);
     }
 
@@ -47,7 +62,10 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
 
     @Override
     protected void add(C object) {
-        Preconditions.checkState(values.add(object), "Trying to add [%s] to CachedSort, but an equal value already exists in the set. Does your comparator conform to the requirements?", object);
+        Preconditions.checkState(values.add(object),
+                "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                formattedName,
+                object);
     }
 
     public Optional<C> peek() {

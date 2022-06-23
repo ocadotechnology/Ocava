@@ -15,10 +15,13 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import java.util.Comparator;
 import java.util.function.Function;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,12 +34,13 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A SortedOneToManyIndexTest")
 class SortedOneToManyIndexTest {
-
+    private static final String INDEX_NAME = "TEST_SORTED_ONE_TO_MANY_INDEX";
+    
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
         SortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addSortedOneToManyIndex(TestState::getIndexingValue, Comparator.comparingInt(TestState::getComparatorValue));
+            return cache.addSortedOneToManyIndex(INDEX_NAME, TestState::getIndexingValue, Comparator.comparingInt(TestState::getComparatorValue));
         }
     }
 
@@ -50,7 +54,7 @@ class SortedOneToManyIndexTest {
             // due to automatic type coercion of the lambda.
             Function<LocationState, Integer> indexFunction = LocationState::getIndexingValue;
             Comparator<LocationState> comparator = Comparator.comparingInt(LocationState::getComparatorValue);
-            return cache.addSortedOneToManyIndex(indexFunction, comparator);
+            return cache.addSortedOneToManyIndex(INDEX_NAME, indexFunction, comparator);
         }
     }
 
@@ -75,7 +79,7 @@ class SortedOneToManyIndexTest {
             TestState testState = new TestState(Id.create(100), 1, INDEXING_VALUE);
             cache.add(testState);
 
-            Assertions.assertEquals(testState, index.first(INDEXING_VALUE));
+            assertThat(index.first(INDEXING_VALUE)).isEqualTo(testState);
         }
 
         @Test
@@ -84,7 +88,9 @@ class SortedOneToManyIndexTest {
             TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUE);
 
             cache.add(stateOne);
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.add(stateTwo));
+            assertThatThrownBy(() -> cache.add(stateTwo))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -92,7 +98,9 @@ class SortedOneToManyIndexTest {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
             TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUE);
 
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)));
+            assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -101,8 +109,10 @@ class SortedOneToManyIndexTest {
             TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
             TestState stateThree = new TestState(Id.create(3), 1, INDEXING_VALUE);
 
-            Assertions.assertDoesNotThrow(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)));
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.add(stateThree));
+            assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
+            assertThatThrownBy(() -> cache.add(stateThree))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -116,7 +126,7 @@ class SortedOneToManyIndexTest {
             cache.addAll(expected.reverse());
 
             ImmutableList<TestState> actual = ImmutableList.copyOf(index.iterator(INDEXING_VALUE));
-            Assertions.assertEquals(expected, actual);
+            assertThat(actual).isEqualTo(expected);
         }
 
         @Test
@@ -130,8 +140,8 @@ class SortedOneToManyIndexTest {
             cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
 
             ImmutableList<TestState> testStates = ImmutableList.copyOf(index.iterator(INDEXING_VALUE));
-            Assertions.assertSame(testStates.get(0), updateTwo.newObject);
-            Assertions.assertSame(testStates.get(1), updateOne.newObject);
+            assertThat(testStates.get(0)).isSameAs(updateTwo.newObject);
+            assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
         }
 
     }
@@ -140,7 +150,7 @@ class SortedOneToManyIndexTest {
     void addToCache_whenMultipleTestStatesWithDifferentIndicesCompareAsEqual_thenDifferentTestStatesAreNeverCompared() {
         IndexedImmutableObjectCache<TestState, TestState> cache = IndexedImmutableObjectCache.createHashMapBackedCache();
         Comparator<TestState> requireSameComparator = (t, o) -> {
-            Assertions.assertSame(t, o);
+            assertThat(t).isSameAs(o);
             return 0;
         };
         cache.addSortedOneToManyIndex(TestState::getIndexingValue, requireSameComparator);

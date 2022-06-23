@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
 
@@ -38,6 +40,11 @@ public class IdCachedPredicateIndex<C extends Identified<? extends I>, I> extend
     private final HashSet<Identity<? extends I>> objectIdsNotMatchingPredicate = new HashSet<>();
 
     public IdCachedPredicateIndex(IndexedImmutableObjectCache<C, I> backingCache, Predicate<? super C> predicate) {
+        this(null, backingCache, predicate);
+    }
+
+    public IdCachedPredicateIndex(@CheckForNull String name, IndexedImmutableObjectCache<C, I> backingCache, Predicate<? super C> predicate) {
+        super(name);
         this.predicate = predicate;
         this.backingCache = backingCache;
     }

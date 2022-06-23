@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
@@ -43,6 +44,11 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     private transient ImmutableMap<R, C> snapshot; //Null if the previous snapshot has been invalidated by an update
 
     public FastOptionalOneToOneIndex(Function<? super C, Optional<R>> indexingFunction) {
+        this(null, indexingFunction);
+    }
+
+    public FastOptionalOneToOneIndex(@CheckForNull String name, Function<? super C, Optional<R>> indexingFunction) {
+        super(name);
         this.indexingFunction = indexingFunction;
     }
 
@@ -134,8 +140,19 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
             }
         }
 
-        Preconditions.checkState(oldValue == oldObject, "Expected %s at old index %s, but found %s.  new index is %s", oldObject, maybeOldKey, oldValue, maybeNewKey);
-        Preconditions.checkState(replacedValue == null, "Unexpected value %s at new index %s.  old index is %s", replacedValue, maybeNewKey, maybeOldKey);
+        Preconditions.checkState(oldValue == oldObject,
+                "Error updating %s: Expected %s at old index %s, but found %s.  New index is %s",
+                formattedName,
+                oldObject,
+                maybeOldKey,
+                oldValue,
+                maybeNewKey);
+        Preconditions.checkState(replacedValue == null,
+                "Error updating %s: Unexpected value %s at new index %s.  Old index is %s",
+                formattedName,
+                replacedValue,
+                maybeNewKey,
+                maybeOldKey);
 
         snapshot = null;
         try {
@@ -158,7 +175,12 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     protected void remove(C object) {
         indexingFunction.apply(object).ifPresent(key -> {
             C oldValue = indexValues.remove(key);
-            Preconditions.checkState(oldValue == object, "Trying to remove [%s] from OptionalOneToOneIndex, but oldValue [%s] not found at index [%s]", object, oldValue, key);
+            Preconditions.checkState(oldValue == object,
+                    "Error updating %s: Trying to remove [%s], but oldValue [%s] not found at index [%s]",
+                    formattedName,
+                    object,
+                    oldValue,
+                    key);
             snapshot = null;
         });
     }
@@ -167,7 +189,12 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     protected void add(C object) {
         indexingFunction.apply(object).ifPresent(key -> {
             C oldValue = indexValues.put(key, object);
-            Preconditions.checkState(oldValue == null, "Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]", object, oldValue, key);
+            Preconditions.checkState(oldValue == null,
+                    "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
+                    formattedName,
+                    object,
+                    oldValue,
+                    key);
             snapshot = null;
         });
     }

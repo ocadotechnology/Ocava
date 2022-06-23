@@ -15,11 +15,32 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.Optional;
+
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import com.ocadotechnology.id.Identified;
 
 public abstract class AbstractIndex<C extends Identified<?>> extends Index<C> {
+    @CheckForNull
+    protected final String name;
+    protected final String formattedName;
+
+    protected AbstractIndex() {
+        this(null);
+    }
+
+    protected AbstractIndex(@CheckForNull String name) {
+        this.name = name;
+        this.formattedName = name != null
+                ? String.format("%s[%s]", getClass().getSimpleName(), name)
+                : getClass().getSimpleName();
+    }
+
+    public Optional<String> getName() {
+        return Optional.ofNullable(name);
+    }
 
     @Override
     protected void update(C newObject, C oldObject) throws IndexUpdateException {

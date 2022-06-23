@@ -15,19 +15,23 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.Optional;
+import java.util.function.Function;
+
 import javax.annotation.CheckForNull;
 
 import com.ocadotechnology.id.Identified;
+import com.ocadotechnology.indexedcache.IndexedImmutableObjectCache.Hints;
 
-abstract class AbstractOptionalOneToOneIndex<R, C extends Identified<?>>
-        extends AbstractIndex<C>
-        implements OptionalOneToOneIndex<R, C> {
-
-    public AbstractOptionalOneToOneIndex() {
-        this(null);
-    }
-
-    public AbstractOptionalOneToOneIndex(@CheckForNull String name) {
-        super(name);
+public class OptionalOneToOneIndexFactory {
+    static <R, C extends Identified<?>> AbstractOptionalOneToOneIndex<R, C> newOptionalOneToOneIndex(@CheckForNull String name, Function<? super C, Optional<R>> function, Hints hint) {
+        switch (hint) {
+            case optimiseForUpdate:
+                return new FastOptionalOneToOneIndex<>(name, function);
+            case optimiseForQuery:
+                return new DefaultOptionalOneToOneIndex<>(name, function);
+            default:
+                throw new UnsupportedOperationException("Missing case:" + hint);
+        }
     }
 }

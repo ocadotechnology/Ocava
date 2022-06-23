@@ -19,17 +19,38 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Identified;
+import com.ocadotechnology.indexedcache.OneToOneIndex.WrappedIndexingFunction;
 
 public final class OneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
 
     private final OptionalOneToManyIndex<R, C> optionalOneToManyIndex;
 
+    /**
+     * @deprecated use OptionalOneToManyIndex or pass in a non-optional function
+     */
+    @Deprecated
     public OneToManyIndex(Function<? super C, Optional<R>> function) {
+        super(null);
         optionalOneToManyIndex = new OptionalOneToManyIndex<>(function);
+    }
+
+    private OneToManyIndex(@CheckForNull String name, Function<? super C, R> function) {
+        super(name);
+        optionalOneToManyIndex = new OptionalOneToManyIndex<>(name, new WrappedIndexingFunction<>(function, formattedName));
+    }
+
+    public static <R, C extends Identified<?>> OneToManyIndex<R, C> create(Function<? super C, R> function) {
+        return create(null, function);
+    }
+
+    public static <R, C extends Identified<?>> OneToManyIndex<R, C> create(@CheckForNull String name, Function<? super C, R> function) {
+        return new OneToManyIndex<>(name, function);
     }
 
     public ImmutableList<C> getCopy(R r) {

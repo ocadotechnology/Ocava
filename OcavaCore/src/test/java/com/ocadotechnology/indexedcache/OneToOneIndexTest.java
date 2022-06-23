@@ -33,12 +33,13 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A OneToOneIndex")
 class OneToOneIndexTest {
+    private static final String INDEX_NAME = "TEST_ONE_TO_ONE_INDEX";
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
         OneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOneToOneIndex(TestState::getLocation);
+            return cache.addOneToOneIndex(INDEX_NAME, TestState::getLocation);
         }
     }
 
@@ -51,7 +52,7 @@ class OneToOneIndexTest {
             // Function<TestState, Coordinate> instead of Function<? super TestState, Coordinate>, due to automatic type
             // coercion of the lambda.
             Function<LocationState, CoordinateLikeTestObject> indexFunction = LocationState::getLocation;
-            return cache.addOneToOneIndex(indexFunction);
+            return cache.addOneToOneIndex(INDEX_NAME, indexFunction);
         }
     }
 
@@ -87,7 +88,9 @@ class OneToOneIndexTest {
                 TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
 
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
-                assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
+                assertThatThrownBy(() -> cache.add(stateTwo))
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining(INDEX_NAME);
             }
 
             @Test
@@ -96,7 +99,8 @@ class OneToOneIndexTest {
                 TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(0, 0));
 
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                        .isInstanceOf(IllegalStateException.class);
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining(INDEX_NAME);
             }
 
             @Test
@@ -107,7 +111,8 @@ class OneToOneIndexTest {
 
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
-                        .isInstanceOf(IllegalStateException.class);
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining(INDEX_NAME);
             }
 
             @Test

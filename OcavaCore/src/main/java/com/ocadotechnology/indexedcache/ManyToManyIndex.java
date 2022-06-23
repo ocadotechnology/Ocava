@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.collect.ImmutableCollection;
 import com.ocadotechnology.id.Identified;
 
@@ -32,6 +34,11 @@ public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractI
     private final Function<? super C, Set<R>> function;
 
     ManyToManyIndex(Function<? super C, Set<R>> function) {
+        this(null, function);
+    }
+
+    ManyToManyIndex(@CheckForNull String name, Function<? super C, Set<R>> function) {
+        super(name);
         this.function = function;
     }
 

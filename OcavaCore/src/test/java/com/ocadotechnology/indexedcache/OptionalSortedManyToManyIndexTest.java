@@ -15,11 +15,14 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,12 +35,13 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("An OptionalSortedManyToManyIndexTest")
 class OptionalSortedManyToManyIndexTest {
+    private static final String INDEX_NAME = "TEST_OPTIONAL_SORTED_MANY_TO_MANY_INDEX";
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
         OptionalSortedManyToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOptionalSortedManyToManyIndex(TestState::getIndexingValues, Comparator.comparingInt(TestState::getComparatorValue));
+            return cache.addOptionalSortedManyToManyIndex(INDEX_NAME, TestState::getIndexingValues, Comparator.comparingInt(TestState::getComparatorValue));
         }
     }
 
@@ -50,7 +54,7 @@ class OptionalSortedManyToManyIndexTest {
             // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
             // to automatic type coercion of the lambda.
             Comparator<LocationState> comparator = Comparator.comparingInt(LocationState::getComparatorValue);
-            return cache.addOptionalSortedManyToManyIndex(LocationState::getIndexingValues, comparator);
+            return cache.addOptionalSortedManyToManyIndex(INDEX_NAME, LocationState::getIndexingValues, comparator);
         }
     }
 
@@ -74,7 +78,7 @@ class OptionalSortedManyToManyIndexTest {
         void addToCache_whenOptionalIsEmpty_thenStateNotIndexed() {
             cache.add(new TestState(Id.create(1), 1, Optional.empty()));
 
-            Assertions.assertEquals(0, index.streamKeySet().mapToInt(index::size).sum());
+            assertThat(index.streamKeySet().mapToInt(index::size).sum()).isEqualTo(0);
         }
 
         @Test
@@ -82,7 +86,7 @@ class OptionalSortedManyToManyIndexTest {
             TestState testState = new TestState(Id.create(100), 1, INDEXING_VALUES);
             cache.add(testState);
 
-            INDEXING_VALUES.get().forEach(indexValue -> Assertions.assertEquals(testState, index.asList(indexValue).get(0)));
+            INDEXING_VALUES.get().forEach(indexValue -> assertThat(index.asList(indexValue).get(0)).isEqualTo(testState));
         }
 
         @Test
@@ -90,8 +94,10 @@ class OptionalSortedManyToManyIndexTest {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
             TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUES);
 
-            Assertions.assertDoesNotThrow(() -> cache.add(stateOne));
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.add(stateTwo));
+            assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
+            assertThatThrownBy(() -> cache.add(stateTwo))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -99,7 +105,9 @@ class OptionalSortedManyToManyIndexTest {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
             TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUES);
 
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)));
+            assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -108,8 +116,10 @@ class OptionalSortedManyToManyIndexTest {
             TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUES);
             TestState stateThree = new TestState(Id.create(3), 1, INDEXING_VALUES);
 
-            Assertions.assertDoesNotThrow(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)));
-            Assertions.assertThrows(IllegalStateException.class, () -> cache.add(stateThree));
+            assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
+            assertThatThrownBy(() -> cache.add(stateThree))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -117,7 +127,7 @@ class OptionalSortedManyToManyIndexTest {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
             TestState stateTwo = new TestState(Id.create(2), 1, DIFFERENT_INDEXING_VALUES);
 
-            Assertions.assertDoesNotThrow(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)));
+            assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
         }
 
         @Test
@@ -132,7 +142,7 @@ class OptionalSortedManyToManyIndexTest {
 
             INDEXING_VALUES.get().forEach(indexValue -> {
                 ImmutableList<TestState> actual = index.asList(indexValue);
-                Assertions.assertEquals(expected, actual);
+                assertThat(actual).isEqualTo(expected);
             });
         }
 
@@ -148,8 +158,8 @@ class OptionalSortedManyToManyIndexTest {
 
             INDEXING_VALUES.get().forEach(indexValue -> {
                 ImmutableList<TestState> testStates = index.asList(indexValue);
-                Assertions.assertSame(testStates.get(0), updateTwo.newObject);
-                Assertions.assertSame(testStates.get(1), updateOne.newObject);
+                assertThat(testStates.get(0)).isSameAs(updateTwo.newObject);
+                assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
             });
         }
     }

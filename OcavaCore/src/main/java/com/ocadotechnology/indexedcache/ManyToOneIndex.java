@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.id.Identified;
 
@@ -31,6 +33,11 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
     private Function<? super C, Collection<R>> indexingFunction;
 
     public ManyToOneIndex(Function<? super C, Collection<R>> indexingFunction) {
+        this(null, indexingFunction);
+    }
+
+    public ManyToOneIndex(@CheckForNull String name, Function<? super C, Collection<R>> indexingFunction) {
+        super(name);
         this.indexingFunction = indexingFunction;
     }
 
@@ -45,9 +52,19 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
 
     @Override
     protected void add(C newObject) {
-        indexingFunction.apply(newObject).forEach(r -> {
-            C oldObject = indexValues.put(r, newObject);
-            Preconditions.checkState(oldObject == null, "New object %s blocked by old object %s for index value", newObject, oldObject, r);
+        Collection<R> indexValues = Preconditions.checkNotNull(
+                indexingFunction.apply(newObject),
+                "Error updating %s: New object %s returned null index value collection",
+                formattedName,
+                newObject);
+        indexValues.forEach(r -> {
+            C oldObject = this.indexValues.put(r, newObject);
+            Preconditions.checkState(oldObject == null,
+                    "Error updating %s: New object %s blocked by old object %s for index value %s",
+                    formattedName,
+                    newObject,
+                    oldObject,
+                    r);
         });
     }
 

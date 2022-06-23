@@ -17,6 +17,8 @@ package com.ocadotechnology.indexedcache;
 
 import java.util.function.Predicate;
 
+import javax.annotation.CheckForNull;
+
 import com.ocadotechnology.id.Identified;
 
 public final class PredicateCountValue<C extends Identified<?>> extends AbstractIndex<C> {
@@ -24,6 +26,11 @@ public final class PredicateCountValue<C extends Identified<?>> extends Abstract
     private long current;
 
     PredicateCountValue(Predicate<? super C> predicate) {
+        this(null, predicate);
+    }
+
+    PredicateCountValue(@CheckForNull String name, Predicate<? super C> predicate) {
+        super(name);
         this.predicate = predicate;
         this.current = 0;
     }

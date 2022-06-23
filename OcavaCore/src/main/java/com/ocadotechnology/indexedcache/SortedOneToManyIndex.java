@@ -24,6 +24,8 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -47,6 +49,20 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
      *        and leave the cache in an inconsistent state.
      */
     public SortedOneToManyIndex(Function<? super C, R> function, Comparator<? super C> comparator) {
+        this(null, function, comparator);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param function key extraction function
+     * @param comparator A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public SortedOneToManyIndex(@CheckForNull String name, Function<? super C, R> function, Comparator<? super C> comparator) {
+        super(name);
         this.function = function;
         this.comparator = comparator;
     }
@@ -105,7 +121,10 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
     protected void add(C object) {
         R r = function.apply(object);
         SortedSet<C> cs = indexValues.computeIfAbsent(r, this::newValues);
-        Preconditions.checkState(cs.add(object), "Trying to add [%s] to SortedOneToManyIndex, but an equal value already exists in the set. Does your comparator conform to the requirements?", object);
+        Preconditions.checkState(cs.add(object),
+                "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                formattedName,
+                object);
     }
 
     private SortedSet<C> getMutable(R r) {

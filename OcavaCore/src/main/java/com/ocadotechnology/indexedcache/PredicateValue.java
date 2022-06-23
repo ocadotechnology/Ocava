@@ -19,6 +19,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import javax.annotation.CheckForNull;
+
 import com.ocadotechnology.id.Identified;
 
 public final class PredicateValue<C extends Identified<?>, R, T> extends AbstractIndex<C> {
@@ -29,6 +31,11 @@ public final class PredicateValue<C extends Identified<?>, R, T> extends Abstrac
     private T current;
 
     PredicateValue(Predicate<? super C> predicate, Function<? super C, R> extract, BiFunction<T, R, T> leftAccumulate, BiFunction<T, R, T> leftDecumulate, T initial) {
+        this(null, predicate, extract, leftAccumulate, leftDecumulate, initial);
+    }
+
+    PredicateValue(@CheckForNull String name, Predicate<? super C> predicate, Function<? super C, R> extract, BiFunction<T, R, T> leftAccumulate, BiFunction<T, R, T> leftDecumulate, T initial) {
+        super(name);
         this.predicate = predicate;
         this.extract = extract;
         this.leftAccumulate = leftAccumulate;

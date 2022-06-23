@@ -19,6 +19,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultiset;
 import com.google.common.collect.Multiset;
@@ -37,6 +39,11 @@ public class MappedPredicateIndex<C extends Identified<?>, R> extends AbstractIn
     private ImmutableSet<R> distinctWhereNotSnapshot;
 
     public MappedPredicateIndex(Predicate<? super C> predicate, Function<? super C, R> mappingFunction) {
+        this(null, predicate, mappingFunction);
+    }
+
+    public MappedPredicateIndex(@CheckForNull String name, Predicate<? super C> predicate, Function<? super C, R> mappingFunction) {
+        super(name);
         this.predicate = predicate;
         this.mappingFunction = mappingFunction;
     }

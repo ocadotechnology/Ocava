@@ -19,24 +19,29 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.id.Identified;
+import com.ocadotechnology.indexedcache.IndexedImmutableObjectCache.Hints;
 
 public final class OneToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
     private final AbstractOptionalOneToOneIndex<R, C> optionalOneToOneIndex;
 
     /**
-     *
      * @param indexingFunction mapping C -&gt; R where nulls are not permitted
      */
     public OneToOneIndex(Function<? super C, R> indexingFunction) {
-        Function<? super C, Optional<R>> optionalIndexingFunction = indexingFunction.andThen(Preconditions::checkNotNull).andThen(Optional::of);
-        this.optionalOneToOneIndex = new DefaultOptionalOneToOneIndex<>(optionalIndexingFunction);
+        this(null, indexingFunction, Hints.optimiseForQuery);
     }
 
-    OneToOneIndex(AbstractOptionalOneToOneIndex<R, C> backingIndex) {
-        this.optionalOneToOneIndex = backingIndex;
+    OneToOneIndex(@CheckForNull String name, Function<? super C, R> indexingFunction, Hints hint) {
+        super(name);
+        this.optionalOneToOneIndex = OptionalOneToOneIndexFactory.newOptionalOneToOneIndex(
+                name,
+                new WrappedIndexingFunction<>(indexingFunction, formattedName),
+                hint);
     }
 
     public C get(R r) {
@@ -63,5 +68,25 @@ public final class OneToOneIndex<R, C extends Identified<?>> extends AbstractInd
 
     public Stream<R> streamKeySet() {
         return optionalOneToOneIndex.streamKeys();
+    }
+
+    static class WrappedIndexingFunction<R, C extends Identified<?>> implements Function<C, Optional<R>> {
+        private final Function<? super C, R> indexingFunction;
+        private final String formattedName;
+
+        WrappedIndexingFunction(Function<? super C, R> indexingFunction, String formattedName) {
+            this.indexingFunction = indexingFunction;
+            this.formattedName = formattedName;
+        }
+
+        @Override
+        public Optional<R> apply(C object) {
+            R result = Preconditions.checkNotNull(
+                    indexingFunction.apply(object),
+                    "Error updating %s: Mapping function returned null for object [%s]",
+                    formattedName,
+                    object);
+            return Optional.of(result);
+        }
     }
 }

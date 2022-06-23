@@ -33,12 +33,13 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A ManyToOneIndex")
 class ManyToOneIndexTest {
+    private static final String INDEX_NAME = "TEST_MANY_TO_ONE_INDEX";
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
         ManyToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addManyToOneIndex(TestState::getLocations);
+            return cache.addManyToOneIndex(INDEX_NAME, TestState::getLocations);
         }
     }
 
@@ -51,7 +52,7 @@ class ManyToOneIndexTest {
             // Function<TestState, Collection<Coordinate>> instead of Function<? super TestState, Collection<Coordinate>>,
             // due to automatic type coercion of the lambda.
             Function<LocationState, Collection<CoordinateLikeTestObject>> indexFunction = LocationState::getLocations;
-            return cache.addManyToOneIndex(indexFunction);
+            return cache.addManyToOneIndex(INDEX_NAME, indexFunction);
         }
     }
 
@@ -73,7 +74,8 @@ class ManyToOneIndexTest {
             TestState stateOne = new TestState(Id.create(1), null);
 
             assertThatThrownBy(() -> cache.add(stateOne))
-                    .isInstanceOf(NullPointerException.class);
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -82,7 +84,9 @@ class ManyToOneIndexTest {
             TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
-            assertThatThrownBy(() -> cache.add(stateTwo)).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> cache.add(stateTwo))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -91,7 +95,8 @@ class ManyToOneIndexTest {
             TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                    .isInstanceOf(IllegalStateException.class);
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test
@@ -102,7 +107,8 @@ class ManyToOneIndexTest {
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
-                    .isInstanceOf(IllegalStateException.class);
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(INDEX_NAME);
         }
 
         @Test

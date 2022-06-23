@@ -18,6 +18,7 @@ package com.ocadotechnology.indexedcache;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 import com.ocadotechnology.id.Identified;
@@ -27,7 +28,11 @@ public class UncachedPredicateIndex<C extends Identified<? extends I>, I> extend
     private final IndexedImmutableObjectCache<C, I> backingCache;
     private final Predicate<? super C> predicate;
 
-    public UncachedPredicateIndex(IndexedImmutableObjectCache<C, I> backingCache, Predicate<? super C> predicate) {
+    @CheckForNull
+    private final String name;
+
+    public UncachedPredicateIndex(@CheckForNull String name, IndexedImmutableObjectCache<C, I> backingCache, Predicate<? super C> predicate) {
+        this.name = name;
         this.backingCache = backingCache;
         this.predicate = predicate;
     }
@@ -47,6 +52,7 @@ public class UncachedPredicateIndex<C extends Identified<? extends I>, I> extend
         return backingCache.stream().noneMatch(predicate);
     }
 
+    @Override
     public int count() {
         return (int)stream().count();
     }

@@ -47,4 +47,5 @@ public interface OptionalOneToOneIndex<R, C extends Identified<?>> {
     boolean isEmpty();
 
     ImmutableMap<R, C> snapshot();
+
 }

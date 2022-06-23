@@ -24,6 +24,8 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.ocadotechnology.id.Identified;
@@ -41,6 +43,11 @@ public class CachedGroupBy<C extends Identified<?>, G, T> extends AbstractIndex<
     private final Set<G> invalidatedGroups = new LinkedHashSet<>();
 
     CachedGroupBy(Function<? super C, G> groupByExtractor, Collector<? super C, ?, T> collector) {
+        this(null, groupByExtractor, collector);
+    }
+
+    CachedGroupBy(@CheckForNull String name, Function<? super C, G> groupByExtractor, Collector<? super C, ?, T> collector) {
+        super(name);
         this.groupByExtractor = groupByExtractor;
         this.collector = collector;
         this.emptyAggregation = Stream.<C>of().collect(collector);

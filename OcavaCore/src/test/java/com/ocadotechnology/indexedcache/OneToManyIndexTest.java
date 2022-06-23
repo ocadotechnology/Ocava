@@ -32,12 +32,13 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A OneToManyIndex")
 class OneToManyIndexTest {
+    private static final String INDEX_NAME = "TEST_ONE_TO_MANY_INDEX";
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
         OneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOneToManyIndex(TestState::getLocation);
+            return cache.addOneToManyIndex(INDEX_NAME, TestState::getLocation);
         }
     }
 
@@ -50,7 +51,7 @@ class OneToManyIndexTest {
             // Function<TestState, Coordinate> instead of Function<? super TestState, Coordinate>, due to automatic type
             // coercion of the lambda.
             Function<LocationState, CoordinateLikeTestObject> indexFunction = LocationState::getLocation;
-            return cache.addOneToManyIndex(indexFunction);
+            return cache.addOneToManyIndex(INDEX_NAME, indexFunction);
         }
     }
 
@@ -75,7 +76,8 @@ class OneToManyIndexTest {
             @Test
             void add_whenFunctionReturnsNull_thenThrowException() {
                 assertThatThrownBy(() -> cache.add(new TestState(Id.create(1), null)))
-                        .isInstanceOf(NullPointerException.class);
+                        .isInstanceOf(NullPointerException.class)
+                        .hasMessageContaining(INDEX_NAME);
             }
 
             @Test

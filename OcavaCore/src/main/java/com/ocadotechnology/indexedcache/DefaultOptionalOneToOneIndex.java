@@ -19,6 +19,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -47,6 +49,11 @@ public final class DefaultOptionalOneToOneIndex<R, C extends Identified<?>> exte
     private transient ImmutableMap<R, C> snapshot; //Null if the previous snapshot has been invalidated by an update
 
     public DefaultOptionalOneToOneIndex(Function<? super C, Optional<R>> indexingFunction) {
+        this(null, indexingFunction);
+    }
+
+    public DefaultOptionalOneToOneIndex(@CheckForNull String name, Function<? super C, Optional<R>> indexingFunction) {
+        super(name);
         this.indexingFunction = indexingFunction;
     }
 
@@ -98,7 +105,12 @@ public final class DefaultOptionalOneToOneIndex<R, C extends Identified<?>> exte
         Optional<R> optionalR = indexingFunction.apply(object);
         optionalR.ifPresent(r -> {
             C oldValue = indexValues.put(r, object);
-            Preconditions.checkState(oldValue == null, "Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]", object, oldValue, r);
+            Preconditions.checkState(oldValue == null,
+                    "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
+                    formattedName,
+                    object,
+                    oldValue,
+                    r);
             snapshot = null;
         });
     }

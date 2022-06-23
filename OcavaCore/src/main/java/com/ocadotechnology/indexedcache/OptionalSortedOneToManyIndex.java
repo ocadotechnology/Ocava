@@ -26,6 +26,8 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -47,6 +49,20 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
      *        and leave the cache in an inconsistent state.
      */
     public OptionalSortedOneToManyIndex(Function<? super C, Optional<R>> function, Comparator<? super C> comparator) {
+        this(null, function, comparator);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param function key extraction function
+     * @param comparator A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public OptionalSortedOneToManyIndex(@CheckForNull String name, Function<? super C, Optional<R>> function, Comparator<? super C> comparator) {
+        super(name);
         this.function = function;
         this.comparator = comparator;
     }
@@ -94,7 +110,10 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
     protected void add(C object) {
         function.apply(object).ifPresent(r -> {
             TreeSet<C> cs = indexValues.computeIfAbsent(r, list -> new TreeSet<>(comparator));
-            Preconditions.checkState(cs.add(object), "Trying to add [%s] to OptionalSortedOneToManyIndex, but an equal value already exists in the set. Does your comparator conform to the requirements?", object);
+            Preconditions.checkState(cs.add(object),
+                    "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                    formattedName,
+                    object);
         });
     }
 
