@@ -15,16 +15,29 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.Optional;
+
+import javax.annotation.CheckForNull;
+
 /**
  * Indicates that an exception occurred while updating the IndexedImmutableObjectCache and that no changes should have
  * resulted to the cache or indices as a result of the bad method call.
  */
 public class CacheUpdateException extends RuntimeException {
+    @CheckForNull
+    private final String failingIndexName;
+
     public CacheUpdateException(String message) {
         super(message);
+        this.failingIndexName = null;
     }
 
     public CacheUpdateException(String message, IndexUpdateException cause) {
         super(message, cause);
+        this.failingIndexName = cause.getIndexName();
+    }
+
+    public Optional<String> getFailingIndexName() {
+        return Optional.ofNullable(failingIndexName);
     }
 }

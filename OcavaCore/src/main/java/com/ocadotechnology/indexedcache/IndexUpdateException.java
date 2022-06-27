@@ -15,12 +15,22 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 /**
  * Indicates that an exception occurred while updating an index. All changes caused by the throwing method should be
  * rolled back before propagating this exception.
  */
+@ParametersAreNonnullByDefault
 public class IndexUpdateException extends Exception {
-    public IndexUpdateException(String message) {
+    private final String indexName;
+
+    public IndexUpdateException(String indexName, String message) {
         super(message);
+        this.indexName = indexName;
+    }
+
+    public String getIndexName() {
+        return indexName;
     }
 }

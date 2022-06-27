@@ -25,10 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -79,7 +79,7 @@ class HashMapObjectStoreTest {
         @Test
         void addAll_whenSomeElementsAlreadyAdded_thenThrowsExceptionAndCacheUnchanged() {
             testStore.add(AN_OBJECT);
-            Assertions.assertThrows(CacheUpdateException.class, () -> testStore.addAll(MANY_OBJECTS));
+            assertThrowsWithoutIndex(() -> testStore.addAll(MANY_OBJECTS));
             assertEquals(1, testStore.size());
             assertEquals(AN_OBJECT, testStore.get(AN_OBJECT.id));
         }
@@ -140,7 +140,7 @@ class HashMapObjectStoreTest {
             ImmutableSet<Change<TestObject>> objectUpdates = MANY_OBJECTS.stream()
                     .map(o -> Change.update(o, new TestObject(o.getId().id, o.data + 1)))
                     .collect(ImmutableSet.toImmutableSet());
-            assertThrows(CacheUpdateException.class, () -> testStore.updateAll(objectUpdates));
+            assertThrowsWithoutIndex(() -> testStore.updateAll(objectUpdates));
 
             for (TestObject newObject : changedObjects) {
                 assertEquals(newObject, testStore.get(newObject.id), "Incorrect object returned for id " + newObject.id);
@@ -156,7 +156,7 @@ class HashMapObjectStoreTest {
         @Test
         void add_whenObjectPresent_thenThrowsExceptionAndCacheUnchanged() {
             testStore.add(AN_OBJECT);
-            assertThrows(CacheUpdateException.class, () -> testStore.add(new TestObject(AN_OBJECT.id.id, -3)));
+            assertThrowsWithoutIndex(() -> testStore.add(new TestObject(AN_OBJECT.id.id, -3)));
             assertEquals(AN_OBJECT, testStore.get(AN_OBJECT.id));
         }
 
@@ -186,7 +186,7 @@ class HashMapObjectStoreTest {
             testStore.add(AN_OBJECT);
             TestObject oldObject = new TestObject(AN_OBJECT.getId().id, -1);
             TestObject newObject = new TestObject(AN_OBJECT.getId().id, -3);
-            assertThrows(CacheUpdateException.class, () -> testStore.update(oldObject, newObject));
+            assertThrowsWithoutIndex(() -> testStore.update(oldObject, newObject));
             assertEquals(AN_OBJECT, testStore.get(AN_OBJECT.id));
         }
 
@@ -200,7 +200,7 @@ class HashMapObjectStoreTest {
         @Test
         void delete_whenObjectNotInCache_thenThrowsExceptionAndCacheUnChanged() {
             testStore.add(AN_OBJECT);
-            assertThrows(CacheUpdateException.class, () -> testStore.delete(Id.create(AN_OBJECT.getId().id + 1)));
+            assertThrowsWithoutIndex(() -> testStore.delete(Id.create(AN_OBJECT.getId().id + 1)));
             assertEquals(AN_OBJECT, testStore.get(AN_OBJECT.id));
             assertEquals(1, testStore.size());
         }
@@ -216,7 +216,7 @@ class HashMapObjectStoreTest {
         @Test
         void deleteAll_whenSomeObjectsNotInCache_thenThrowsExceptionAndCacheUnChanged() {
             testStore.addAll(MANY_OBJECTS);
-            assertThrows(CacheUpdateException.class, () -> testStore.deleteAll(MANY_OBJECTS.stream().map(o -> Id.<TestObject>create(o.id.id + 1)).collect(ImmutableList.toImmutableList())));
+            assertThrowsWithoutIndex(() -> testStore.deleteAll(MANY_OBJECTS.stream().map(o -> Id.<TestObject>create(o.id.id + 1)).collect(ImmutableList.toImmutableList())));
             assertEquals(MANY_OBJECTS.size(), testStore.size());
             for (TestObject object : MANY_OBJECTS) {
                 assertEquals(object, testStore.get(object.id));
@@ -421,7 +421,7 @@ class HashMapObjectStoreTest {
 
         @Test
         void snapshot_whenASnapshotIsRequestedAfter_addAllWithRollback_thenSameSnapshotIsProvided() {
-            assertThrows(CacheUpdateException.class, () -> testStore.addAll(MANY_OBJECTS));  // addAll() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.addAll(MANY_OBJECTS));  // addAll() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
@@ -436,13 +436,13 @@ class HashMapObjectStoreTest {
             ImmutableSet<Change<TestObject>> wrongObjectUpdates = MANY_OBJECTS.stream()
                     .map(o -> Change.update(new TestObject(o.getId().id + 1, o.data), new TestObject(o.getId().id + 1, o.data + 1)))
                     .collect(ImmutableSet.toImmutableSet());
-            assertThrows(CacheUpdateException.class, () -> testStore.updateAll(wrongObjectUpdates));  // updateAll() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.updateAll(wrongObjectUpdates));  // updateAll() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
         @Test
         void snapshot_whenASnapshotIsRequestedAfter_addWithRollback_thenSameSnapshotIsProvided() {
-            assertThrows(CacheUpdateException.class, () -> testStore.add(AN_OBJECT));  // add() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.add(AN_OBJECT));  // add() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
@@ -458,14 +458,14 @@ class HashMapObjectStoreTest {
                     .map(TestObject::getId)
                     .map(id -> Id.<TestObject>create(id.id + 1))
                     .collect(ImmutableSet.toImmutableSet());
-            assertThrows(CacheUpdateException.class, () -> testStore.deleteAll(wrongObjectIds));  // deleteAll() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.deleteAll(wrongObjectIds));  // deleteAll() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
         @Test
         void snapshot_whenASnapshotIsRequestedAfter_deleteWithRollback_thenSameSnapshotIsProvided() {
             Identity<? extends TestObject> wrongId = Id.create(1_000_000);
-            assertThrows(CacheUpdateException.class, () -> testStore.delete(wrongId));  // delete() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.delete(wrongId));  // delete() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
@@ -473,22 +473,27 @@ class HashMapObjectStoreTest {
         void snapshot_whenASnapshotIsRequestedAfter_updateWithRollback_thenSameSnapshotIsProvided() {
             TestObject updatedObject = new TestObject(AN_OBJECT.getId().id, AN_OBJECT.data + 1);
             TestObject wrongExistingObject = new TestObject(AN_OBJECT.getId().id + 1, AN_OBJECT.data);
-            assertThrows(CacheUpdateException.class, () -> testStore.update(wrongExistingObject, updatedObject));  // update() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.update(wrongExistingObject, updatedObject));  // update() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
         @Test
         void snapshot_whenASnapshotIsRequestedAfter_updateToAddWithRollback_thenSameSnapshotIsProvided() {
-            assertThrows(CacheUpdateException.class, () -> testStore.update(null, AN_OBJECT));  // update() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.update(null, AN_OBJECT));  // update() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
 
         @Test
         void snapshot_whenASnapshotIsRequestedAfter_updateToDeleteWithRollback_thenSameSnapshotIsProvided() {
             TestObject wrongExistingObject = new TestObject(AN_OBJECT.getId().id + 1, AN_OBJECT.data);
-            assertThrows(CacheUpdateException.class, () -> testStore.update(wrongExistingObject, null));  // update() fails and triggers roll-back
+            assertThrowsWithoutIndex(() -> testStore.update(wrongExistingObject, null));  // update() fails and triggers roll-back
             assertThat(testStore.snapshot()).isSameAs(firstSnapshot);
         }
+    }
+
+    private static void assertThrowsWithoutIndex(Executable runnable) {
+        CacheUpdateException exception = assertThrows(CacheUpdateException.class, runnable);
+        assertFalse(exception.getFailingIndexName().isPresent());
     }
 
     private class TestObject implements Identified<TestObject> {

@@ -18,6 +18,7 @@ package com.ocadotechnology.indexedcache;
 import javax.annotation.Nullable;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -25,12 +26,15 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.id.Id;
+import com.ocadotechnology.utils.Types;
 import com.ocadotechnology.validation.Failer;
 
 public class CacheIndexFailureTest {
     private enum Method {
-        ADD, DELETE, UPDATE, ADD_ALL, DELETE_ALL, UPDATE_ALL
+        ADD, DELETE, UPDATE, ADD_ALL, DELETE_ALL, UPDATE_ALL;
     }
+
+    private static final String FAILING_INDEX_NAME = "FAILING_TEST_INDEX";
 
     private static final TestState OLD_STATE_1 = new TestState(Id.create(1), false,  0);
     private static final TestState NEW_STATE_1 = new TestState(Id.create(1), true,  1);
@@ -47,7 +51,7 @@ public class CacheIndexFailureTest {
     private final OneToOneIndex<Long, TestState> valueIndex = cache.addOneToOneIndex(TestState::getValue);
     private final PredicateCountValue<TestState> predicateCount = cache.addPredicateCount(TestState::isSomething);
     private final TestIndex testIndex1 = cache.registerCustomIndex(new TestIndex());
-    private final TestIndex testIndex2 = cache.registerCustomIndex(new TestIndex());
+    private final TestIndex testIndex2 = cache.registerCustomIndex(new TestIndex(FAILING_INDEX_NAME));
 
     @BeforeEach
     void setup() {
@@ -65,7 +69,10 @@ public class CacheIndexFailureTest {
     void testMethod_whenIndexFails_thenRollsBackAndThrowsCacheUpdateException(Method method) {
         Assertions.assertThatThrownBy(() -> performAction(method))
                 .isInstanceOf(CacheUpdateException.class)
-                .hasCauseInstanceOf(IndexUpdateException.class);
+                .has(new Condition<>(this::validateCacheUpdateExceptionIndexName, "correct index name on CacheUpdateException"))
+                .cause()
+                .isInstanceOf(IndexUpdateException.class)
+                .has(new Condition<>(this::validateIndexUpdateExceptionName, "correct index name on IndexUpdateException"));
         validateState();
     }
 
@@ -133,6 +140,20 @@ public class CacheIndexFailureTest {
         Assertions.assertThat(valueIndex.get(6L)).isSameAs(OLD_STATE_5);
 
         Assertions.assertThat(predicateCount.getValue()).isEqualTo(1);
+    }
+
+    private boolean validateCacheUpdateExceptionIndexName(Throwable t) {
+        return Types.fromType(t, CacheUpdateException.class)
+                .flatMap(CacheUpdateException::getFailingIndexName)
+                .map(indexName -> indexName.equals(FAILING_INDEX_NAME))
+                .orElse(false);
+    }
+
+    private boolean validateIndexUpdateExceptionName(Throwable t) {
+        return Types.fromType(t, IndexUpdateException.class)
+                .map(IndexUpdateException::getIndexName)
+                .map(indexName -> indexName.equals(FAILING_INDEX_NAME))
+                .orElse(false);
     }
 
     /**

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.google.common.base.MoreObjects;
@@ -30,11 +31,21 @@ class TestIndex extends AbstractIndex<TestState> {
 
     private final List<Action> actions = new ArrayList<>();
 
+    public TestIndex() {
+        this(null);
+    }
+
+    public TestIndex(@CheckForNull String name) {
+        super(name);
+    }
+
     @Override
     protected void remove(TestState object) throws IndexUpdateException {
         actions.add(Action.removed(object));
         if (valuesToFailRemove.contains(object.getValue())) {
-            throw new IndexUpdateException("Test failure");
+            throw new IndexUpdateException(
+                    getName().orElse(TestIndex.class.getSimpleName()),
+                    "Error updating " + formattedName + ": Test failure");
         }
     }
 
@@ -42,7 +53,9 @@ class TestIndex extends AbstractIndex<TestState> {
     protected void add(TestState object) throws IndexUpdateException {
         actions.add(Action.added(object));
         if (valuesToFailAdd.contains(object.getValue())) {
-            throw new IndexUpdateException("Test failure");
+            throw new IndexUpdateException(
+                    getName().orElse(TestIndex.class.getSimpleName()),
+                    "Error updating " + formattedName + ": Test failure");
         }
     }
 
