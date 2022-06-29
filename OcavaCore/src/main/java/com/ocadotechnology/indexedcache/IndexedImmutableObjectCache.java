@@ -592,11 +592,11 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addIndex(cacheSort);
     }
 
-    public C get(Identity<I> id) {
+    public C get(@CheckForNull Identity<I> id) {
         return objectStore.get(id);
     }
 
-    public boolean containsId(Identity<I> id) {
+    public boolean containsId(@CheckForNull Identity<I> id) {
         return objectStore.containsId(id);
     }
 
