@@ -22,9 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.id.Identified;
 
@@ -34,6 +33,7 @@ import com.ocadotechnology.id.Identified;
  *  This implementation is fine if used with IndexedImmutableObjectCache
  *  and is around 10% faster for an update-biased workload.
  */
+@ParametersAreNonnullByDefault
 public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends AbstractOptionalOneToOneIndex<R, C> {
 
     private final Function<? super C, Optional<R>> indexingFunction;
@@ -110,7 +110,7 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     // Current code timing: 980ms
 
     @Override
-    protected void update(@Nullable C newObject, @Nullable C oldObject) throws IndexUpdateException {
+    protected void update(@CheckForNull C newObject, @CheckForNull C oldObject) throws IndexUpdateException {
         Optional<R> maybeOldKey = null;
         Optional<R> maybeNewKey = null;
         C oldValue = oldObject;
@@ -140,31 +140,56 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
             }
         }
 
-        Preconditions.checkState(oldValue == oldObject,
-                "Error updating %s: Expected %s at old index %s, but found %s.  New index is %s",
-                formattedName,
-                oldObject,
-                maybeOldKey,
-                oldValue,
-                maybeNewKey);
-        Preconditions.checkState(replacedValue == null,
-                "Error updating %s: Unexpected value %s at new index %s.  Old index is %s",
-                formattedName,
-                replacedValue,
-                maybeNewKey,
-                maybeOldKey);
-
         snapshot = null;
         try {
+            validateUpdate(oldObject, oldValue, replacedValue, maybeOldKey, maybeNewKey);
             afterUpdate();
         } catch (IndexUpdateException e) {
-            rollbackAndThrow(newObject, oldObject, e);
+            rollbackAndThrow(maybeOldKey, maybeNewKey, oldValue, replacedValue, e);
         }
     }
 
-    private void rollbackAndThrow(C newObject, C oldObject, IndexUpdateException cause) throws IndexUpdateException {
+    private void validateUpdate(
+            @CheckForNull C oldObject,
+            @CheckForNull C oldValue,
+            @CheckForNull C replacedValue,
+            @CheckForNull Optional<R> maybeOldKey,
+            @CheckForNull Optional<R> maybeNewKey) throws IndexUpdateException {
+        if (oldValue != oldObject) {
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
+                    "Error updating %s: Expected %s at old index %s, but found %s.  New index is %s",
+                    formattedName,
+                    oldObject,
+                    maybeOldKey,
+                    oldValue,
+                    maybeNewKey);
+        }
+        if (replacedValue != null) {
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
+                    "Error updating %s: Unexpected value %s at new index %s.  Old index is %s",
+                    formattedName,
+                    replacedValue,
+                    maybeNewKey,
+                    maybeOldKey);
+        }
+    }
+
+    private void rollbackAndThrow(
+            @CheckForNull Optional<R> maybeOldKey,
+            @CheckForNull Optional<R> maybeNewKey,
+            @CheckForNull C oldValue,
+            @CheckForNull C replacedValue,
+            IndexUpdateException cause) throws IndexUpdateException {
+        if (maybeOldKey != null && maybeOldKey.isPresent()) {
+            indexValues.put(maybeOldKey.get(), oldValue);
+        }
+        if (maybeNewKey != null && maybeNewKey.isPresent() && !maybeNewKey.equals(maybeOldKey)) {
+            indexValues.put(maybeNewKey.get(), replacedValue);
+        }
         try {
-            update(oldObject, newObject);
+            afterUpdate();
         } catch (IndexUpdateException rollbackFailure) {
             throw new IllegalStateException("Failed to rollback after error: " + cause.getMessage(), rollbackFailure);
         }
@@ -172,30 +197,46 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     }
 
     @Override
-    protected void remove(C object) {
-        indexingFunction.apply(object).ifPresent(key -> {
+    protected void remove(C object) throws IndexUpdateException {
+        Optional<R> optionalKey = indexingFunction.apply(object);
+        if (optionalKey.isPresent()) {
+            R key = optionalKey.get();
             C oldValue = indexValues.remove(key);
-            Preconditions.checkState(oldValue == object,
-                    "Error updating %s: Trying to remove [%s], but oldValue [%s] not found at index [%s]",
-                    formattedName,
-                    object,
-                    oldValue,
-                    key);
+            if (oldValue != object) {
+                indexValues.put(key, oldValue);
+                throw new IndexUpdateException(
+                        getNameOrDefault(),
+                        "Error updating %s: Trying to remove [%s], but oldValue [%s] not found at index [%s]",
+                        formattedName,
+                        object,
+                        oldValue,
+                        key);
+            }
             snapshot = null;
-        });
+        }
     }
 
     @Override
-    protected void add(C object) {
-        indexingFunction.apply(object).ifPresent(key -> {
+    protected void add(C object) throws IndexUpdateException {
+        Optional<R> optionalKey = indexingFunction.apply(object);
+        if (optionalKey.isPresent()) {
+            R key = optionalKey.get();
             C oldValue = indexValues.put(key, object);
-            Preconditions.checkState(oldValue == null,
-                    "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
-                    formattedName,
-                    object,
-                    oldValue,
-                    key);
+            if (oldValue != null) {
+                indexValues.put(key, oldValue);
+                throw new IndexUpdateException(
+                        getNameOrDefault(),
+                        "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
+                        formattedName,
+                        object,
+                        oldValue,
+                        key);
+            }
             snapshot = null;
-        });
+        }
+    }
+
+    private String getNameOrDefault() {
+        return name != null ? name : indexingFunction.getClass().getSimpleName();
     }
 }

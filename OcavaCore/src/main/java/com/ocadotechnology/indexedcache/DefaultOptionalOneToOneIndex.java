@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -101,18 +100,24 @@ public final class DefaultOptionalOneToOneIndex<R, C extends Identified<?>> exte
     }
 
     @Override
-    protected void add(C object) {
+    protected void add(C object) throws IndexUpdateException {
         Optional<R> optionalR = indexingFunction.apply(object);
-        optionalR.ifPresent(r -> {
+        if (optionalR.isPresent()) {
+            R r = optionalR.get();
             C oldValue = indexValues.put(r, object);
-            Preconditions.checkState(oldValue == null,
-                    "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
-                    formattedName,
-                    object,
-                    oldValue,
-                    r);
+            if (oldValue != null) {
+                indexValues.put(r, oldValue);
+                throw new IndexUpdateException(
+                        name != null ? name : indexingFunction.getClass().getSimpleName(),
+                        "Error updating %s: Trying to add [%s] to OptionalOneToOneIndex, but oldValue [%s] already exists at index [%s]",
+                        formattedName,
+                        object,
+                        oldValue,
+                        r
+                );
+            }
             snapshot = null;
-        });
+        }
     }
 
     @Override

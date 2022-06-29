@@ -16,6 +16,7 @@
 package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,12 +41,13 @@ import com.ocadotechnology.indexedcache.IndexedImmutableObjectCache.Hints;
 
 @DisplayName("An OptionalOneToOneIndex")
 class OptionalOneToOneIndexTest {
+    private static final String INDEX_NAME = "TEST_OPTIONAL_ONE_TO_ONE_INDEX";
 
     @Nested
     class CacheTypeWithUpdateHintTests extends IndexTests {
         @Override
         OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOptionalOneToOneIndex(TestState::getLocation, Hints.optimiseForUpdate);
+            return cache.addOptionalOneToOneIndex(INDEX_NAME, TestState::getLocation, Hints.optimiseForUpdate);
         }
     }
 
@@ -52,7 +55,7 @@ class OptionalOneToOneIndexTest {
     class CacheTypeWithQueryHintTests extends IndexTests {
         @Override
         OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addOptionalOneToOneIndex(TestState::getLocation, Hints.optimiseForQuery);
+            return cache.addOptionalOneToOneIndex(INDEX_NAME, TestState::getLocation, Hints.optimiseForQuery);
         }
     }
 
@@ -65,7 +68,7 @@ class OptionalOneToOneIndexTest {
             // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
             // to automatic type coercion of the lambda.
             Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
-            return cache.addOptionalOneToOneIndex(indexFunction, Hints.optimiseForUpdate);
+            return cache.addOptionalOneToOneIndex(INDEX_NAME, indexFunction, Hints.optimiseForUpdate);
         }
     }
 
@@ -78,7 +81,7 @@ class OptionalOneToOneIndexTest {
             // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
             // to automatic type coercion of the lambda.
             Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
-            return cache.addOptionalOneToOneIndex(indexFunction, Hints.optimiseForQuery);
+            return cache.addOptionalOneToOneIndex(INDEX_NAME, indexFunction, Hints.optimiseForQuery);
         }
     }
 
@@ -138,6 +141,34 @@ class OptionalOneToOneIndexTest {
                 cache.update(original, sameIdChangedCoordinate);
                 assertThat(index.streamKeys().count()).isEqualTo(1);
                 assertThat(index.get(sameIdChangedCoordinate.getLocation().get()).get()).isEqualTo(sameIdChangedCoordinate);
+            }
+
+            @Test
+            void add_whenNewValueHasSameKeyAsOld_thenThrowsExceptionAndRollsBackChanges() {
+                TestState original = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState clash = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                cache.add(original);
+
+                //Check exception
+                assertThatThrownBy(() -> cache.add(clash))
+                        .isInstanceOf(CacheUpdateException.class)
+                        .has(new Condition<>(this::validateException, "correct error details"));
+
+                //Check rollback
+                assertThat(index.get(CoordinateLikeTestObject.ORIGIN))
+                        .containsSame(original);
+                assertThat(cache.stream().collect(ImmutableSet.toImmutableSet())).containsExactly(original);
+            }
+
+            private boolean validateException(Throwable t) {
+                CacheUpdateException cacheUpdateException = (CacheUpdateException) t;
+                assertThat(cacheUpdateException.getFailingIndexName()).contains(INDEX_NAME);
+                assertThat(cacheUpdateException).hasCauseInstanceOf(IndexUpdateException.class);
+
+                IndexUpdateException indexUpdateException = (IndexUpdateException) cacheUpdateException.getCause();
+                assertThat(indexUpdateException).hasMessageContaining(INDEX_NAME);
+                assertThat(indexUpdateException.getIndexName()).isEqualTo(INDEX_NAME);
+                return true;
             }
 
             @Test

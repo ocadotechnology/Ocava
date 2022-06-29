@@ -25,8 +25,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class IndexUpdateException extends Exception {
     private final String indexName;
 
-    public IndexUpdateException(String indexName, String message) {
-        super(message);
+    public IndexUpdateException(String indexName, String message, Object... messageArgs) {
+        super(String.format(message, messageArgs));
         this.indexName = indexName;
     }
 
