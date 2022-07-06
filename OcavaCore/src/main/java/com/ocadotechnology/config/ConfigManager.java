@@ -112,6 +112,7 @@ public class ConfigManager {
 
         private final Map<Class<? extends Enum<?>>, Config<?>> config = new HashMap<>();
         private final ConfigUsageChecker checker = new ConfigUsageChecker();
+        private final ConfigSettingCollector configSettingCollector = new ConfigSettingCollector();
         private TimeUnit timeUnit = null;
         private LengthUnit lengthUnit = null;
         private ImmutableSet<PrefixedProperty> prefixedProperties;
@@ -124,7 +125,7 @@ public class ConfigManager {
 
             if (cli.hasResourceLocations()) {
                 Map<String, String> overrides = new LinkedHashMap<>();
-                cli.streamResourceLocations().forEach(loc -> ConfigDataSource.readResource(loc, ImmutableSet.of()).forEach((k, v) -> overrides.put((String) k, (String) v)));
+                cli.streamResourceLocations().forEach(loc -> ConfigDataSource.readResource(null, loc, ImmutableSet.of()).forEach((k, v) -> overrides.put((String) k, (String) v)));
                 overrides.putAll(cli.getOverrides());
 
                 this.commandLineArgs = new CLISetup(cli.getOriginalArgs(), ImmutableMap.copyOf(overrides));
@@ -218,6 +219,13 @@ public class ConfigManager {
         }
 
         /**
+         * Provides a textual description of configuration key/value pairs grouped by their source, including overrides.
+         */
+        public String getConfigSourceDescription() {
+            return configSettingCollector.toString();
+        }
+
+        /**
          * Loads config from an ordered list of data sources.  Data sources later in the list will override those
          * earlier on.  Finally any command line arguments will be applied as overrides to values in all of the
          * files and resource locations specified.
@@ -226,8 +234,10 @@ public class ConfigManager {
          */
         public Builder loadConfig(ImmutableList<ConfigDataSource> dataSources, ImmutableSet<Class<? extends Enum<?>>> configKeys) throws IOException {
             Properties props = new Properties();
+            configSettingCollector.addSecrets(configKeys);
+
             for (ConfigDataSource dataSource : dataSources) {
-                Properties sourceProps = dataSource.readAsProperties();
+                Properties sourceProps = dataSource.readAsProperties(configSettingCollector);
                 props.putAll(sourceProps);
             }
 
@@ -249,11 +259,10 @@ public class ConfigManager {
          * environment variables.
          *
          * @param configKeys The environment variables to look up. Unlike other config sources, this will not look
-         *        for the class name, but just use the enum's raw name.
-         *
+         *                   for the class name, but just use the enum's raw name.
          * @return The instance of this builder
          * @throws DuplicateMatchingEnvironmentVariableException if a set environment variable matches multiple enum
-         *         values across the classes in configKeys.
+         *                                                       values across the classes in configKeys.
          */
         public Builder loadConfigFromEnvironmentVariables(ImmutableSet<Class<? extends Enum<?>>> configKeys) {
             return loadConfigFromEnvironmentVariables(System.getenv(), configKeys);
@@ -268,7 +277,18 @@ public class ConfigManager {
         }
 
         private Builder mergePropertiesWithCommandLineOverrides(Properties properties, ImmutableSet<Class<? extends Enum<?>>> configKeys) {
-            properties.putAll(commandLineArgs.getOverrides());
+            ImmutableMap<String, String> overrides = commandLineArgs.getOverrides();
+            properties.putAll(overrides);
+
+            /*
+             * Ocava supports command line overrides using -O and -a (see CLISetup for the meaning of these options);
+             * the config setting collector will group these overrides under the label of "command line overrides".
+             */
+            configSettingCollector.addSecrets(configKeys);
+            Properties overrideProperties = new Properties();
+            overrideProperties.putAll(overrides);
+            loadPrefixedProperties(overrideProperties);
+            configSettingCollector.accept("command line overrides", overrideProperties);
 
             loadPrefixedProperties(properties);
 
@@ -321,7 +341,7 @@ public class ConfigManager {
          * thrown by the validation.
          *
          * @throws ConfigKeyNotFoundException if a value for the given key has not yet been loaded.
-         * @throws IllegalArgumentException if no config object has been created matching the enum key.
+         * @throws IllegalArgumentException   if no config object has been created matching the enum key.
          */
         public String getConfigUnchecked(Enum<?> key) {
             return getConfigForKey(key).getValue(key).asString();
@@ -444,29 +464,32 @@ public class ConfigManager {
             return new ConfigDataSource(localResource);
         }
 
-        private Properties readAsProperties() throws IOException {
+        private Properties readAsProperties(@CheckForNull ConfigSettingCollector configSettingCollector) throws IOException {
             if (fileSource != null) {
-                return readFromFile(fileSource, ImmutableSet.of());
+                return readFromFile(configSettingCollector, fileSource, ImmutableSet.of());
             } else if (resourceLocation != null) {
-                return readFromResource(resourceLocation, ImmutableSet.of());
+                return readFromResource(configSettingCollector, resourceLocation, ImmutableSet.of());
             } else {
-                return readProperties(Preconditions.checkNotNull(inputStream), ImmutableSet.of());
+                return readProperties(null, configSettingCollector, Preconditions.checkNotNull(inputStream), ImmutableSet.of());
             }
         }
 
-        private static Properties readResource(String resourceLocation, ImmutableSet<String> alreadyVisitedInputs) {
+        private static Properties readResource(
+                @CheckForNull ConfigSettingCollector configSettingCollector,
+                String resourceLocation,
+                ImmutableSet<String> alreadyVisitedInputs) {
             ImmutableSet<String> newVisitedInputs = ImmutableSet.<String>builder()
                     .addAll(alreadyVisitedInputs)
                     .add(resourceLocation)
                     .build();
 
             try {
-                return readFromResource(resourceLocation, newVisitedInputs);
+                return readFromResource(configSettingCollector, resourceLocation, newVisitedInputs);
             } catch (IOException resourceEx) {
                 try {
                     File file = new File(resourceLocation);
                     if (file.isFile() && file.canRead()) {
-                        return readFromFile(new File(resourceLocation), newVisitedInputs);
+                        return readFromFile(configSettingCollector, new File(resourceLocation), newVisitedInputs);
                     }
                 } catch (IOException fileEx) {
                     throw new RuntimeException("Unable to read as resource (message:" + resourceEx.getMessage() + ") or as file", fileEx);
@@ -475,7 +498,10 @@ public class ConfigManager {
             }
         }
 
-        private static Properties readFromResource(String resourceLocation, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
+        private static Properties readFromResource(
+                @CheckForNull ConfigSettingCollector configSettingCollector,
+                String resourceLocation,
+                ImmutableSet<String> alreadyVisitedInputs) throws IOException {
             if (resourceLocation.startsWith("/")) {
                 resourceLocation = resourceLocation.substring(1);
             }
@@ -488,14 +514,21 @@ public class ConfigManager {
                 throw new IOException("unable to load resource " + resourceLocation);
             }
 
-            return readProperties(in, alreadyVisitedInputs);
+            return readProperties(resourceLocation, configSettingCollector, in, alreadyVisitedInputs);
         }
 
-        private static Properties readFromFile(File fileLocation, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
-            return readProperties(new FileInputStream(fileLocation), alreadyVisitedInputs);
+        private static Properties readFromFile(
+                @CheckForNull ConfigSettingCollector configSettingCollector,
+                File fileLocation,
+                ImmutableSet<String> alreadyVisitedInputs) throws IOException {
+            return readProperties(fileLocation.getName(), configSettingCollector, new FileInputStream(fileLocation), alreadyVisitedInputs);
         }
 
-        private static Properties readProperties(InputStream in, ImmutableSet<String> alreadyVisitedInputs) throws IOException {
+        private static Properties readProperties(
+                @CheckForNull String resource,
+                @CheckForNull ConfigSettingCollector configSettingCollector,
+                InputStream in,
+                ImmutableSet<String> alreadyVisitedInputs) throws IOException {
             Properties childProperties = new Properties();
             childProperties.load(in);
             in.close();
@@ -510,17 +543,26 @@ public class ConfigManager {
                     throw new ModularConfigException("Properties files in a loop! Already visited: " + alreadyVisitedInputs);
                 }
 
-                Properties parentProperties = readResource(fileName, alreadyVisitedInputs);
+                Properties parentProperties = readResource(configSettingCollector, fileName, alreadyVisitedInputs);
 
                 // Anything defined by the child overrides the parent. We look for conflicts in the parent
                 // only for properties that are not in the child overrides.
                 childProperties.keySet().forEach(parentProperties::remove);
                 ModularConfigUtils.checkForConflicts(accumulatedParentProperties, parentProperties);
 
+                if (configSettingCollector != null) {
+                    configSettingCollector.accept(fileName, parentProperties);
+                }
+
                 accumulatedParentProperties.putAll(parentProperties);
             }
 
             accumulatedParentProperties.putAll(childProperties);
+
+            if (resource != null && configSettingCollector != null) {
+                configSettingCollector.accept(resource, childProperties);
+            }
+
             return accumulatedParentProperties;
         }
     }

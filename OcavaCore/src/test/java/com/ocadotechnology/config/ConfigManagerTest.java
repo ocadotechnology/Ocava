@@ -49,9 +49,9 @@ class ConfigManagerTest {
     private enum TestConfigThree {
         QUACK
     }
-    
+
     private Builder builder;
-    
+
     @BeforeEach
     void setUp() {
         builder = new Builder();
@@ -104,47 +104,104 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenExtendsOtherFiles_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending.properties"), ImmutableSet.of(TestConfig.class));
+
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
         assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(5);
+
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n\n" +
+                        "modularconfig/extending.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=5\n" +
+                        "TestConfig.BAR=2\n\n" +
+                        "modularconfig/base-2.properties\n" +
+                        "TestConfig.FOO=1\n\n");
+    }
+
+    @Test
+    void loadConfigFromResourceOrFile_whenExtendsOtherFiles_thenCollectsConfigCorrectly() throws IOException, ConfigKeysNotRecognisedException {
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending.properties"), ImmutableSet.of(TestConfig.class));
+        builder.build();
+
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n\n" +
+                        "modularconfig/extending.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=5\n" +
+                        "TestConfig.BAR=2\n\n" +
+                        "modularconfig/base-2.properties\n" +
+                        "TestConfig.FOO=1\n\n");
     }
 
     @Test
     void loadConfigFromResourceOrFile_whenExtendsNonResource_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-non-resource.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-non-resource.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(2);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "src/test/test-config-file.properties\n" +
+                        "TestConfig.EMPTY=\n" +
+                        "TestConfig.FirstSubConfig.SubSubConfig.X=3\n" +
+                        "TestConfig.FOO=2\n" +
+                        "TestConfig.Colours.BLUE=7\n\n" +
+                        "modularconfig/extending-non-resource.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=5\n" +
+                        "TestConfig.BAR=2\n\n"
+        );
     }
 
     @Test
     void loadConfigFromResourceOrFile_whenExtendsNestedFile_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-nested.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-nested.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(1);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(12);
         assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(13);
+
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/nested/base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=12\n" +
+                        "TestConfig.FOO=1\n\n" +
+                "modularconfig/extending-nested.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=13\n" +
+                        "TestConfig.BAR=2\n\n");
     }
 
     @Test
     void loadConfigFromResourceOrFile_whenExtensionIsNestedFile_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/nested/extending.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/nested/extending.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
         assertThat(config.getValue(FirstSubConfig.HOO).asInt()).isEqualTo(34);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n" +
+                        "\n" +
+                        "modularconfig/nested/extending.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=34\n" +
+                        "TestConfig.BAR=2\n" +
+                        "\n");
     }
 
     @Test
@@ -168,21 +225,31 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenFileExtensionConflictsResolved_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-resolved-conflicts.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-resolved-conflicts.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(3);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/extending-resolved-conflicts.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=3\n\n");
     }
 
     @Test
     void loadConfigFromResourceOrFile_whenFileExtensionsDefineSameKeyAndValue_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-matches.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-matches.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(TestConfig.BAR).asInt()).isEqualTo(2);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/matches-base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n\n" +
+                        "modularconfig/extending-matches.properties\n" +
+                        "TestConfig.BAR=2\n\n");
     }
 
     @Test
@@ -195,27 +262,39 @@ class ConfigManagerTest {
 
     @Test
     void loadConfigFromResourceOrFile_whenExtendingFileEmpty_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-empty.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-empty.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/base.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n\n");
     }
 
     @Test
     void loadConfigFromResourceOrFile_whenSameFileExtendedOnDifferentPaths_thenLoadsCorrectly() throws IOException, ConfigKeysNotRecognisedException {
-        ConfigManager configManager = builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-base-two-ways.properties"), ImmutableSet.of(TestConfig.class))
-                .build();
+        Builder builder = new Builder()
+                .loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-base-two-ways.properties"), ImmutableSet.of(TestConfig.class));
+        ConfigManager configManager = builder.build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
         assertThat(config.getValue(FirstSubConfig.WOO).asInt()).isEqualTo(4);
+        assertThat(builder.getConfigSourceDescription()).isEqualTo(
+                "modularconfig/extending-matches.properties\n" +
+                        "TestConfig.FirstSubConfig.WOO=4\n\n" +
+                        "modularconfig/extending-base-two-ways.properties\n" +
+                        "TestConfig.FirstSubConfig.HOO=5\n" +
+                    "TestConfig.BAR=2\n\n");
     }
 
     @Test
     void loadConfigFromInputStream_testGenericIdsParsing() throws IOException, ConfigKeysNotRecognisedException {
         InputStream inputStream = new FileInputStream("src/test/resources/test-config-resource.properties");
-        
-        ConfigManager configManager = builder.loadConfig(ImmutableList.of(ConfigDataSource.fromInputStream(inputStream)), ImmutableSet.of(TestConfig.class))
+
+        ConfigManager configManager = builder
+                .loadConfig(ImmutableList.of(ConfigDataSource.fromInputStream(inputStream)), ImmutableSet.of(TestConfig.class))
                 .build();
 
         Config<TestConfig> config = configManager.getConfig(TestConfig.class);
@@ -395,8 +474,8 @@ class ConfigManagerTest {
     @Test
     void getPrefixes() throws IOException, ConfigKeysNotRecognisedException {
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
-                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
-                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         ImmutableSet<String> actual = configManager.getConfig(TestConfig.class).getPrefixes();
@@ -414,8 +493,8 @@ class ConfigManagerTest {
     @Test
     void loadPrefixedConfigItems_singlePrefix() throws IOException, ConfigKeysNotRecognisedException {
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
-                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
-                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -441,8 +520,8 @@ class ConfigManagerTest {
     @Test
     void loadPrefixedConfigItems_clashingNames() throws IOException, ConfigKeysNotRecognisedException {
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
-                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
-                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -457,8 +536,8 @@ class ConfigManagerTest {
     @Test
     void loadPrefixedConfigItems_noUnprefixedEquivalent() throws IOException, ConfigKeysNotRecognisedException {
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
-                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
-                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -469,8 +548,8 @@ class ConfigManagerTest {
     @Test
     void loadPrefixedConfigItems_prefixNotFound() throws IOException, ConfigKeysNotRecognisedException {
         ConfigManager configManager = builder.loadConfigFromResourceOrFile(
-                ImmutableList.of("src/test/prefixes-test-config-file.properties"),
-                ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
+                        ImmutableList.of("src/test/prefixes-test-config-file.properties"),
+                        ImmutableSet.of(TestConfig.class, TestConfigDummy.class))
                 .build();
 
         Config<TestConfig> testConfig = configManager.getConfig(TestConfig.class);
@@ -725,7 +804,7 @@ class ConfigManagerTest {
         ConfigManager cm = new Builder("-a=test-config-resource.properties").withConfig(TestConfig.class).build();
         assertThat(cm.getConfig(TestConfig.class).areKeyAndValueDefined(TestConfig.FOO)).isTrue();
     }
-    
+
     @Test
     void loadConfigFromResource_whenUsingAlternateArg() throws ConfigKeysNotRecognisedException {
         ConfigManager cm = new Builder("-a=test-config-resource.properties").withConfigFromCommandLine(TestConfig.class).build();
@@ -743,7 +822,7 @@ class ConfigManagerTest {
             assertThat(cm2.getConfig(TestConfig.class).getValue(TestConfig.FOO).asInt()).isEqualTo(2);
         }
     }
-    
+
     @Test
     void loadConfigFromResource_whenUsingAlternateArgThenActualCommandLineTakesPriority() throws ConfigKeysNotRecognisedException {
         {
