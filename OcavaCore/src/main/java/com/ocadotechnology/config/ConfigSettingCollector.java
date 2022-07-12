@@ -42,7 +42,9 @@ class ConfigSettingCollector {
      *                      with @SecretConfig will be excluded.
      */
     void addSecrets(ImmutableSet<Class<? extends Enum<?>>> configEnums) {
-        configEnums.forEach(clazz -> secretKeys.addAll(resolveSecretKeysForClass(clazz)));
+        for (Class<? extends Enum<?>> clazz : configEnums) {
+            secretKeys.addAll(resolveSecretKeysForClass(clazz));
+        }
 
         // Defensively remove any existing settings that we now know to be secrets.
         valueAndFileByKey.keySet().removeAll(secretKeys);
@@ -58,23 +60,22 @@ class ConfigSettingCollector {
             String qualifier = qualifierAndClass.a();
             Class<? extends Enum<?>> clazz = qualifierAndClass.b();
 
-            for (Enum<?> enumeration : qualifierAndClass.b().getEnumConstants()) {
+            for (Enum<?> enumeration : clazz.getEnumConstants()) {
                 try {
-                    String settingNameFormat = "%s.%s";
-
                     if (clazz.getField(enumeration.name()).isAnnotationPresent(SecretConfig.class)) {
-                        result.add(String.format(settingNameFormat, qualifier, enumeration.name()));
+                        result.add(qualifier + "." + enumeration.name());
                     }
 
-                    for (Class<?> subEnumeration : clazz.getDeclaredClasses()) {
-                        String subQualifier = String.format(settingNameFormat, qualifier, subEnumeration.getSimpleName());
-                        Preconditions.checkState(subEnumeration.isEnum());
-
-                        qualifierAndClassQueue.offer(Pair.of(subQualifier, (Class<? extends Enum<?>>) subEnumeration));
-                    }
                 } catch (NoSuchFieldException e) {
                     throw new RuntimeException(e);
                 }
+            }
+
+            for (Class<?> subEnumeration : clazz.getDeclaredClasses()) {
+                String subQualifier = qualifier + "." + subEnumeration.getSimpleName();
+                Preconditions.checkState(subEnumeration.isEnum());
+
+                qualifierAndClassQueue.offer(Pair.of(subQualifier, (Class<? extends Enum<?>>) subEnumeration));
             }
         }
 
