@@ -74,19 +74,29 @@ class ManyToOneIndexTest {
             TestState stateOne = new TestState(Id.create(1), null);
 
             assertThatThrownBy(() -> cache.add(stateOne))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.isEmpty()).isTrue();
+            assertThat(index.isEmpty()).isTrue();
         }
 
         @Test
         void putOrUpdate_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
-            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            CoordinateLikeTestObject clashingCoordinate = CoordinateLikeTestObject.create(0, 0);
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(clashingCoordinate));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(clashingCoordinate));
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateTwo))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.stream()).containsExactly(stateOne);
+            assertThat(index.keySet()).containsExactly(clashingCoordinate);
+            assertThat(index.getOptionally(clashingCoordinate)).contains(stateOne);
         }
 
         @Test
@@ -95,20 +105,30 @@ class ManyToOneIndexTest {
             TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.isEmpty()).isTrue();
+            assertThat(index.isEmpty()).isTrue();
         }
 
         @Test
         void putOrUpdateAll_whenTestStateMapsToCoordinateMappedToBySomeThingElse_thenExceptionThrownOnAdd() {
-            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            CoordinateLikeTestObject clashingCoordinate = CoordinateLikeTestObject.create(0, 0);
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(clashingCoordinate));
             TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1)));
-            TestState stateThree = new TestState(Id.create(3), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
+            TestState stateThree = new TestState(Id.create(3), ImmutableSet.of(clashingCoordinate));
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.stream()).containsExactly(stateOne);
+            assertThat(index.keySet()).containsExactly(clashingCoordinate);
+            assertThat(index.getOptionally(clashingCoordinate)).contains(stateOne);
         }
 
         @Test

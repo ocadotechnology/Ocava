@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -152,23 +151,12 @@ class OptionalOneToOneIndexTest {
                 //Check exception
                 assertThatThrownBy(() -> cache.add(clash))
                         .isInstanceOf(CacheUpdateException.class)
-                        .has(new Condition<>(this::validateException, "correct error details"));
+                        .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
 
                 //Check rollback
                 assertThat(index.get(CoordinateLikeTestObject.ORIGIN))
                         .containsSame(original);
                 assertThat(cache.stream().collect(ImmutableSet.toImmutableSet())).containsExactly(original);
-            }
-
-            private boolean validateException(Throwable t) {
-                CacheUpdateException cacheUpdateException = (CacheUpdateException) t;
-                assertThat(cacheUpdateException.getFailingIndexName()).contains(INDEX_NAME);
-                assertThat(cacheUpdateException).hasCauseInstanceOf(IndexUpdateException.class);
-
-                IndexUpdateException indexUpdateException = (IndexUpdateException) cacheUpdateException.getCause();
-                assertThat(indexUpdateException).hasMessageContaining(INDEX_NAME);
-                assertThat(indexUpdateException.getIndexName()).isEqualTo(INDEX_NAME);
-                return true;
             }
 
             @Test

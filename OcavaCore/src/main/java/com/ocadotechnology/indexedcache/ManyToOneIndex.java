@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 
-import com.google.common.base.Preconditions;
 import com.ocadotechnology.id.Identified;
 
 public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
@@ -46,26 +45,62 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
     }
 
     @Override
-    protected void remove(C object) {
-        indexingFunction.apply(object).forEach(indexValues::remove);
+    protected void remove(C object) throws IndexUpdateException {
+        Collection<R> objectIndexValues = indexingFunction.apply(object);
+        if (objectIndexValues == null) {
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
+                    "Error updating %s: Removed object %s returned null index value collection",
+                    formattedName,
+                    object
+            );
+        }
+        objectIndexValues.forEach(this.indexValues::remove);
     }
 
     @Override
-    protected void add(C newObject) {
-        Collection<R> indexValues = Preconditions.checkNotNull(
-                indexingFunction.apply(newObject),
-                "Error updating %s: New object %s returned null index value collection",
-                formattedName,
-                newObject);
-        indexValues.forEach(r -> {
+    protected void add(C newObject) throws IndexUpdateException {
+        Collection<R> objectIndexValues = indexingFunction.apply(newObject);
+        if (objectIndexValues == null) {
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
+                    "Error updating %s: New object %s returned null index value collection",
+                    formattedName,
+                    newObject
+            );
+        }
+        int added = 0;
+        for (R r : objectIndexValues) {
             C oldObject = this.indexValues.put(r, newObject);
-            Preconditions.checkState(oldObject == null,
+            if (oldObject == null) {
+                ++added;
+                continue;
+            }
+            this.indexValues.put(r, oldObject);
+            rollback(objectIndexValues, added);
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
                     "Error updating %s: New object %s blocked by old object %s for index value %s",
                     formattedName,
                     newObject,
                     oldObject,
-                    r);
-        });
+                    r
+            );
+        }
+    }
+
+    private void rollback(Collection<R> indexValues, int added) {
+        for (R r : indexValues) {
+            if (added <= 0) {
+                return;
+            }
+            indexValues.remove(r);
+            --added;
+        }
+    }
+
+    private String getNameOrDefault() {
+        return name != null ? name : indexingFunction.getClass().getSimpleName();
     }
 
     public C getOrNull(R r) {

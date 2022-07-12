@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.function.Function;
 
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -91,7 +90,7 @@ class OneToOneIndexTest {
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
                 assertThatThrownBy(() -> cache.add(stateTwo))
                         .isInstanceOf(CacheUpdateException.class)
-                        .has(new Condition<>(this::validateException, "correct error details"));
+                        .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
 
                 //Test rollback
                 assertThat(cache.stream().collect(ImmutableSet.toImmutableSet())).containsExactly(stateOne);
@@ -105,7 +104,7 @@ class OneToOneIndexTest {
 
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
                         .isInstanceOf(CacheUpdateException.class)
-                        .has(new Condition<>(this::validateException, "correct error details"));
+                        .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
 
                 //Test rollback
                 assertThat(cache.size()).isEqualTo(0);
@@ -121,7 +120,7 @@ class OneToOneIndexTest {
                 assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
                 assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateTwo, stateThree)))
                         .isInstanceOf(CacheUpdateException.class)
-                        .has(new Condition<>(this::validateException, "correct error details"));
+                        .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
 
                 //Test rollback
                 assertThat(cache.stream().collect(ImmutableSet.toImmutableSet())).containsExactly(stateOne);
@@ -179,17 +178,6 @@ class OneToOneIndexTest {
                 cache.delete(stateOne.getId());
 
                 assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(stateTwo.getLocation(), stateTwo));
-            }
-
-            private boolean validateException(Throwable t) {
-                CacheUpdateException cacheUpdateException = (CacheUpdateException) t;
-                assertThat(cacheUpdateException.getFailingIndexName()).contains(INDEX_NAME);
-                assertThat(cacheUpdateException).hasCauseInstanceOf(IndexUpdateException.class);
-
-                IndexUpdateException indexUpdateException = (IndexUpdateException) cacheUpdateException.getCause();
-                assertThat(indexUpdateException).hasMessageContaining(INDEX_NAME);
-                assertThat(indexUpdateException.getIndexName()).isEqualTo(INDEX_NAME);
-                return true;
             }
         }
 
