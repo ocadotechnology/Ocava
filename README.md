@@ -29,7 +29,7 @@ The key classes within OcavaCore are:
 Some of the other utilities included are:
 * Tools to make randomness deterministic between program runs
 * Physics utilities to help deal with acceleration
-* Immutable object cache for efficient lookups of immutable objects
+* [Immutable object cache](OcavaCore/src/main/java/com/ocadotechnology/indexedcache/IndexedImmutableObjectCache.md) for efficient lookups of immutable objects
 * API for different modes of file access implemented through [Java Service Provider Interface (SPI)]
 
 [Java Service Provider Interface (SPI)]: https://docs.oracle.com/javase/tutorial/ext/basics/spi.html
