@@ -60,8 +60,9 @@ class OptionalSortedManyToManyIndexTest {
 
     private abstract static class IndexTests {
 
-        private static final Optional<Set<Integer>> INDEXING_VALUES = Optional.of(ImmutableSet.of(1, 2));
-        private static final Optional<Set<Integer>> DIFFERENT_INDEXING_VALUES = Optional.of(ImmutableSet.of(3, 4));
+        private static final Optional<Set<Integer>> INDEXING_VALUES = Optional.of(ImmutableSet.of(1, 2, 3));
+        private static final Optional<Set<Integer>> CLASHING_INDEXING_VALUES = Optional.of(ImmutableSet.of(-1, 0, 1)); //Only clashes on the last
+        private static final Optional<Set<Integer>> DIFFERENT_INDEXING_VALUES = Optional.of(ImmutableSet.of(4, 5, 6));
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
         private OptionalSortedManyToManyIndex<Integer, TestState> index;
@@ -92,12 +93,17 @@ class OptionalSortedManyToManyIndexTest {
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndicesCompareAsEqual_thenThrowsExceptionOnSecondAdd() {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
-            TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUES);
+            TestState stateTwo = new TestState(Id.create(2), 1, CLASHING_INDEXING_VALUES);
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateTwo))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.stream()).containsExactly(stateOne);
+            assertThat(index.streamKeySet()).containsExactlyElementsOf(INDEXING_VALUES.get());
+            INDEXING_VALUES.get().forEach(i -> assertThat(index.stream(i)).containsExactly(stateOne));
         }
 
         @Test
@@ -106,20 +112,29 @@ class OptionalSortedManyToManyIndexTest {
             TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUES);
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.isEmpty()).isTrue();
+            assertThat(index.streamKeySet()).isEmpty();
         }
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndicesCompareAsEqual_thenThrowsExceptionOnFirstInconsistence() {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
             TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUES);
-            TestState stateThree = new TestState(Id.create(3), 1, INDEXING_VALUES);
+            TestState stateThree = new TestState(Id.create(3), 1, CLASHING_INDEXING_VALUES);
 
             assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateThree))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.stream()).containsExactlyInAnyOrder(stateOne, stateTwo);
+            assertThat(index.streamKeySet()).containsExactlyElementsOf(INDEXING_VALUES.get());
+            INDEXING_VALUES.get().forEach(i -> assertThat(index.stream(i)).containsExactly(stateOne, stateTwo));
         }
 
         @Test

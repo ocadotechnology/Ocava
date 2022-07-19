@@ -15,9 +15,11 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,9 +29,9 @@ import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
@@ -94,23 +96,36 @@ public final class OptionalSortedManyToManyIndex<R, C extends Identified<?>> ext
     @Override
     protected void remove(C object) {
         function.apply(object).ifPresent(setOfRs -> setOfRs.forEach(r -> {
-            Set<C> cs = indexValues.get(r);
-            cs.remove(object);
-            if (cs.isEmpty()) {
-                indexValues.remove(r);
-            }
+            removeFromStore(object, r);
         }));
     }
 
+    private void removeFromStore(C object, R r) {
+        Set<C> cs = indexValues.get(r);
+        cs.remove(object);
+        if (cs.isEmpty()) {
+            indexValues.remove(r);
+        }
+    }
+
     @Override
-    protected void add(C object) {
-        function.apply(object).ifPresent(setOfRs -> setOfRs.forEach(r -> {
+    protected void add(C object) throws IndexUpdateException {
+        Optional<Set<R>> optionalSet = function.apply(object);
+        List<R> addedTo = new ArrayList<>(optionalSet.map(Set::size).orElse(1));
+        for (R r : optionalSet.orElse(ImmutableSet.of())) {
             Set<C> cs = indexValues.computeIfAbsent(r, set -> new TreeSet<>(comparator));
-            Preconditions.checkState(cs.add(object),
+            if (cs.add(object)) {
+                addedTo.add(r);
+                continue;
+            }
+            addedTo.forEach(r1 -> removeFromStore(object, r1));
+            throw new IndexUpdateException(
+                    name != null ? name : function.getClass().getSimpleName(),
                     "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
                     formattedName,
-                    object);
-        }));
+                    object
+            );
+        }
     }
 
     private Set<C> getMutable(R r) {

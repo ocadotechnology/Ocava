@@ -22,7 +22,6 @@ import java.util.function.Function;
 
 import javax.annotation.CheckForNull;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
@@ -61,11 +60,23 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
     }
 
     @Override
-    protected void add(C object) {
-        Preconditions.checkState(values.add(object),
-                "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
-                formattedName,
-                object);
+    protected void add(C object) throws IndexUpdateException {
+        if (!values.add(object)) {
+            throw new IndexUpdateException(
+                    getNameOrDefault(),
+                    "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                    formattedName,
+                    object
+            );
+        }
+    }
+
+    private String getNameOrDefault() {
+        if (name != null) {
+            return name;
+        }
+        Comparator<? super C> comparator = values.comparator();
+        return comparator != null ? comparator.getClass().getSimpleName() : getClass().getSimpleName();
     }
 
     public Optional<C> peek() {

@@ -27,35 +27,42 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("A SortedOneToManyIndexTest")
-class SortedOneToManyIndexTest {
+class SeparatelySortedOneToManyIndexTest {
     private static final String INDEX_NAME = "TEST_SORTED_ONE_TO_MANY_INDEX";
     
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        SortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addSortedOneToManyIndex(INDEX_NAME, TestState::getIndexingValue, Comparator.comparingInt(TestState::getComparatorValue));
+        SeparatelySortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+            return cache.addSeparatelySortedOneToManyIndex(INDEX_NAME, TestState::getIndexingValue, getComparator());
         }
     }
 
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        SortedOneToManyIndex<Integer, TestState>  addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        SeparatelySortedOneToManyIndex<Integer, TestState>  addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
-            // DO NOT inline indexFunction or comparator, as that will not fail to compile should addSortedOneToManyIndex()
-            // require a type of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate>>,
+            // DO NOT inline indexFunction or comparator, as that will not fail to compile should addSeparatelySortedOneToManyIndex()
+            // require a type of Function<TestState, Integer> instead of Function<? super TestState, Integer>,
             // due to automatic type coercion of the lambda.
             Function<LocationState, Integer> indexFunction = LocationState::getIndexingValue;
-            Comparator<LocationState> comparator = Comparator.comparingInt(LocationState::getComparatorValue);
-            return cache.addSortedOneToManyIndex(INDEX_NAME, indexFunction, comparator);
+            Function<Integer, Comparator<LocationState>> comparatorFunction = getComparator();
+            return cache.addSeparatelySortedOneToManyIndex(INDEX_NAME, indexFunction, comparatorFunction);
         }
+    }
+
+    private static <T extends LocationState> Function<Integer, Comparator<T>> getComparator() {
+            return i -> i % 2 == 0
+                    ? Comparator.<T>comparingInt(LocationState::getComparatorValue).reversed()
+                    : Comparator.comparingInt(LocationState::getComparatorValue);
     }
 
     private abstract static class IndexTests {
@@ -64,9 +71,9 @@ class SortedOneToManyIndexTest {
         private static final Integer DIFFERENT_INDEXING_VALUE = 2;
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private SortedOneToManyIndex<Integer, TestState> index;
+        private SeparatelySortedOneToManyIndex<Integer, TestState> index;
 
-        abstract SortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+        abstract SeparatelySortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
 
         @BeforeEach
         void init() {
@@ -79,7 +86,7 @@ class SortedOneToManyIndexTest {
             TestState testState = new TestState(Id.create(100), 1, INDEXING_VALUE);
             cache.add(testState);
 
-            assertThat(index.first(INDEXING_VALUE)).isEqualTo(testState);
+            assertThat(index.first(INDEXING_VALUE)).contains(testState);
         }
 
         @Test
@@ -144,6 +151,18 @@ class SortedOneToManyIndexTest {
         }
 
         @Test
+        void addToCache_whenDifferentIndexWithDifferentSort_thenIndexValuesAreSortedIndependently() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateFour = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree, stateFour));
+
+            assertThat(index.stream(INDEXING_VALUE)).containsExactly(stateOne, stateTwo);
+            assertThat(index.stream(DIFFERENT_INDEXING_VALUE)).containsExactly(stateFour, stateThree);
+        }
+
+        @Test
         void updateCache_whenComparatorValuesAreSwapped_testStatesAreSorted() {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
             TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
@@ -197,6 +216,14 @@ class SortedOneToManyIndexTest {
         @Override
         public Integer getComparatorValue() {
             return comparatorValue;
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("indexingValue", indexingValue)
+                    .add("comparatorValue", comparatorValue)
+                    .toString();
         }
     }
 

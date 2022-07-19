@@ -37,7 +37,7 @@ import com.ocadotechnology.id.Identified;
 public class SeparatelySortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
     private final Map<R, TreeSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, R> function;
-    private final Function<R, Comparator<C>> comparatorGenerator;
+    private final Function<R, ? extends Comparator<? super C>> comparatorGenerator;
 
     /**
      * @param function key extraction function.
@@ -48,7 +48,7 @@ public class SeparatelySortedOneToManyIndex<R, C extends Identified<?>> extends 
      *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
      *        and leave the cache in an inconsistent state.
      */
-    public SeparatelySortedOneToManyIndex(Function<? super C, R> function, Function<R, Comparator<C>> comparatorGenerator) {
+    public SeparatelySortedOneToManyIndex(Function<? super C, R> function, Function<R, ? extends Comparator<? super C>> comparatorGenerator) {
         this(null, function, comparatorGenerator);
     }
 
@@ -62,7 +62,7 @@ public class SeparatelySortedOneToManyIndex<R, C extends Identified<?>> extends 
      *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
      *        and leave the cache in an inconsistent state.
      */
-    public SeparatelySortedOneToManyIndex(@CheckForNull String name, Function<? super C, R> function, Function<R, Comparator<C>> comparatorGenerator) {
+    public SeparatelySortedOneToManyIndex(@CheckForNull String name, Function<? super C, R> function, Function<R, ? extends Comparator<? super C>> comparatorGenerator) {
         super(name);
         this.function = function;
         this.comparatorGenerator = comparatorGenerator;
@@ -111,13 +111,17 @@ public class SeparatelySortedOneToManyIndex<R, C extends Identified<?>> extends 
     }
 
     @Override
-    protected void add(C object) {
+    protected void add(C object) throws IndexUpdateException {
         R r = function.apply(object);
         TreeSet<C> cs = indexValues.computeIfAbsent(r, this::newValues);
-        Preconditions.checkState(cs.add(object),
-                "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
-                formattedName,
-                object);
+        if (!cs.add(object)) {
+            throw new IndexUpdateException(
+                    name != null ? name : function.getClass().getSimpleName(),
+                    "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                    formattedName,
+                    object
+            );
+        }
     }
 
     private TreeSet<C> getMutable(R r) {

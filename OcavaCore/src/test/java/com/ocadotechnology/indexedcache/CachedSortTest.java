@@ -84,8 +84,12 @@ class CachedSortTest {
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateTwo))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.stream()).containsExactly(stateOne);
+            assertThat(sort.asList()).containsExactly(stateOne);
         }
 
         @Test
@@ -94,8 +98,12 @@ class CachedSortTest {
             TestState stateTwo = new TestState(Id.create(2), 1);
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.isEmpty()).isTrue();
+            assertThat(sort.asList()).isEmpty();
         }
 
         @Test
@@ -106,8 +114,12 @@ class CachedSortTest {
 
             assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateThree))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(INDEX_NAME);
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //Test rollback
+            assertThat(cache.stream()).containsExactly(stateOne, stateTwo);
+            assertThat(sort.asList()).containsExactly(stateOne, stateTwo);
         }
 
         @Test

@@ -118,13 +118,17 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
     }
 
     @Override
-    protected void add(C object) {
+    protected void add(C object) throws IndexUpdateException {
         R r = function.apply(object);
         SortedSet<C> cs = indexValues.computeIfAbsent(r, this::newValues);
-        Preconditions.checkState(cs.add(object),
-                "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
-                formattedName,
-                object);
+        if (!cs.add(object)) {
+            throw new IndexUpdateException(
+                    name != null ? name : function.getClass().getSimpleName(),
+                    "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                    formattedName,
+                    object
+            );
+        }
     }
 
     private SortedSet<C> getMutable(R r) {

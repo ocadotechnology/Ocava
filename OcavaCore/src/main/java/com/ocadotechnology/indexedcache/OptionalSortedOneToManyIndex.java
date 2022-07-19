@@ -107,14 +107,20 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
     }
 
     @Override
-    protected void add(C object) {
-        function.apply(object).ifPresent(r -> {
+    protected void add(C object) throws IndexUpdateException {
+        Optional<R> optionalR = function.apply(object);
+        if (optionalR.isPresent()) {
+            R r = optionalR.get();
             TreeSet<C> cs = indexValues.computeIfAbsent(r, list -> new TreeSet<>(comparator));
-            Preconditions.checkState(cs.add(object),
-                    "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
-                    formattedName,
-                    object);
-        });
+            if (!cs.add(object)) {
+                throw new IndexUpdateException(
+                        name != null ? name : function.getClass().getSimpleName(),
+                        "Error updating %s: Trying to add [%s], but an equal value already exists in the set. Does your comparator conform to the requirements?",
+                        formattedName,
+                        object
+                );
+            }
+        }
     }
 
     private SortedSet<C> getMutable(R r) {

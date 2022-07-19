@@ -497,7 +497,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      */
     public <R> SeparatelySortedOneToManyIndex<R, C> addSeparatelySortedOneToManyIndex(
             Function<? super C, R> function,
-            Function<R, Comparator<C>> comparatorGenerator) {
+            Function<R, Comparator<? super C>> comparatorGenerator) {
         return addSeparatelySortedOneToManyIndex(null, function, comparatorGenerator);
     }
 
@@ -514,7 +514,7 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     public <R> SeparatelySortedOneToManyIndex<R, C> addSeparatelySortedOneToManyIndex(
             @CheckForNull String name,
             Function<? super C, R> function,
-            Function<R, Comparator<C>> comparatorGenerator) {
+            Function<R, ? extends Comparator<? super C>> comparatorGenerator) {
         SeparatelySortedOneToManyIndex<R, C> index = new SeparatelySortedOneToManyIndex<>(name, function, comparatorGenerator);
         return addIndex(index);
     }
