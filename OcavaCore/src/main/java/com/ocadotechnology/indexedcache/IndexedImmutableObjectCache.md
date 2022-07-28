@@ -78,7 +78,7 @@ code to control the recovery behaviour.
 Extending the example above, imagine that the caller wanted to recover from
 an error where the same driver was assinged to multiple cars:
 
-```
+```java
 private static final String DRIVER_INDEX = "DRIVER_INDEX";
 
 .....

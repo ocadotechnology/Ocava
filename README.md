@@ -31,6 +31,7 @@ Some of the other utilities included are:
 * Physics utilities to help deal with acceleration
 * [Immutable object cache](OcavaCore/src/main/java/com/ocadotechnology/indexedcache/IndexedImmutableObjectCache.md) for efficient lookups of immutable objects
 * API for different modes of file access implemented through [Java Service Provider Interface (SPI)]
+* Tools for [loading and retrieving program configuration](OcavaCore/src/main/java/com/ocadotechnology/config/Config.md)
 
 [Java Service Provider Interface (SPI)]: https://docs.oracle.com/javase/tutorial/ext/basics/spi.html
 ### File Access through SPI
