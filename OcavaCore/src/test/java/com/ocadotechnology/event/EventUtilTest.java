@@ -67,13 +67,13 @@ class EventUtilTest {
     @Test
     void eventTimeToBigQueryString_fromDayUnit() {
         EventUtil.setSimulationTimeUnit(TimeUnit.DAYS);
-        assertEquals("1970-01-02 12:00:00.000000", EventUtil.eventTimeToBigQueryString(1.5d));
+        assertEquals("1970-01-02T12:00:00.000000Z", EventUtil.eventTimeToBigQueryString(1.5d));
     }
 
     @Test
     void eventTimeToBigQueryString_fromNanoUnit() {
         EventUtil.setSimulationTimeUnit(TimeUnit.NANOSECONDS);
-        assertEquals("1970-01-01 00:25:00.000000", EventUtil.eventTimeToBigQueryString(1.5e12d));
+        assertEquals("1970-01-01T00:25:00.000000Z", EventUtil.eventTimeToBigQueryString(1.5e12d));
     }
     //endregion
 
