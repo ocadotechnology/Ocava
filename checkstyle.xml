@@ -174,7 +174,9 @@ See http://checkstyle.sourceforge.net/checks.html for available checks
             <property name="tokens" value="COMMA"/>
         </module>
 
-        <module name="OneTopLevelClass"/>
+        <module name="OneTopLevelClass">
+            <property name="id" value="OneTopLevelClass"/>
+        </module>
 
         <module name="AvoidStarImport">
             <property name="excludes" value="java.awt,java.swing"/>

@@ -100,6 +100,7 @@
         <module>OcavaScenarioTest</module>
         <module>OcavaS3</module>
         <module>TrafficLightSimulation</module>
+        <module>SuiteTestEngine</module>
     </modules>
 
     <dependencies>

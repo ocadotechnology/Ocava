@@ -5,4 +5,5 @@
 
 <suppressions>
     <suppress files="OneToOneJoinView.java" id="StreamForEach"/>
+    <suppress files="com[\\/]ocadotechnology[\\/]junit5[\\/]suite[\\/]engine[\\/].*.java" id="OneTopLevelClass" />
 </suppressions>
