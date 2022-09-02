@@ -128,6 +128,11 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
         return list == null ? Collections.emptySortedSet() : list;
     }
 
+    public Optional<C> getFirst(R r) {
+        SortedSet<C> mutable = getMutable(r);
+        return mutable.isEmpty() ? Optional.empty() : Optional.of(mutable.first());
+    }
+
     public Optional<C> getLast(R r) {
         SortedSet<C> mutable = getMutable(r);
         return mutable.isEmpty() ? Optional.empty() : Optional.of(mutable.last());

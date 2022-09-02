@@ -91,6 +91,22 @@ class OptionalSortedManyToManyIndexTest {
         }
 
         @Test
+        void addToCache_whenMultipleTestStatesWithTheSameIndex_thenFirstAndLastCorrect() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUES);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUES);
+            TestState stateFour = new TestState(Id.create(4), 4, INDEXING_VALUES);
+            TestState stateFive = new TestState(Id.create(5), 5, INDEXING_VALUES);
+            ImmutableList<TestState> expected = ImmutableList.of(stateOne, stateTwo, stateThree, stateFour, stateFive);
+            cache.addAll(expected.reverse());
+
+            assertThat(index.first(1).get()).isEqualTo(stateOne);
+            assertThat(index.last(1).get()).isEqualTo(stateFive);
+            assertThat(index.first(2).get()).isEqualTo(stateOne);
+            assertThat(index.last(2).get()).isEqualTo(stateFive);
+        }
+
+        @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndicesCompareAsEqual_thenThrowsExceptionOnSecondAdd() {
             TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUES);
             TestState stateTwo = new TestState(Id.create(2), 1, CLASHING_INDEXING_VALUES);

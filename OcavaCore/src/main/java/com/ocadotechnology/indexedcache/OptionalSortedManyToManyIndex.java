@@ -16,13 +16,13 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -32,13 +32,14 @@ import javax.annotation.CheckForNull;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public final class OptionalSortedManyToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
-
-    private final Map<R, Set<C>> indexValues = new LinkedHashMap<>();
+    private final SortedSet<C> emptySet = ImmutableSortedSet.of();
+    private final Map<R, SortedSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, Optional<Set<R>>> function;
     private final Comparator<? super C> comparator;
 
@@ -79,6 +80,16 @@ public final class OptionalSortedManyToManyIndex<R, C extends Identified<?>> ext
 
     public Stream<C> streamIncludingDuplicates(ImmutableCollection<R> keys) {
         return keys.stream().flatMap(this::stream);
+    }
+
+    public Optional<C> first(@CheckForNull R r) {
+        SortedSet<C> tmp = getMutable(r);
+        return tmp.isEmpty() ? Optional.empty() : Optional.of(tmp.first());
+    }
+
+    public Optional<C> last(@CheckForNull R r) {
+        SortedSet<C> tmp = getMutable(r);
+        return tmp.isEmpty() ? Optional.empty() : Optional.of(tmp.last());
     }
 
     public int size(R r) {
@@ -128,8 +139,7 @@ public final class OptionalSortedManyToManyIndex<R, C extends Identified<?>> ext
         }
     }
 
-    private Set<C> getMutable(R r) {
-        Set<C> set = indexValues.get(r);
-        return set == null ? Collections.emptySet() : set;
+    private SortedSet<C> getMutable(R r) {
+        return indexValues.getOrDefault(r, emptySet);
     }
 }

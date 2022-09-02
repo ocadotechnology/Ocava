@@ -18,6 +18,7 @@ package com.ocadotechnology.indexedcache;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -99,8 +100,16 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         return getMutable(r).size();
     }
 
-    public C first(R r) {
-        return getMutable(r).first();
+    public Optional<C> first(R r) {
+        SortedSet<C> tmp = getMutable(r);
+
+        return tmp.isEmpty() ? Optional.empty() : Optional.of(tmp.first());
+    }
+
+    public Optional<C> last(R r) {
+        SortedSet<C> tmp = getMutable(r);
+
+        return tmp.isEmpty() ? Optional.empty() : Optional.of(tmp.last());
     }
 
     public UnmodifiableIterator<C> iterator(R r) {
