@@ -79,7 +79,7 @@
         <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
 
         <!-- Spotbugs versions -->
-        <spotbugs.version>4.7.1</spotbugs.version>
+        <spotbugs.version>4.7.2</spotbugs.version>
         <spotbugs-maven-plugin.version>4.7.1.1</spotbugs-maven-plugin.version>
         <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
 
