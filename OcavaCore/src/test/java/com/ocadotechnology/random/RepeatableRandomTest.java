@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,28 @@ public class RepeatableRandomTest {
     private static final long FIXED_SEED = 12345;
     private static final int TEST_ITERATIONS = 50;
     private static final int TEST_ITERATIONS_FOR_UNIQUENESS_CHECK = 1_000_000;
+
+    @AfterEach
+    public void clearRepeatableRandom() {
+        RepeatableRandom.clear();
+    }
+
+    @Test
+    public void whenUninitialised_thenThrows() {
+        Assertions.assertThrows(IllegalStateException.class, RepeatableRandom::newInstance);
+    }
+
+    @Test
+    public void whenInitialisedSeed_thenDoNoThrow() {
+        RepeatableRandom.initialiseWithSeed(1234L);
+        Assertions.assertNotNull(RepeatableRandom.newInstance(), "New instance should return an object if initialised.");
+    }
+
+    @Test
+    public void whenInitialisedFixed_thenDoNoThrow() {
+        RepeatableRandom.initialiseWithFixedValue(0.65);
+        Assertions.assertNotNull(RepeatableRandom.newInstance(), "New instance should return an object if initialised.");
+    }
 
     @Test
     public void seededRandom_canReturnExpectedBoolean() {

@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.common.base.Preconditions;
 import com.ocadotechnology.validation.Failer;
 
 /**
@@ -40,6 +41,11 @@ public class RepeatableRandom {
         throw Failer.fail("Do not instantiate static utility class");
     }
 
+    private static InstancedRepeatableRandom getInstance() {
+        Preconditions.checkState(instancedRepeatableRandom != null, "Repeatable Random has not been initialised, please call an initialising function prior to this call.");
+        return instancedRepeatableRandom;
+    }
+
     public static void initialiseWithSeed(long masterSeed) {
         instancedRepeatableRandom = InstancedRepeatableRandom.fromSeed(masterSeed);
     }
@@ -53,11 +59,11 @@ public class RepeatableRandom {
     }
 
     public static InstancedRepeatableRandom newInstance() {
-        return InstancedRepeatableRandom.fromSeed(instancedRepeatableRandom.nextLong());
+        return InstancedRepeatableRandom.fromSeed(getInstance().nextLong());
     }
 
     public static double nextDouble() {
-        return instancedRepeatableRandom.nextDouble();
+        return getInstance().nextDouble();
     }
 
     /**
@@ -70,42 +76,42 @@ public class RepeatableRandom {
      *        (inclusive) and the bound (inclusive)
      */
     public static double nextDouble(double origin, double bound) {
-        return instancedRepeatableRandom.nextDouble(origin, bound);
+        return getInstance().nextDouble(origin, bound);
     }
 
     public static int nextInt(int bound) {
-        return instancedRepeatableRandom.nextInt(bound);
+        return getInstance().nextInt(bound);
     }
 
     public static boolean nextBoolean() {
-        return instancedRepeatableRandom.nextBoolean();
+        return getInstance().nextBoolean();
     }
 
     public static UUID nextUUID() {
-        return instancedRepeatableRandom.nextUUID();
+        return getInstance().nextUUID();
     }
 
     public static long nextLong() {
-        return instancedRepeatableRandom.nextLong();
+        return getInstance().nextLong();
     }
 
     public static double nextGaussian() {
-        return instancedRepeatableRandom.nextGaussian();
+        return getInstance().nextGaussian();
     }
 
     public static <T> void shuffle(List<T> list) {
-        instancedRepeatableRandom.shuffle(list);
+        getInstance().shuffle(list);
     }
 
     public static <T> void shuffle(T[] array) {
-        instancedRepeatableRandom.shuffle(array);
+        getInstance().shuffle(array);
     }
 
     public static <T> T randomElementOf(Collection<T> collection) {
-        return instancedRepeatableRandom.randomElementOf(collection);
+        return getInstance().randomElementOf(collection);
     }
 
     public static <T> T randomElementOf(List<T> list) {
-        return instancedRepeatableRandom.randomElementOf(list);
+        return getInstance().randomElementOf(list);
     }
 }
