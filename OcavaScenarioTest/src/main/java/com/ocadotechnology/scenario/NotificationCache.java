@@ -15,11 +15,14 @@
  */
 package com.ocadotechnology.scenario;
 
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.reflect.TypeToken;
 
 public class NotificationCache extends Cleanable {
-    private List<Class<?>> knownNotifications = new LinkedList<>();
+    private final Set<Class<?>> knownNotifications = new LinkedHashSet<>();
     private Object notification;
     // we have to keep both as there are cases where we have unordered steps check value A in notification and ordered step wait for value B in the same notification
     private Object unorderedNotification;
@@ -44,7 +47,25 @@ public class NotificationCache extends Cleanable {
     }
 
     public boolean knownNotification(Object notification) {
-        return knownNotifications.stream().anyMatch(c -> c.isAssignableFrom(notification.getClass()));
+        Class<?> clazz = notification.getClass();
+
+        if (knownNotifications.contains(clazz)) {
+            return true;
+        }
+
+        for (Class<?> superType : getSuperTypes(clazz)) {
+            if (knownNotifications.contains(superType)) {
+                knownNotifications.add(clazz);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static <T> Set<Class<? super T>> getSuperTypes(Class<T> clazz) {
+        return TypeToken.of(clazz).getTypes().rawTypes();
     }
 
     public void resetUnorderedNotification() {
@@ -52,12 +73,12 @@ public class NotificationCache extends Cleanable {
     }
 
     public List<Class<?>> getKnownNotifications() {
-        return knownNotifications;
+        return List.copyOf(knownNotifications);
     }
 
     @Override
     public void clean() {
-        knownNotifications = new LinkedList<>();
+        knownNotifications.clear();
         notification = null;
         unorderedNotification = null;
     }
