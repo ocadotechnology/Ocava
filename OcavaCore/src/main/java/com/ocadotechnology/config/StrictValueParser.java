@@ -122,16 +122,24 @@ public class StrictValueParser {
     }
 
     /**
-     * @return the string config value parsed as a time using the declared application time unit.
+     * @return a double representing a time in the unit returned by {@link Config#getTimeUnit()}.
      * <p>
-     * Time config values can be given either
-     * - as a double, in which case Config will assume that the value is being specified in seconds
-     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     * The double is created by parsing the string config value and converting between the time unit declared in the
+     * string config value and the time unit of the enclosing Config class instance. The value returned will also include
+     * the non-integer fraction of the time, if any, that results from converting between time units.
+     * See {@link StrictValueParser#asTime()} for a variant that only returns a whole number of time units.
+     * <p>
+     * String config values representing times can be given either:
+     * <ul>
+     *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
+     *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
+     * </ul>
+     * Valid time units are those defined by {@link TimeUnit}
      *
-     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public double asFractionalTime() {
         try {
@@ -142,17 +150,23 @@ public class StrictValueParser {
     }
 
     /**
-     * @return the string config value parsed as a time using the declared application time unit, rounded to the nearest
-     *          whole number of units.
+     * @return a long representing a time in the unit returned by {@link Config#getTimeUnit()}.
      * <p>
-     * Time config values can be given either
-     * - as a double, in which case Config will assume that the value is being specified in seconds
-     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     * The long is created by parsing the string config value and converting between the time unit declared in the
+     * string config value and the time unit of the enclosing Config class instance. The value returned will be rounded to the nearest
+     * whole number of units.
+     * <p>
+     * String config values representing times can be given either:
+     * <ul>
+     *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
+     *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
+     * </ul>
+     * Valid time units are those defined by {@link TimeUnit}
      *
-     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public long asTime() {
         return Math.round(asFractionalTime());

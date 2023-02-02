@@ -108,35 +108,49 @@ public class OptionalValueParser {
     }
 
     /**
-     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing the string config value parsed as a time using the declared application time unit.
+     * @return {@link OptionalDouble#empty()} if the config value is an empty String, otherwise returns an {@link OptionalDouble}
+     * containing a double representing a time in the unit returned by {@link Config#getTimeUnit()}.
      * <p>
-     * Time config values can be given either
-     * - as a double, in which case Config will assume that the value is being specified in s
-     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}
+     * The double is created by parsing the string config value and converting between the time unit declared in the
+     * string config value and the time unit of the enclosing Config class instance. The value returned will also include
+     * the non-integer fraction of the time, if any, that results from converting between time units.
+     * See {@link OptionalValueParser#asTime()} for a variant that only returns a whole number of time units.
+     * <p>
+     * String config values representing times can be given either:
+     * <ul>
+     *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
+     *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
+     * </ul>
+     * Valid time units are those defined by {@link TimeUnit}
      *
-     * @throws NullPointerException       if the application time unit has not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
+     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public OptionalDouble asFractionalTime() {
         return parser.map(p -> OptionalDouble.of(p.asFractionalTime())).orElse(OptionalDouble.empty());
     }
 
     /**
-     * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing the string config value parsed as a time using the declared application time unit, rounded
-     *          to the nearest whole number of units.
+     * @return {@link OptionalLong#empty()} if the config value is an empty String, otherwise returns an {@link OptionalLong}
+     * containing a long representing a time in the unit returned by {@link Config#getTimeUnit()}.
      * <p>
-     * Time config values can be given either
-     * - as a double, in which case Config will assume that the value is being specified in seconds
-     * - in the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     * The long is created by parsing the string config value and converting between the time unit declared in the
+     * string config value and the time unit of the enclosing Config class instance. The value returned will be rounded to the nearest
+     * whole number of units.
+     * <p>
+     * String config values representing times can be given either:
+     * <ul>
+     *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
+     *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
+     * </ul>
+     * Valid time units are those defined by {@link TimeUnit}
      *
-     * @throws NullPointerException       if the application time unit has not been set.
+     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public OptionalLong asTime() {
         return parser.map(p -> OptionalLong.of(p.asTime())).orElse(OptionalLong.empty());
