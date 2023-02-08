@@ -23,8 +23,7 @@ import java.util.stream.Stream;
 
 /**
  * Enforces that there is at most ONE subscribing class for any PointToPointNotification.
- * We do not check broadcasts (there may be multiple broadcasters). We check classes rather
- * than instances (we allow multiple instances of a subscriber).
+ * We do not check broadcasts (there may be multiple broadcasters). We do not allow multiple instances of a subscriber.
  *
  * Formally, it raises an error if this weak check passes:
  *  exists sub1(A), sub2(B) in Subscriptions, A, B in Classes : sub1 != sub2 & A >= B & P2P >= A
