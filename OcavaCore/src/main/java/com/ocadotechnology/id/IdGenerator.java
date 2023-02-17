@@ -67,10 +67,10 @@ public final class IdGenerator {
     /**
      * Allows to reset the counter to selected value
      * @param classForId class which represents Id
-     * @param lastId new id value
+     * @param initialId new initial Id value
      */
-    public static void initialiseIdCounter(Class<?> classForId, long lastId) {
-        getRawIdGenerator(classForId).set(lastId);
+    public static void initialiseIdCounter(Class<?> classForId, long initialId) {
+        getRawIdGenerator(classForId).set(initialId);
     }
 
     /**
