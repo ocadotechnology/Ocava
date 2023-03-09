@@ -19,6 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
@@ -91,4 +96,58 @@ class ModularConfigUtilsTest {
 
         assertThrows(ModularConfigException.class, () -> ModularConfigUtils.checkForConflicts(properties1, properties2));
     }
+
+    @Test
+    void whenOutputPathWouldOverrideOriginalFile_thenThrows() {
+        File config = new File("test.properties");
+        assertThrows(IllegalArgumentException.class, () -> ModularConfigUtils.writeToFileMergedConfig(config, "test"));
+    }
+
+    @Test
+    void whenPropertiesExtends_thenFullFileCreatedFormatted() throws IOException {
+        File entryFile = new File("entry.properties");
+        File wooFile = new File("woo.properties");
+        File outputFile = new File("output.properties");
+
+        entryFile.deleteOnExit();
+        wooFile.deleteOnExit();
+        outputFile.deleteOnExit();
+
+        Properties entryProp = new Properties();
+        entryProp.put(ModularConfigUtils.EXTENDS, "woo");
+        entryProp.put("foo.1_one", "1");
+        entryProp.put("bar.1_one", "2");
+        entryProp.put("foo.2_two", "1");
+        entryProp.put("bar.2_two", "2");
+        entryProp.put("foo.3_three", "1");
+        entryProp.put("bar.3_three", "2");
+
+        Properties wooProp = new Properties();
+        wooProp.put("woo.1_one", "1");
+        wooProp.put("bar.2_two", "4");
+        wooProp.put("foo.1_one", "3");
+
+        try (FileWriter entryWriter = new FileWriter(entryFile); FileWriter wooWriter = new FileWriter(wooFile)) {
+            entryProp.store(entryWriter, "entry config");
+            wooProp.store(wooWriter, "");
+        }
+
+        ModularConfigUtils.writeToFileMergedConfig(entryFile, outputFile.getPath());
+
+        String fileContent = Files.readString(Path.of(outputFile.getPath()));
+        // %n inside a String.format will use System.lineSeparator
+        String expectedContent = String.format(
+                "bar.1_one=2%n" +
+                "bar.2_two=2%n" +
+                "bar.3_three=2%n" +
+                "%n" +
+                "foo.1_one=1%n" +
+                "foo.2_two=1%n" +
+                "foo.3_three=1%n" +
+                "%n" +
+                "woo.1_one=1%n"
+        );
+        assertEquals(fileContent, expectedContent);
+    }
+
 }

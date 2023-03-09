@@ -464,7 +464,7 @@ public class ConfigManager {
             return new ConfigDataSource(localResource);
         }
 
-        private Properties readAsProperties(@CheckForNull ConfigSettingCollector configSettingCollector) throws IOException {
+        Properties readAsProperties(@CheckForNull ConfigSettingCollector configSettingCollector) throws IOException {
             if (fileSource != null) {
                 return readFromFile(configSettingCollector, fileSource, ImmutableSet.of());
             } else if (resourceLocation != null) {
