@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.assertj.core.data.Offset;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,6 +72,42 @@ class ConfigParsersTest {
     private static final String LIST_LONG_VALUES = "1,1,2,3,5,8,12,9223372036854775807";
     private static final String LIST_DOUBLE_VALUES = "1.0,1.0,2.0,3.0,5.0,8.0,12.0,9223372036854775808.5";
     private static final String LIST_ENUM_VALUES = "RED, RED, BLUE ";
+
+    @Nested
+    class ParseProportion {
+        @Test
+        void parseFraction_whenProvidedValidData_thenReturnsIt() {
+            double proportion = 0.1;
+
+            double fractionText = ConfigParsers.parseFraction("0.1");
+            Assertions.assertEquals(proportion, fractionText);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"-0.1", "1.1"})
+        void parseFraction_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String proportion) {
+
+            Exception exception = Assertions.assertThrows(
+                    IllegalStateException.class,
+                    () -> ConfigParsers.parseFraction(proportion)
+            );
+
+            String expectedMessage = "Value must be between 0 and 1";
+            String actualMessage = exception.getMessage();
+
+            Assertions.assertEquals(expectedMessage, actualMessage);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"blah", ""})
+        void parseFraction_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String proportion) {
+
+            Assertions.assertThrows(
+                    NumberFormatException.class,
+                    () -> ConfigParsers.parseFraction(proportion)
+            );
+        }
+    }
 
     @Nested
     class ParseInt {
@@ -254,6 +291,26 @@ class ConfigParsersTest {
         @Test
         void testParseWithUnits() {
             assertThat(parseDuration("1, MINUTES")).isEqualTo(Duration.ofMinutes(1));
+        }
+
+        @Test
+        void testParseNanos() {
+            assertThat(parseDuration("1, NANOS")).isEqualTo(Duration.ofNanos(1));
+        }
+
+        @Test
+        void testParseNanoseconds() {
+            assertThat(parseDuration("1, NANOSECONDS")).isEqualTo(Duration.ofNanos(1));
+        }
+
+        @Test
+        void testParseHalfDays() {
+            assertThat(parseDuration("1, HALF_DAYS")).isEqualTo(Duration.ofHours(12));
+        }
+
+        @Test
+        void testWithFractionalUnits() {
+            assertThat(parseDuration("0.5, MINUTES")).isEqualTo(Duration.ofSeconds(30));
         }
 
         @Test

@@ -20,8 +20,8 @@
             <artifactId>spotbugs-annotations</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math</artifactId>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
         </dependency>
         <dependency>
             <groupId>com.beust</groupId>
@@ -72,7 +72,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>

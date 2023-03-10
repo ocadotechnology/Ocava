@@ -17,7 +17,7 @@ package com.ocadotechnology.maths;
 
 import java.util.Comparator;
 
-import org.apache.commons.math.complex.Complex;
+import org.apache.commons.math3.complex.Complex;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.DoubleMath;

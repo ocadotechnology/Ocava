@@ -15,10 +15,16 @@
  */
 package com.ocadotechnology.random;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ImmutableAbsoluteProbabilityChooserTest {
+import com.google.common.collect.ImmutableMap;
+
+class ImmutableAbsoluteProbabilityChooserTest {
     private static final String DEFAULT = "DEFAULT";
     private static final String VALUE_1 = "VALUE_1";
     private static final String VALUE_2 = "VALUE_2";
@@ -92,5 +98,57 @@ public class ImmutableAbsoluteProbabilityChooserTest {
             RepeatableRandom.initialiseWithFixedValue(selectionValue);
             Assertions.assertEquals(expectedValue, chooser.choose());
         }
+    }
+
+    @Test
+    void ImmutableAbsoluteProbabilityChooser_whenCreatedWithEmptyProbabilties_thenThrowsException() {
+        var probabilities = ImmutableMap.<Void, Double>of();
+        assertThatThrownBy(
+                () -> ImmutableAbsoluteProbabilityChooser.fromMap(probabilities)
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void ImmutableAbsoluteProbabilityChooser_whenCreatedWithNegativeInputs_thenThrowsException() {
+        var probabilities = ImmutableMap.of(true,  -0.5);
+        assertThatThrownBy(
+                () -> ImmutableAbsoluteProbabilityChooser.fromMap(probabilities)
+        ).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void ImmutableAbsoluteProbabilityChooser_whenCreatedWithInputsLessThanOne_thenThrowsException() {
+        var probabilities = ImmutableMap.of(true,  0.25, false, 0.25);
+        assertThatThrownBy(
+                () -> ImmutableAbsoluteProbabilityChooser.fromMap(probabilities)
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void ImmutableAbsoluteProbabilityChooser_whenCreatedWithInputsGreaterThanOne_thenThrowsException() {
+        var probabilities = ImmutableMap.of(true,  0.75, false, 0.75);
+        assertThatThrownBy(
+                () -> ImmutableAbsoluteProbabilityChooser.fromMap(probabilities)
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void ImmutableAbsoluteProbabilityChooser_whenCreatedWithInputsThatAreUnbalanced_thenDistributesTheResultsWithoutBalance() {
+        RepeatableRandom.initialiseWithSeed(1L);
+        double trueProb = 0.75;
+        double falseProb = 0.25;
+        var probabilities = ImmutableMap.of(true, trueProb, false, falseProb);
+        var dist = ImmutableAbsoluteProbabilityChooser.fromMap(probabilities);
+        int numSamples = 10000;
+
+        // when
+        var result = dist.choose(numSamples);
+
+        // then
+        Integer trueResult = result.count(true);
+        Integer falseResult = result.count(false);
+        assertThat((double) trueResult).isCloseTo(trueProb * numSamples, Percentage.withPercentage(1.5));
+        assertThat((double) falseResult).isCloseTo(falseProb * numSamples, Percentage.withPercentage(1.5));
+        assertThat(falseResult + trueResult).isEqualTo(numSamples);
     }
 }

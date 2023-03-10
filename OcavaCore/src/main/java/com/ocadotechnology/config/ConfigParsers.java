@@ -16,11 +16,14 @@
 package com.ocadotechnology.config;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
+import com.google.common.base.Enums;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -41,8 +44,21 @@ public class ConfigParsers {
     }
 
     /**
+     * Parses the input string as a Double, using {@link ConfigParsers#parseDouble(String)}, and validates that it lies between 0 and 1.
+     *
+     * This is useful in code relating to probability - to validate a value is valid for use as a probability.
+     * @throws IllegalStateException if the input is not between 0 and 1.
+     * @throws NumberFormatException if the config value cannot be parsed to a double.
+     */
+    public static double parseFraction(String s) {
+        var proportion = parseDouble(s);
+        Preconditions.checkState(proportion >= 0 && proportion <= 1, "Value must be between 0 and 1");
+        return proportion;
+    }
+
+    /**
      * If the String is a number defers to {@link Integer#parseInt(String)}, if it is the String "max" or "min"
-     * (case insensitive) returns {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively
+     * (case-insensitive) returns {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively
      */
     public static int parseInt(String configValue) {
         if (configValue.equalsIgnoreCase("max")) {
@@ -55,7 +71,7 @@ public class ConfigParsers {
 
     /**
      * If the String is a number defers to {@link Long#parseLong(String)}, if it is the String "max" or "min"
-     * (case insensitive) returns {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE} respectively
+     * (case-insensitive) returns {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE} respectively
      */
     public static long parseLong(String configValue) {
         if (configValue.equalsIgnoreCase("max")) {
@@ -74,7 +90,7 @@ public class ConfigParsers {
     }
 
     /**
-     * Unlike {@link Boolean#parseBoolean}, this parser only accepts TRUE or FALSE (case insensitive). Other values will
+     * Unlike {@link Boolean#parseBoolean}, this parser only accepts TRUE or FALSE (case-insensitive). Other values will
      * cause a failure.
      *
      * @param value String value to parse
@@ -149,6 +165,10 @@ public class ConfigParsers {
         return time * getTimeUnitsInSourceTimeUnit(sourceUnit, returnTimeUnit);
     }
 
+    private static ChronoUnit parseChronoUnit(String value) {
+        return Enums.getIfPresent(TimeUnit.class, value).transform(TimeUnit::toChronoUnit).or(() -> ChronoUnit.valueOf(value));
+    }
+
     /**
      * Parse the given String into a {@link Duration}. The format of the input String must be a number followed by an
      * optional time unit separated by a comma (",") or a colon (":")
@@ -158,8 +178,8 @@ public class ConfigParsers {
     public static Duration parseDuration(String value) {
         String[] parts = parseParts(value);
         if (parts.length > 0 && parts.length <= 2) {
-            TimeUnit unit = parts.length == 1 ? TimeUnit.SECONDS : TimeUnit.valueOf(parts[1].trim());
-            double nanoTime = Double.parseDouble(parts[0].trim()) * unit.toNanos(1);
+            ChronoUnit unit = parts.length == 1 ? ChronoUnit.SECONDS : parseChronoUnit(parts[1].trim());
+            double nanoTime = Double.parseDouble(parts[0].trim()) * unit.getDuration().toNanos();
             return Duration.ofNanos(Math.round(nanoTime));
         } else {
             throw Failer.fail("Duration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<time unit>' or '<value>:<time unit>'", Arrays.toString(parts));

@@ -19,7 +19,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnegative;
 
-import org.apache.commons.math.complex.Complex;
+import org.apache.commons.math3.complex.Complex;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.DoubleMath;

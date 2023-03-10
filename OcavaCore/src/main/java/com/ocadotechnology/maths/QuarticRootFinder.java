@@ -15,7 +15,7 @@
  */
 package com.ocadotechnology.maths;
 
-import org.apache.commons.math.complex.Complex;
+import org.apache.commons.math3.complex.Complex;
 
 import com.google.common.collect.ImmutableList;
 

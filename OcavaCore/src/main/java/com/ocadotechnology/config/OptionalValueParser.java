@@ -89,6 +89,17 @@ public class OptionalValueParser {
     }
 
     /**
+     * @return {@link OptionalDouble#empty()}  if the config value is an empty string, otherwise the {@link OptionalDouble}
+     *          resulting from parsing the string config value parsed to a fraction via {@link ConfigParsers#parseFraction(String)}.
+     *          In particular, that will parse it as a Double first, and then validate that it lies between 0 and 1.
+     * @throws NumberFormatException if the config value cannot be parsed to a double.
+     * @throws IllegalStateException if the config value does not lie between 0 and 1.
+     */
+    public OptionalDouble asFraction() {
+        return parser.map(StrictValueParser::asFraction).map(OptionalDouble::of).orElse(OptionalDouble.empty());
+    }
+
+    /**
      * @return {@link OptionalDouble#empty()} if the config value is an empty String, otherwise returns an {@link
      *          OptionalDouble} containing the string config value parsed to a double via {@link
      *          Double#parseDouble(String)}.

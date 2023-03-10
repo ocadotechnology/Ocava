@@ -17,7 +17,7 @@ package com.ocadotechnology.maths;
 
 import static com.ocadotechnology.maths.PolynomialRootUtilsTest.assertEquals;
 
-import org.apache.commons.math.complex.Complex;
+import org.apache.commons.math3.complex.Complex;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;

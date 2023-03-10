@@ -27,6 +27,8 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongSupplier;
 
+import org.apache.commons.math3.random.RandomGenerator;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.google.common.base.Preconditions;
@@ -39,7 +41,9 @@ import com.google.common.base.Preconditions;
  * be passed an independent instance, created from a deterministic seed.
  */
 @SuppressFBWarnings(value = "DMI_RANDOM_USED_ONLY_ONCE", justification = "Random object is stored in the instantiated class")
-public class InstancedRepeatableRandom {
+public class InstancedRepeatableRandom implements RandomGenerator {
+    private static final String CANNOT_SET_SEED = "It is not possible to call this method, because the seed used for random is controlled by Ocava and cannot be set outside of it";
+
     private final Random randomInstance;
 
     private final DoubleSupplier repeatableDoubleSupplier;
@@ -102,6 +106,7 @@ public class InstancedRepeatableRandom {
         );
     }
 
+    @Override
     public double nextDouble() {
         return repeatableDoubleSupplier.getAsDouble();
     }
@@ -125,22 +130,34 @@ public class InstancedRepeatableRandom {
         return random;
     }
 
+    @Override
     public int nextInt(int bound) {
         return repeatableIntSupplier.applyAsInt(bound);
     }
 
+    @Override
     public boolean nextBoolean() {
         return repeatableBooleanSupplier.getAsBoolean();
     }
 
-    public UUID nextUUID() {
-        return UUID.nameUUIDFromBytes(repeatableByteArraySupplier.getBytes(16));
+    @Override
+    public void nextBytes(byte[] bytes) {
+        var toReturn = repeatableByteArraySupplier.getBytes(bytes.length);
+        System.arraycopy(toReturn, 0, bytes, 0, bytes.length);
     }
 
+    public UUID nextUUID() {
+        var bytes = new byte[16];
+        nextBytes(bytes);
+        return UUID.nameUUIDFromBytes(bytes);
+    }
+
+    @Override
     public long nextLong() {
         return repeatableLongSupplier.getAsLong();
     }
 
+    @Override
     public double nextGaussian() {
         return repeatableGaussianSupplier.getAsDouble();
     }
@@ -172,4 +189,33 @@ public class InstancedRepeatableRandom {
         int indexToReturn = nextInt(list.size());
         return list.get(indexToReturn);
     }
+
+    @Override
+    public int nextInt() {
+        return nextInt(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public float nextFloat() {
+        return (float)nextDouble();
+    }
+
+    @Override
+    @Deprecated(since = "13.3.101")
+    public void setSeed(int i) {
+        throw new UnsupportedOperationException(CANNOT_SET_SEED);
+    }
+
+    @Override
+    @Deprecated(since = "13.3.101")
+    public void setSeed(int[] ints) {
+        throw new UnsupportedOperationException(CANNOT_SET_SEED);
+    }
+
+    @Override
+    @Deprecated(since = "13.3.101")
+    public void setSeed(long l) {
+        throw new UnsupportedOperationException(CANNOT_SET_SEED);
+    }
+
 }

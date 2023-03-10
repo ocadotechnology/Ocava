@@ -98,6 +98,23 @@ public class StrictValueParser {
     }
 
     /**
+     * The string config value is parsed as a Double, and validated that it lies between 0 and 1.
+     *
+     * This is useful in code relating to probability - to validate a value is valid for use as a probability.
+     *
+     * @return the string config value parsed to a fraction via {@link ConfigParsers#parseFraction(String)}.
+     * @throws NumberFormatException if the config value cannot be parsed to a double.
+     * @throws IllegalStateException if the config value does not lie between 0 and 1.
+     */
+    public double asFraction() {
+        try {
+            return ConfigParsers.parseFraction(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
+    }
+
+    /**
      * @return the string config value parsed to a double via {@link Double#parseDouble(String)}.
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */

@@ -246,6 +246,39 @@ public class OptionalValueParserTest {
     }
 
     @Nested
+    @DisplayName("For fraction values")
+    class FractionParserTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            String testValue = "";
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
+            assertThat(parser.asFraction()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("throws IllegalStateException when out of bounds")
+        void throwsIllegalStateException() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.7182");
+            assertThatThrownBy(parser::asFraction).hasCauseInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("throws NumberFormatException when not a number")
+        void throwsNumberFormatException() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "abcde");
+            assertThatThrownBy(parser::asFraction).hasCauseInstanceOf(NumberFormatException.class);
+        }
+
+        @Test
+        @DisplayName("throws NumberFormatException when not a number")
+        void returnsValueWhenValid() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "0.1");
+            assertThat(parser.asFraction()).hasValue(0.1);
+        }
+    }
+
+    @Nested
     @DisplayName("for Double values")
     class DoubleParserTests {
         @Test
@@ -253,14 +286,14 @@ public class OptionalValueParserTest {
         void returnsEmptyValue() {
             String testValue = "";
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
-            assertThat(parser.asDouble().isPresent()).isFalse();
+            assertThat(parser.asDouble()).isEmpty();
         }
 
         @Test
         @DisplayName("returns the double value")
         void returnDoubleValue() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.7182");
-            assertThat(parser.asDouble()).isEqualTo(OptionalDouble.of(2.7182));
+            assertThat(parser.asDouble()).hasValue(2.7182);
         }
 
         @Test
