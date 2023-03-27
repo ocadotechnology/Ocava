@@ -22,9 +22,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -129,4 +132,114 @@ class RepeatableRandomMapTest {
         return StringId.create(RepeatableRandom.nextUUID().toString());
     }
 
+    @Nested
+    class CreateFromMasterRepeatableRandomTest {
+
+        @Test
+        void testDeterminism() {
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> firstMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> secondMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            Assertions.assertEquals(firstMasterSeedMap.get(1L).nextLong(), secondMasterSeedMap.get(1L).nextLong());
+        }
+
+        @Test
+        void testDependenceOnMasterSeed() {
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> firstMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            RepeatableRandom.initialiseWithSeed(1);
+            RepeatableRandomMap<Long> secondMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            Assertions.assertNotEquals(
+                    firstMasterSeedMap.get(1L).nextLong(),
+                    secondMasterSeedMap.get(1L).nextLong(),
+                    "Two different master seeds should produce different results"
+            );
+        }
+
+        @Test
+        void testIndependenceOfElements() {
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> repeatableRandomMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            Assertions.assertNotEquals(
+                    repeatableRandomMap.get(1L),
+                    repeatableRandomMap.get(2L),
+                    "Two distinct elements of the map should have distinct random generators"
+            );
+            Assertions.assertNotEquals(
+                    repeatableRandomMap.get(1L).nextLong(),
+                    repeatableRandomMap.get(2L).nextLong(),
+                    "Two distinct elements of the map should not be initialised with the same seed"
+            );
+        }
+
+        @Test
+        void testIndependenceFromAdditionalIds() {
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> firstMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+            long valueWithoutOtherIdCall = firstMasterSeedMap.get(2L).nextLong();
+
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> secondMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            secondMasterSeedMap.get(1L).nextLong(); // Testing that this does not affect the result
+            long valueAfterOtherIdCall = secondMasterSeedMap.get(2L).nextLong();
+
+            Assertions.assertEquals(
+                    valueWithoutOtherIdCall,
+                    valueAfterOtherIdCall,
+                    "The order and the number of IDs initialised in the map should "
+                            + "not affect the individual behaviours"
+            );
+        }
+
+        @Test
+        void testIndependenceFromRepeatableRandomNextCalls() {
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> firstMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            long valueWithoutRepeatableRandomCall = firstMasterSeedMap.get(1L).nextLong();
+
+            RepeatableRandom.initialiseWithSeed(0);
+            RepeatableRandomMap<Long> secondMasterSeedMap =
+                    RepeatableRandomMap.createFromMasterRepeatableRandomAndLong(Long::longValue);
+
+            RepeatableRandom.nextLong(); // Testing that this does not affect the result
+
+            long valueAfterRepeatableRandomCall = secondMasterSeedMap.get(1L).nextLong();
+
+            Assertions.assertEquals(
+                    valueWithoutRepeatableRandomCall,
+                    valueAfterRepeatableRandomCall,
+                    "Calls to RepeatableRandom after RepeatableRandomMap construction "
+                            + "should not affect the behaviour of the elements"
+            );
+        }
+    }
+
+    @Test
+    void testDeterminismOfCreateFromMasterRepeatableRandomAndString() {
+        RepeatableRandom.initialiseWithSeed(0);
+        RepeatableRandomMap<String> firstMasterSeedMap =
+                RepeatableRandomMap.createFromMasterRepeatableRandomAndString(Function.identity());
+
+        RepeatableRandom.initialiseWithSeed(0);
+        RepeatableRandomMap<String> secondMasterSeedMap =
+                RepeatableRandomMap.createFromMasterRepeatableRandomAndString(Function.identity());
+
+        Assertions.assertEquals(firstMasterSeedMap.get("Test").nextLong(), secondMasterSeedMap.get("Test").nextLong());
+    }
 }

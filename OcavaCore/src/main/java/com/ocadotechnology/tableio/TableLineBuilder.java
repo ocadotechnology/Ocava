@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Table;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
@@ -147,48 +148,70 @@ public class TableLineBuilder {
     /**
      * This function iterates through each enum value of a specific type. For each enum value it retrieves an int
      * from the countByEnum map representing the number of occurrences of that enum, and appends it to a
-     * unique column of the TableLineBuilder. This unique column's header is calculated by appending the statName to
+     * unique column of the TableLineBuilder. This unique column's header is calculated by prepending the columnHeader to
      * the specific enum values name. If the enum does not occur in the map the value of 0 is appended.
      *
-     * @param statName    the stat name to append to the header.
-     * @param countByEnum the map to count the occurrences of each enum.
-     * @param clazz       the type of the Enum which is being counted.
+     * @param columnHeader the stat name to append to the header.
+     * @param countByEnum  the map to count the occurrences of each enum.
+     * @param clazz        the type of the Enum which is being counted.
      * @return This TableLineBuilder is returned to allow for chaining.
      */
     public <T extends Enum<T>> TableLineBuilder withEnumCount(
-            String statName,
+            String columnHeader,
             Map<T, Integer> countByEnum,
             Class<T> clazz) {
         for (T enumValue : clazz.getEnumConstants()) {
             withInt(
-                    enumValue.toString() + "_" + statName,
+                    enumValue.toString() + "_" + columnHeader,
                     countByEnum.getOrDefault(enumValue, 0));
         }
         return this;
     }
 
     /**
+     * This function iterates through each enum value of a specific type. For each enum value it retrieves an int
+     * from the countByEnum Multiset representing the number of occurrences of that enum, and appends it to a
+     * unique column of the TableLineBuilder. This unique column's header is calculated by prepending the columnHeader to
+     * the specific enum values name. If the enum does not occur in the multiset the value of 0 is appended.
+     *
+     * @param columnHeader the stat name to append to the header.
+     * @param countByEnum   the multiset to count the occurrences of each enum.
+     * @param clazz         the type of the Enum which is being counted.
+     * @return This TableLineBuilder is returned to allow for chaining.
+     */
+    public <T extends Enum<T>> TableLineBuilder withEnumCount(
+            String columnHeader,
+            Multiset<T> countByEnum,
+            Class<T> clazz) {
+        for (T enumValue : clazz.getEnumConstants()) {
+            withInt(
+                    enumValue.toString() + "_" + columnHeader,
+                    countByEnum.count(enumValue));
+        }
+        return this;
+    }
+    /**
      * This function iterates through each enum of the rowClass. For each of the rowClass it then iterates through each
      * enum of the columnClass. For each possible enum pair it retrieves an int from the Table, representing the number
      * of occurrences of that enum pair, and appends it to a unique column of the TableLineBuilder.
-     * This unique column's header is calculated by appending the statName to the specific enum values name.
+     * This unique column's header is calculated by prepending the columnHeader to the specific enum values' names.
      * If the enum pair does not occur in the map the value of 0 is appended.
      *
-     * @param statName    the stat name to append to the header.
-     * @param countTable  the table to count the occurrences of each enum pair .
-     * @param rowClass    the enum class of the row of the pair being counted.
-     * @param columnClass The enum class of the column of the pair being counted.
+     * @param columnHeader the stat name to append to the header.
+     * @param countTable   the table to count the occurrences of each enum pair .
+     * @param rowClass     the enum class of the row of the pair being counted.
+     * @param columnClass  The enum class of the column of the pair being counted.
      * @return This TableLineBuilder is returned to allow for chaining.
      */
     public <C extends Enum<C>, R extends Enum<R>> TableLineBuilder withTableEnumCount(
-            String statName,
+            String columnHeader,
             Table<R, C, Integer> countTable,
             Class<R> rowClass,
             Class<C> columnClass) {
         for (R enumRowValue : rowClass.getEnumConstants()) {
             for (C enumColumnValue : columnClass.getEnumConstants()) {
                 withInt(
-                        String.format("%s_%s_%s", enumColumnValue, enumRowValue, statName),
+                        String.format("%s_%s_%s", enumColumnValue, enumRowValue, columnHeader),
                         TableUtils.getOrDefault(countTable, enumRowValue, enumColumnValue, 0));
             }
         }

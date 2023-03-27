@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.ImmutableTable.Builder;
@@ -179,6 +180,21 @@ class TableLineBuilderTest {
 
         TableLine expectedTableLine = new TableLine(ImmutableMap.of(
                 "PRESENT_ELEMENTS_COUNT", "1",
+                "MISSING_ELEMENTS_COUNT", "0"),
+                ImmutableSet.of());
+
+        Assertions.assertEquals(expectedTableLine.getLineMap(), tableLine.getLineMap());
+    }
+
+    @Test
+    void testWithEnumCountWithMultiset() {
+        ImmutableMultiset<TestEnum> testEnumCount = ImmutableMultiset.of(TestEnum.PRESENT_ELEMENTS, TestEnum.PRESENT_ELEMENTS);
+        TableLine tableLine = builder
+                .withEnumCount("COUNT", testEnumCount, TestEnum.class)
+                .build();
+
+        TableLine expectedTableLine = new TableLine(ImmutableMap.of(
+                "PRESENT_ELEMENTS_COUNT", "2",
                 "MISSING_ELEMENTS_COUNT", "0"),
                 ImmutableSet.of());
 
