@@ -68,6 +68,12 @@ public class StrictValueParserTest {
     @Nested
     @DisplayName("For fraction values")
     class FractionParserTests {
+        @Test
+        @DisplayName("returns the expected value when within bounds")
+        void returnsValueWhenValid() {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "0.1");
+            assertThat(parser.asFraction()).isEqualTo(0.1);
+        }
 
         @Test
         @DisplayName("throws IllegalStateException when out of bounds")
@@ -81,13 +87,6 @@ public class StrictValueParserTest {
         void throwsNumberFormatException() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "abcde");
             assertThatThrownBy(parser::asFraction).hasCauseInstanceOf(NumberFormatException.class);
-        }
-
-        @Test
-        @DisplayName("throws NumberFormatException when not a number")
-        void returnsValueWhenValid() {
-            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "0.1");
-            assertThat(parser.asFraction()).isEqualTo(0.1);
         }
     }
 
