@@ -16,7 +16,7 @@
 package com.ocadotechnology.notification;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -57,19 +57,19 @@ class WithinAppNotificationRouter implements NotificationRouter {
     @Override
     public <T extends Notification> void broadcast(T notification) {
         RememberingSupplier<T> notificationHolder = new RememberingSupplier<>(notification);
-        broadcastImplementation(notificationHolder, notification.getClass(), (clazz, broadcaster) -> broadcaster.canHandleNotification(clazz));
+        broadcastImplementation(notificationHolder, notification.getClass(), Broadcaster::canHandleNotification);
     }
 
     @Override
     public <T extends Notification> void broadcast(Supplier<T> concreteMessageNotificationSupplier, Class<T> notificationClass) {
         RememberingSupplier<T> rememberingSupplier = new RememberingSupplier<>(concreteMessageNotificationSupplier);
-        broadcastImplementation(rememberingSupplier, notificationClass, (clazz, broadcaster) -> broadcaster.isNotificationRegistered(clazz));
+        broadcastImplementation(rememberingSupplier, notificationClass, Broadcaster::isNotificationRegistered);
     }
 
     <T extends Notification> void broadcastImplementation(
             RememberingSupplier<T> messageSupplier,
             Class<?> notificationClass,
-            BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+            BiPredicate<Broadcaster<?>, Class<?>> shouldHandToBroadcaster) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Broadcasting {}", messageSupplier.get());
@@ -89,9 +89,9 @@ class WithinAppNotificationRouter implements NotificationRouter {
      * Use {@link #passToBroadcastersCrossThreadFirst} passToBroadcastersCrossThreadFirst instead.
      */
     @Deprecated
-    private <T> void passToBroadcastersInOrder(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+    private <T> void passToBroadcastersInOrder(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiPredicate<Broadcaster<?>, Class<?>> shouldHandToBroadcaster) {
         for (Broadcaster<?> broadcaster : broadcasters.get()) {
-            if (shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
+            if (shouldHandToBroadcaster.test(broadcaster, notificationClass)) {
                 broadcaster.broadcast(messageSupplier.get());
             }
         }
@@ -100,10 +100,10 @@ class WithinAppNotificationRouter implements NotificationRouter {
     /**
      * Guarantees that cross-thread notifications are received in the order they are sent.
      */
-    private <T> void passToBroadcastersCrossThreadFirst(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+    private <T> void passToBroadcastersCrossThreadFirst(RememberingSupplier<T> messageSupplier, Class<?> notificationClass, BiPredicate<Broadcaster<?>, Class<?>> shouldHandToBroadcaster) {
         Broadcaster<?> inThreadBroadcaster = null;
         for (Broadcaster<?> broadcaster : broadcasters.get()) {
-            if (!shouldHandToBroadcaster.apply(notificationClass, broadcaster)) {
+            if (!shouldHandToBroadcaster.test(broadcaster, notificationClass)) {
                 continue;
             }
 

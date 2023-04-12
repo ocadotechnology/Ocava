@@ -15,7 +15,7 @@
  */
 package com.ocadotechnology.notification;
 
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -65,19 +65,19 @@ public class CrossAppNotificationRouter implements NotificationRouter {
     @Override
     public <T extends Notification> void broadcast(T notification) {
         RememberingSupplier<T> notificationHolder = new RememberingSupplier<>(notification);
-        broadcastImplementation(notificationHolder, notification.getClass(), (clazz, broadcaster) -> broadcaster.canHandleNotification(clazz));
+        broadcastImplementation(notificationHolder, notification.getClass(), Broadcaster::canHandleNotification);
     }
 
     @Override
     public <T extends Notification> void broadcast(Supplier<T> concreteMessageNotificationSupplier, Class<T> notificationClass) {
         RememberingSupplier<T> rememberingSupplier = new RememberingSupplier<>(concreteMessageNotificationSupplier);
-        broadcastImplementation(rememberingSupplier, notificationClass, (clazz, broadcaster) -> broadcaster.isNotificationRegistered(clazz));
+        broadcastImplementation(rememberingSupplier, notificationClass, Broadcaster::isNotificationRegistered);
     }
 
     private <T extends Notification> void broadcastImplementation(
             RememberingSupplier<T> messageSupplier,
             Class<?> notificationClass,
-            BiFunction<Class<?>, Broadcaster<?>, Boolean> shouldHandToBroadcaster) {
+            BiPredicate<Broadcaster<?>, Class<?>> shouldHandToBroadcaster) {
 
         if (logger != null && logger.accepts(notificationClass)) {
             logger.log(messageSupplier.get());
