@@ -20,29 +20,29 @@ import java.util.stream.LongStream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class IdTest {
-    private static final long RAW_ID = 532;
+class StringIdTest {
+    private static final String RAW_ID = "test";
 
     @Test
     void cachedIdReturnsTheSameInstance() {
-        Assertions.assertSame(Id.createCached(RAW_ID), Id.createCached(RAW_ID));
+        Assertions.assertSame(StringId.createCached(RAW_ID), StringId.createCached(RAW_ID));
     }
 
     @Test
     void idDoesNotReturnTheSameInstance() {
-        Assertions.assertNotSame(Id.create(RAW_ID), Id.create(RAW_ID));
+        Assertions.assertNotSame(StringId.create(RAW_ID), StringId.create(RAW_ID));
     }
 
     @Test
     void reachedMaxOfYourCache() {
-        Id<Object> cached = Id.createCached(RAW_ID);
-        LongStream.range(0, 6_000_000).forEach(Id::createCached);
-        Assertions.assertNotSame(cached, Id.createCached(RAW_ID));
+        StringId<Object> cached = StringId.createCached(RAW_ID);
+        LongStream.range(0, 6_000_000).mapToObj(Long::toString).forEach(StringId::createCached);
+        Assertions.assertNotSame(cached, StringId.createCached(RAW_ID));
     }
 
     @Test
     void cachedIdAndIdDoesNotReturnTheSameInstance() {
-        Assertions.assertNotSame(Id.createCached(RAW_ID), Id.create(RAW_ID));
+        Assertions.assertNotSame(StringId.createCached(RAW_ID), StringId.create(RAW_ID));
     }
 
 }

@@ -20,14 +20,32 @@ import java.io.Serializable;
 import javax.annotation.concurrent.Immutable;
 
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 /** Provides a type-safe way of identifying something, backed by a String. */
 @Immutable
 public class StringId<T> implements Serializable, Comparable<StringId<T>>, Identity<T> {
     private static final long serialVersionUID = 1L;
-    
+
     public final String id;
     private final int hashCode;
+
+    @SuppressWarnings("rawtypes")
+    private static final LoadingCache<String, StringId> objectCache = CacheBuilder.newBuilder()
+            .maximumSize(5_000_000)
+            .build(CacheLoader.from(StringId::new));
+
+    /**
+     * Returns StringId from cache or create new one and cache it.
+     * Cache can store up 5_000_000 Ids but unused ID can be evicted earlier if cache is close to max capacity.
+     * The cache is backed by Guava {@link LoadingCache}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> StringId<T> createCached(String id) {
+        return objectCache.getUnchecked(id);
+    }
 
     /**
      * Creates new StringId

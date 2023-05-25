@@ -33,14 +33,8 @@ public class Id<T> implements Serializable, Comparable<Id<T>>, Identity<T> {
     @SuppressWarnings("rawtypes")
     private static final LoadingCache<Long, Id> objectCache = CacheBuilder.newBuilder()
             .maximumSize(5_000_000)
-            .build(
-                    new CacheLoader<Long, Id>() {
-                        @Override
-                        public Id load(Long id) {
-                            return new Id(id);
-                        }
-                    });
-    
+            .build(CacheLoader.from(Id::new));
+
     protected Id(long id) {
         this.id = id;
     }
@@ -73,10 +67,10 @@ public class Id<T> implements Serializable, Comparable<Id<T>>, Identity<T> {
         if (this == obj) {
             return true;
         }
-        
+
         return (obj instanceof Id) && ((Id) obj).id == id;
     }
-    
+
     @Override
     public String toString() {
         return String.valueOf(id);

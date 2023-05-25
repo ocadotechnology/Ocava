@@ -18,10 +18,10 @@ package com.ocadotechnology.id;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class StringIdGeneratorTest {
+class StringIdGeneratorTest {
 
     @Test
-    public void generateTwoStringIds() {
+    void generateTwoStringIds() {
         StringId<StringIdGeneratorTest> id1 = StringIdGenerator.getId(StringIdGeneratorTest.class);
         StringId<StringIdGeneratorTest> id2 = StringIdGenerator.getId(StringIdGeneratorTest.class);
         Assertions.assertNotNull(id1);
