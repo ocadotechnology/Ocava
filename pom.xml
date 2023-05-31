@@ -58,7 +58,7 @@
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.478</aws-java-sdk-s3.version>
         <jackson-databind.version>2.15.2</jackson-databind.version>
-        <jackson-dataformat-cbor.version>2.15.1</jackson-dataformat-cbor.version>
+        <jackson-dataformat-cbor.version>2.15.2</jackson-dataformat-cbor.version>
         <disruptor.version>3.4.4</disruptor.version>
         <logback-classic.version>1.4.7</logback-classic.version>
         <!-- EE dependency required for s3 to work -->
