@@ -319,6 +319,9 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <forkCount>2</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <argLine>-Xmx3G</argLine>
                 </configuration>
             </plugin>
 
