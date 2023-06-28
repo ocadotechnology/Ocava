@@ -263,6 +263,51 @@ class ConfigTest {
         assertThat(config.getIfKeyAndValueDefined(TestConfig.FOO).asString().isPresent()).isFalse();
     }
 
+    @Test
+    void configsAreEqualWhenContentsAreEqual() {
+        SimpleConfigBuilder<TestConfig> configBuilder = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Hello")
+                .put(TestConfig.FOO, "World", "PREFIX");
+
+        assertThat(configBuilder.buildWrapped()).isEqualTo(configBuilder.buildWrapped());
+    }
+
+    @Test
+    void configsAreNotEqualWhenContentsAreEqual() {
+        Config<TestConfig> firstConfig = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Hello")
+                .buildWrapped();
+
+        Config<TestConfig> secondConfig = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "World")
+                .buildWrapped();
+
+        assertThat(firstConfig).isNotEqualTo(secondConfig);
+    }
+
+    @Test
+    void getPrefixedConfigItemReturnsEqualConfigIfSamePrefixIsUsed() {
+        String prefix = "PREFIX";
+        Config<TestConfig> baseConfig = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Hello", prefix)
+                .buildWrapped();
+
+        assertThat(baseConfig.getPrefixedConfigItems(prefix)).isEqualTo(baseConfig.getPrefixedConfigItems(prefix));
+    }
+
+    @Test
+    void getPrefixedConfigItemReturnsDifferentConfigsIfDifferentPrefixIsUsed() {
+        String firstPrefix = "A";
+        String secondPrefix = "B";
+
+        Config<TestConfig> baseConfig = SimpleConfigBuilder.create(TestConfig.class)
+                .put(TestConfig.FOO, "Hello", firstPrefix)
+                .put(TestConfig.FOO, "World", secondPrefix)
+                .buildWrapped();
+
+        assertThat(baseConfig.getPrefixedConfigItems(firstPrefix)).isNotEqualTo(baseConfig.getPrefixedConfigItems(secondPrefix));
+    }
+
     @Nested
     @DisplayName("toString() method")
     class ToStringMethodTest {

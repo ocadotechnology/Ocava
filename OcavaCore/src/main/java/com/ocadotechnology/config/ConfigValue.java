@@ -18,6 +18,7 @@ package com.ocadotechnology.config;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -105,5 +106,22 @@ class ConfigValue implements Serializable {
 
     private boolean hasSinglePrefix(Set<String> prefixes) {
         return prefixes.size() == 1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ConfigValue that = (ConfigValue) o;
+        return Objects.equals(currentValue, that.currentValue) && Objects.equals(prefixedValues, that.prefixedValues);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(currentValue);
     }
 }
