@@ -29,6 +29,7 @@ import com.ocadotechnology.config.Config;
 import com.ocadotechnology.config.ConfigKeysNotRecognisedException;
 import com.ocadotechnology.config.ConfigManager;
 import com.ocadotechnology.fileaccess.serviceloader.DataAccessManager;
+import com.ocadotechnology.fileaccess.serviceloader.DataAccessServiceProviderNotAvailableException;
 
 public class DataAccessManagerTest {
     private static final String TEST_MODE = "TEST_MODE";
@@ -50,26 +51,24 @@ public class DataAccessManagerTest {
     public void testFileAccessThroughModeWithoutProvider() {
         ImmutableMap<String, Config<?>> initialConfigMap = ImmutableMap.of(TEST_MODE, Config.empty(TestAccessorConfig.class));
         DataAccessManager manager = new DataAccessManager(initialConfigMap);
-        Throwable exception = assertThrows(
-                IllegalStateException.class,
+        assertThrows(
+                DataAccessServiceProviderNotAvailableException.class,
                 () -> manager.getFileFromConfig(TestFileType.getLocalDataSourceDefinition(), createDataConfigForMode(UNSUPPORTED_MODE), DEFAULT_BUCKET)
         );
-        assertEquals("ServiceProvider is not available for mode " + UNSUPPORTED_MODE, exception.getMessage());
     }
 
     @Test
     public void testFileAccessThroughModeWithoutInitialisation() {
         ImmutableMap<String, Config<?>> initialConfigMap = ImmutableMap.of(UNSUPPORTED_MODE, Config.empty(UnsupportedModeConfig.class));
         DataAccessManager manager = new DataAccessManager(initialConfigMap);
-        Throwable exception = assertThrows(
+        assertThrows(
                 IllegalStateException.class,
                 () -> manager.getFileFromConfig(TestFileType.getLocalDataSourceDefinition(), createDataConfigForMode(TEST_MODE), DEFAULT_BUCKET)
         );
-        assertEquals("Accessor is not initialised for mode " + TEST_MODE, exception.getMessage());
     }
 
     @Test
-    public void testFileAccessOnInitialisation () {
+    public void testFileAccessOnInitialisation() {
         ImmutableMap<String, Config<?>> initialConfigMap = ImmutableMap.of(TEST_MODE, Config.empty(TestAccessorConfig.class));
         DataAccessManager manager = new DataAccessManager(initialConfigMap);
         Path path = manager.getFileFromConfig(TestFileType.getLocalDataSourceDefinition(), createDataConfigForMode(TEST_MODE), DEFAULT_BUCKET);
