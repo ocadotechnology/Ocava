@@ -12,7 +12,7 @@
     <artifactId>SuiteTestEngine</artifactId>
 
     <properties>
-        <junit-platform.version>1.9.3</junit-platform.version>
+        <junit-platform.version>1.10.0</junit-platform.version>
     </properties>
 
     <dependencies>
