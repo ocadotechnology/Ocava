@@ -45,7 +45,7 @@
         <extra-enforcer-rules.version>1.7.0</extra-enforcer-rules.version>
 
         <!-- Dependency versions -->
-        <guava.version>32.1.1-jre</guava.version>
+        <guava.version>32.1.2-jre</guava.version>
         <apache-commons.version>3.6.1</apache-commons.version>
         <jcommander.version>1.82</jcommander.version>
 
