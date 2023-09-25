@@ -76,7 +76,7 @@ public class DataAccessManager {
         if (!providerMap.containsKey(mode)) {
             throw new DataAccessServiceProviderNotAvailableException(
                     "ServiceProvider is not available for mode " + mode
-                            + ". Available mode available " + providerMap.keySet());
+                            + ". Modes with available ServiceProviders: " + providerMap.keySet());
         }
         Preconditions.checkState(initialConfigMap.containsKey(mode), "Accessor is not initialised for mode " + mode);
         return providerMap.get(mode).createAccessor(initialConfigMap.get(mode));

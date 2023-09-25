@@ -122,6 +122,6 @@ class ConfigValue implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(currentValue);
+        return Objects.hashCode(currentValue);
     }
 }
