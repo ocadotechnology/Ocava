@@ -21,14 +21,16 @@ import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.simulation.Simulation;
 
 public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventThenSteps> {
+    private final ScenarioSimulationApi<Simulation> scenarioSimulationApi;
 
-    TestEventThenSteps(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
+    TestEventThenSteps(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, ScenarioSimulationApi<Simulation> scenarioSimulationApi) {
         super(stepManager, notificationCache, checkStepExecutionType);
+        this.scenarioSimulationApi = scenarioSimulationApi;
     }
 
     @Override
     protected TestEventThenSteps create(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
-        return new TestEventThenSteps(stepManager, notificationCache, executionType);
+        return new TestEventThenSteps(stepManager, notificationCache, executionType, scenarioSimulationApi);
     }
 
     public void occurs(String name) {
@@ -39,6 +41,12 @@ public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventT
         addCheckStep(TestEventNotification.class, n -> {
             Assertions.assertEquals(name, n.name, "Incorrect event triggered next.");
             return true;
+        });
+    }
+
+    public void timeIsExactly(double time) {
+        addExecuteStep(() -> {
+            Assertions.assertEquals(time, scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime(), "Time is not as expected");
         });
     }
 

@@ -32,6 +32,9 @@ public class TimeThenSteps<S extends Simulation> {
         this.scenarioNotificationListener = scenarioNotificationListener;
     }
 
+    /**
+     * Waits until a specified duration since the start of the test
+     */
     public void waitUntil(double time, TimeUnit unit) {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
@@ -41,6 +44,23 @@ public class TimeThenSteps<S extends Simulation> {
         });
     }
 
+    /**
+     * Waits until a specified point in time
+     *
+     * @param instant - the absolute time as returned by the simulation scheduler's timeProvider that the test should wait for
+     */
+    public void waitUntil(StepFuture<Double> instant) {
+        stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
+            @Override
+            protected double time() {
+                return instant.get();
+            }
+        });
+    }
+
+    /**
+     * Waits for 1 clock tick after this step is started
+     */
     public void waitForNextClockTick() {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
@@ -50,6 +70,9 @@ public class TimeThenSteps<S extends Simulation> {
         });
     }
 
+    /**
+     * Waits for a specified duration after this step is started
+     */
     public void waitForDuration(double duration, TimeUnit unit) {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
@@ -59,6 +82,9 @@ public class TimeThenSteps<S extends Simulation> {
         });
     }
 
+    /**
+     * Waits for a specified duration after this step is started
+     */
     public void waitForDuration(StepFuture<Double> duration) {
         stepManager.add(new WaitStep(scenarioSimulationApi, scenarioNotificationListener) {
             @Override
@@ -76,6 +102,18 @@ public class TimeThenSteps<S extends Simulation> {
     public void timeIsLessThan(double time, TimeUnit unit) {
         stepManager.addExecuteStep(() -> {
             double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
+            double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
+            Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
+        });
+    }
+
+    /**
+     * Asserts that the specified instant has not yet passed at the time this step executes.
+     * The provided time is compared with the time returned by the simulation scheduler's timeProvider.
+     */
+    public void timeIsLessThan(StepFuture<Double> instant) {
+        stepManager.addExecuteStep(() -> {
+            double beforeTime = instant.get();
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
             Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
         });

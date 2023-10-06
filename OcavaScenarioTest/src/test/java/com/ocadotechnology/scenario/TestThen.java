@@ -31,6 +31,6 @@ public class TestThen {
         this.unordered = new UnorderedSteps<>(stepManager);
         this.exception = new ExceptionThenSteps<>(stepManager);
         this.futures = new FuturesThenSteps(stepManager);
-        this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered());
+        this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered(), simulationApi);
     }
 }

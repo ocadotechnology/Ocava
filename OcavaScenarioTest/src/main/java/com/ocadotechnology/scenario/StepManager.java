@@ -145,7 +145,7 @@ public class StepManager<S extends Simulation> {
         add(new ExecuteStep() {
             @Override
             protected void executeStep() {
-                CheckStep<?> step = createStepToAddLater(checkStepExecutionType, testStep);
+                CheckStep<?> step = createUnorderedStepToAddNow(checkStepExecutionType, testStep);
                 if (checkStepExecutionType.isFailingStep) {
                     // Remove the original step added and replace with the new wrapped step
                     stepsCache.removeFailingStep(testStep);
@@ -158,7 +158,7 @@ public class StepManager<S extends Simulation> {
         });
     }
 
-    private CheckStep<?> createStepToAddLater(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
+    private CheckStep<?> createUnorderedStepToAddNow(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
         switch (checkStepExecutionType.type) {
             case UNORDERED:
                 return new UnorderedCheckStep<>(testStep, true);
@@ -236,7 +236,7 @@ public class StepManager<S extends Simulation> {
         private final String name;
         private final Type type;
         private final Supplier<EventScheduler> schedulerSupplier;
-        private final Double duration;
+        private final StepFuture<Double> duration;
 
         /** Used to mark this check step as expecting to fail */
         private final boolean isFailingStep;
@@ -250,22 +250,29 @@ public class StepManager<S extends Simulation> {
         }
 
         private CheckStepExecutionType(String name, Type type) {
-            this(name, type, null, null);
+            this(name, type, null, new MutableStepFuture<>());
         }
 
         /**
          * The main constructor for creating a CheckStepExecutionType
          */
         public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Double duration) {
+            this(name, type, schedulerSupplier, StepFuture.of(duration), false);
+        }
+
+        /**
+         * The main constructor for creating a CheckStepExecutionType
+         */
+        public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
             this(name, type, schedulerSupplier, duration, false);
         }
 
         /**
          * Construct a CheckStepExecutionType, the failingStep argument is used to allow marking a step as expected failure,
          * this is normally only used by {@link #markFailingStep()}, other cases for constructing
-         * this class should make use of {@link #CheckStepExecutionType(String, Type, Supplier, Double)}
+         * this class should make use of {@link #CheckStepExecutionType(String, Type, Supplier, StepFuture)}
          */
-        private CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Double duration, boolean failingStep) {
+        private CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration, boolean failingStep) {
             this.name = name;
             this.type = type;
             this.schedulerSupplier = schedulerSupplier;
@@ -278,7 +285,9 @@ public class StepManager<S extends Simulation> {
         }
 
         public double getDuration() {
-            return Preconditions.checkNotNull(duration, "Duration not provided");
+            Preconditions.checkNotNull(duration, "Duration not provided");
+            Preconditions.checkState(duration.hasBeenPopulated(), "Duration not populated");
+            return duration.get();
         }
 
         public Type getType() {
@@ -310,19 +319,39 @@ public class StepManager<S extends Simulation> {
         }
 
         public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return within(schedulerSupplier, StepFuture.of(duration));
+        }
+
+        public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
             return new CheckStepExecutionType(nextId(), Type.WITHIN, schedulerSupplier, duration);
         }
 
-        public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+        public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
             return new CheckStepExecutionType(name, Type.AFTER_EXACTLY, schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return afterExactly(name, schedulerSupplier, StepFuture.of(duration));
+        }
+
+        public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+            return afterExactly(nextId(), schedulerSupplier, duration);
         }
 
         public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, double duration) {
             return afterExactly(nextId(), schedulerSupplier, duration);
         }
 
-        public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+        public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
             return new CheckStepExecutionType(name, Type.AFTER_AT_LEAST, schedulerSupplier, duration);
+        }
+
+        public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
+            return afterAtLeast(name, schedulerSupplier, StepFuture.of(duration));
+        }
+
+        public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+            return afterAtLeast(nextId(), schedulerSupplier, duration);
         }
 
         public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, double duration) {

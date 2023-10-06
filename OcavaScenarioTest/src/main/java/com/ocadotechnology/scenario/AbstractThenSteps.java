@@ -108,15 +108,26 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     }
 
     /**
+     * @param timeLimit - the time limit specified in the simulation scheduler's time units
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * within the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T within(StepFuture<Double> timeLimit) {
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
      */
     public T afterExactly(double magnitude, TimeUnit timeUnit) {
-        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
-        return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterExactly(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+        double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return afterExactly(StepFuture.of(delay));
     }
 
     /**
@@ -126,9 +137,32 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
      */
     public T afterExactly(String name, double magnitude, TimeUnit timeUnit) {
-        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return afterExactly(name, StepFuture.of(delay));
+    }
+
+    /**
+     * @param delay - the delay specified in the simulation scheduler's time units
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterExactly(name, stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterExactly(stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @param delay - the delay specified in the simulation scheduler's time units
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after exactly the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterExactly(String name, StepFuture<Double> delay) {
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterExactly(name, stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
     }
 
     /**
@@ -158,9 +192,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
      */
     public T afterAtLeast(double magnitude, TimeUnit timeUnit) {
-        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
-        return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterAtLeast(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+        double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return afterAtLeast(StepFuture.of(delay));
     }
 
     /**
@@ -170,9 +203,32 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
      */
     public T afterAtLeast(String name, double magnitude, TimeUnit timeUnit) {
-        double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
+        return afterAtLeast(name, StepFuture.of(delay));
+    }
+
+    /**
+     * @param delay - the delay specified in the simulation scheduler's time units
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterAtLeast(name, stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterAtLeast(stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+    }
+
+    /**
+     * @param delay - the delay specified in the simulation scheduler's time units
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates must complete
+     * after at least the specified duration from the time this step is executed.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     */
+    public T afterAtLeast(String name, StepFuture<Double> delay) {
+        return create(stepManager, notificationCache,
+                CheckStepExecutionType.afterAtLeast(name, stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
     }
 
     /**

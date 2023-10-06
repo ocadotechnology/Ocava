@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.scenario;
 
+import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
 
 public class TestEventWhenSteps {
@@ -27,12 +28,22 @@ public class TestEventWhenSteps {
         this.simulationHolder = simulationHolder;
     }
 
-    public void scheduled(double time, String name) {
+    public <T> StepFuture<T> populateFuture(T value) {
+        MutableStepFuture<T> future = new MutableStepFuture<>();
+        stepManager.addExecuteStep(() -> future.populate(value));
+        return future;
+    }
+
+    public StepFuture<Double> scheduled(double time, String name) {
+        MutableStepFuture<Double> scheduleTime = new MutableStepFuture<>();
         stepManager.addExecuteStep(() -> {
-                simulationHolder.getEventScheduler().doAt(
+            EventScheduler eventScheduler = simulationHolder.getEventScheduler();
+            scheduleTime.populate(time - eventScheduler.getTimeProvider().getTime());
+            eventScheduler.doAt(
                         time,
                         () -> NotificationRouter.get().broadcast(new TestEventNotification(name)),
                         "scheduled(" + time + ", \"" + name + "\")");
-            });
+        });
+        return scheduleTime;
     }
 }
