@@ -28,12 +28,18 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.ocadotechnology.validation.Failer;
 
 public class ImmutableMapFactory {
+    private ImmutableMapFactory() {
+        throw Failer.fail("This class should not be instantiated.");
+    }
     /**
      * This function returns a new {@link ImmutableMap} based on a baseMap. This function takes a keyCreator and valueCreator which
      * are both {@link BiFunction}.
@@ -186,9 +192,24 @@ public class ImmutableMapFactory {
     public static <K, V> ImmutableMap<K, V> createFromKeys(
             Collection<K> keys,
             Supplier<V> valueSupplier) {
-        return keys.stream()
-                .collect(ImmutableMap.toImmutableMap(
-                        key -> key,
+        return createFromKeys(keys.stream(), valueSupplier);
+    }
+    /**
+     *
+     * This function creates a new {@link ImmutableMap} from a stream of keys and a supplier of values. For each key
+     * the valueSupplier gets a new value. These are added to the map as a key value pair.
+     *
+     * @param keys          the keys used to create the new map.
+     * @param valueSupplier the value supplier which gets the values of the new map.
+     * @param <K>           the type of the keys of the new map.
+     * @param <V>           the type of the values of the new map.
+     * @return the newly created map.
+     */
+    public static <K, V> ImmutableMap<K, V> createFromKeys(
+            Stream<K> keys,
+            Supplier<V> valueSupplier) {
+        return keys.collect(ImmutableMap.toImmutableMap(
+                        Function.identity(),
                         key -> valueSupplier.get()));
     }
 
@@ -205,10 +226,49 @@ public class ImmutableMapFactory {
     public static <K, V> ImmutableMap<K, V> createFromKeys(
             Collection<K> keys,
             Function<K, V> valueCreator) {
-        return keys.stream()
-                .collect(ImmutableMap.toImmutableMap(
-                        key -> key,
-                        valueCreator));
+        return createFromKeys(keys.stream(), valueCreator);
+    }
+
+    /**
+     * This function creates a new {@link ImmutableMap} from a stream of keys and a function to create the values. For each key
+     * the valueCreator function is applied to create a new value. These are added to the map as a key value pair.
+     *
+     * @param keys         the keys used to create the new map.
+     * @param valueCreator the valueCreator function used to create the values of the new map.
+     * @param <K>          the type of the keys of the new map.
+     * @param <V>          the type of the values of the new map.
+     * @return the newly created map.
+     */
+    public static <K, V> ImmutableMap<K, V> createFromKeys(
+            Stream<K> keys,
+            Function<K, V> valueCreator) {
+        return keys.collect(ImmutableMap.toImmutableMap(
+                Function.identity(),
+                valueCreator));
+    }
+
+    /**
+     * An alternative to {@link Collectors#groupingBy} that returns an immutable map whose values are also immutable lists.
+     * @param classifier The grouping to apply to each element in the stream
+     * @return A collector that does the grouping
+     * @param <K> The type of the key in the newly collected map
+     * @param <T> The type of the element in the stream being collected
+     */
+    public static <K, T> Collector<T, ?, ImmutableMap<K, ImmutableList<T>>> groupingBy(Function<? super T, ? extends K> classifier) {
+        return Collectors.collectingAndThen(Collectors.groupingBy(classifier, ImmutableList.toImmutableList()), ImmutableMap::copyOf);
+    }
+
+    /**
+     * An alternative to {@link Collectors#groupingBy} that returns an immutable map
+     * @param classifier The grouping to apply to each element in the stream
+     * @param downstream The collector to apply to the stream of all the elements that are grouped togeter
+     * @return A collector that does the grouping
+     * @param <T> The type of the element in the stream being collected
+     * @param <K> The type of the key in the newly collected map
+     * @param <D> The value in the newly created map
+     */
+    public static <T, K, A, D> Collector<T, ?, ImmutableMap<K, D>> groupingBy(Function<? super T, ? extends K> classifier, Collector<? super T, A, D> downstream) {
+        return Collectors.collectingAndThen(Collectors.groupingBy(classifier, downstream), ImmutableMap::copyOf);
     }
 
     /**

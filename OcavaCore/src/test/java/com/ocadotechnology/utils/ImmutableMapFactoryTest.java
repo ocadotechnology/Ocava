@@ -15,9 +15,14 @@
  */
 package com.ocadotechnology.utils;
 
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -270,6 +275,18 @@ class ImmutableMapFactoryTest {
     }
 
     @Test
+    void testCreateFromKeysWithFunctionAndStream() {
+        Stream<Integer> keys = Stream.of(1, 2, 3, 4);
+        ImmutableMap<Integer, Integer> expected = ImmutableMap.of(
+                1, 1,
+                2, 4,
+                3, 9,
+                4, 16);
+        ImmutableMap<Integer, Integer> actual = ImmutableMapFactory.createFromKeys(keys, (key) -> key * key);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     void testCreateFromKeysWithDifferentType() {
         ImmutableList<String> keys = ImmutableList.of("1", "2", "3", "4");
         ImmutableMap<String, Integer> expected = ImmutableMap.of(
@@ -290,6 +307,40 @@ class ImmutableMapFactoryTest {
                 3, 1,
                 4, 1);
         ImmutableMap<Integer, Integer> actual = ImmutableMapFactory.createFromKeys(keys, () -> 1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    void testCreateFromKeysWithValueSupplierAndStream() {
+        Stream<Integer> keys = Stream.of(1, 2, 3, 4);
+        ImmutableMap<Integer, Integer> expected = ImmutableMap.of(
+                1, 1,
+                2, 1,
+                3, 1,
+                4, 1);
+        ImmutableMap<Integer, Integer> actual = ImmutableMapFactory.createFromKeys(keys, () -> 1);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    void testCollector() {
+        Stream<Integer> keys = IntStream.range(1, 10).boxed();
+        ImmutableMap<Integer, ImmutableList<Integer>> actual = keys.collect(ImmutableMapFactory.groupingBy(x -> x % 3));
+        ImmutableMap<Integer, ImmutableList<Integer>> expected = ImmutableMap.of(
+                1, ImmutableList.of(1, 4, 7),
+                2, ImmutableList.of(2, 5, 8),
+                0, ImmutableList.of(3, 6, 9));
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    void testCollectorWithDownstream() {
+        Stream<Integer> keys = IntStream.range(1, 10).boxed();
+        ImmutableMap<Integer, Optional<Integer>> actual = keys.collect(ImmutableMapFactory.groupingBy(x -> x % 3, Collectors.maxBy(Comparator.naturalOrder())));
+        ImmutableMap<Integer, Optional<Integer>> expected = ImmutableMap.of(
+                1, Optional.of(7),
+                2, Optional.of(8),
+                0, Optional.of(9));
         Assertions.assertEquals(expected, actual);
     }
 

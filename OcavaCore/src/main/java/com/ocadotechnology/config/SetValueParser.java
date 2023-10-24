@@ -18,6 +18,7 @@ package com.ocadotechnology.config;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
 
@@ -78,6 +79,8 @@ public class SetValueParser {
     }
 
     /**
+     * ImmutableEnumSet has better performance than ImmutableSet here.
+     *
      * @return an {@link ImmutableSet} containing the String config value parsed as a comma (",") or colon (":")
      *          separated set, with each element  parsed to an enum value via {@link Enum#valueOf(Class, String)}. If
      *          both separators are present, elements will be separated on commas only, probably triggering an
@@ -85,7 +88,8 @@ public class SetValueParser {
      * @throws IllegalArgumentException if any element does not match a defined enum value.
      */
     public <T extends Enum<T>> ImmutableSet<T> ofEnums(Class<T> enumClass) {
-        return withElementParser(s -> Enum.valueOf(enumClass, s));
+        Iterable<T> elements = withElementParser(s -> Enum.valueOf(enumClass, s));
+        return Sets.immutableEnumSet(elements);
     }
 
     /**
