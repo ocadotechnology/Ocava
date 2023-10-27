@@ -38,4 +38,17 @@
         <Class name="com.ocadotechnology.physics.utils.BinarySearch"/>
     </Match>
 
+    <!--
+        Introduced by spotbugs 4.8.0 and OSOcava has a number of enum values which shadow Java names e.g. BusyLoopQueueType which is intentional and not a bug
+    -->
+    <Match>
+        <Bug pattern="PI_DO_NOT_REUSE_PUBLIC_IDENTIFIERS_FIELD_NAMES"/>
+    </Match>
+
+
+    <!-- Introduced by spotbugs 4.8.0 and OSOcava has classes which shadow Java names e.g. Notification/Identity/etc which is intentional and not a bug -->
+    <Match>
+        <Bug pattern="PI_DO_NOT_REUSE_PUBLIC_IDENTIFIERS_CLASS_NAMES"/>
+    </Match>
+
 </FindBugsFilter>

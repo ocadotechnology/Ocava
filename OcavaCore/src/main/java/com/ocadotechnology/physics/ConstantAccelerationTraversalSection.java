@@ -24,8 +24,11 @@ import com.google.common.math.DoubleMath;
 
 /**
  * Implementation of TraversalSection for a section with constant, non-zero acceleration.
+ *
+ * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
+ * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
  */
-public class ConstantAccelerationTraversalSection implements TraversalSection, Serializable {
+public final class ConstantAccelerationTraversalSection implements TraversalSection, Serializable {
     private static final long serialVersionUID = 1L;
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
 

@@ -25,8 +25,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 
-/** A utility for dealing with polymorphic types. */
-public class Types {
+/** A utility for dealing with polymorphic types.
+ *
+ * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
+ * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
+ */
+public final class Types {
     /** This is a static utility and should not be constructed. */
     private Types() {
         throw new UnsupportedOperationException("Static utility class that shouldn't be instantiated");

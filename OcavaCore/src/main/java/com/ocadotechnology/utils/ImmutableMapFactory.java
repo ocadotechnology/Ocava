@@ -36,7 +36,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.ocadotechnology.validation.Failer;
 
-public class ImmutableMapFactory {
+/**
+ * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
+ * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
+ */
+public final class ImmutableMapFactory {
     private ImmutableMapFactory() {
         throw Failer.fail("This class should not be instantiated.");
     }
