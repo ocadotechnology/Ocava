@@ -253,16 +253,10 @@ public class StepManager<S extends Simulation> {
             this(name, type, null, new MutableStepFuture<>());
         }
 
-        /**
-         * The main constructor for creating a CheckStepExecutionType
-         */
         public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, Double duration) {
             this(name, type, schedulerSupplier, StepFuture.of(duration), false);
         }
 
-        /**
-         * The main constructor for creating a CheckStepExecutionType
-         */
         public CheckStepExecutionType(String name, Type type, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
             this(name, type, schedulerSupplier, duration, false);
         }

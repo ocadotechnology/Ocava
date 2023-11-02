@@ -256,7 +256,7 @@ public final class ExecutorEventScheduler extends TypedEventScheduler {
             Throwable cause = e.getCause();
             while (cause != null) {
                 if (cause instanceof RecoverableException) {
-                    logger.error("Replication attempting to recover at {} from failure processing {}", EventUtil.logTime(currentTime), event, cause);
+                    logger.error("Scheduler attempting to recover at {} from failure processing {}", EventUtil.logTime(currentTime), event, cause);
                     RecoverableException exception = (RecoverableException) cause;
                     recoverableFailureListeners.forEach(l -> l.accept(exception));
                     break;
@@ -264,12 +264,12 @@ public final class ExecutorEventScheduler extends TypedEventScheduler {
                 cause = cause.getCause();
             }
             if (cause == null) {
-                logger.error("Replication failed at {} whilst processing {}", EventUtil.logTime(currentTime), event, e);
+                logger.error("Scheduler failed at {} whilst processing {}", EventUtil.logTime(currentTime), event, e);
                 failureListeners.forEach(l -> l.accept(e));
                 stop();
             }
         } catch (Throwable t) {
-            logger.error("Replication failed at {} whilst processing {}", EventUtil.logTime(currentTime), event, t);
+            logger.error("Scheduler failed at {} whilst processing {}", EventUtil.logTime(currentTime), event, t);
             failureListeners.forEach(l -> l.accept(t));
             stop();
         } finally {

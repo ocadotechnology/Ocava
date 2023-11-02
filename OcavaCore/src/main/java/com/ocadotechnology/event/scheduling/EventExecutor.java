@@ -56,7 +56,7 @@ public class EventExecutor {
     }
 
     private void processRecoverableException(RecoverableException e, Event event, double currentTime) {
-        logger.error("Replication attempting to recover at {} from failure processing {}", EventUtil.logTime(currentTime), event, e);
+        logger.error("Scheduler attempting to recover at {} from failure processing {}", EventUtil.logTime(currentTime), event, e);
         recoverableFailureListeners.forEach(l -> l.accept(e));
     }
 }
