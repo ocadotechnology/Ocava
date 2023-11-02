@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 public class IdGeneratorTest {
     private static class A{}
     private static class B{}
@@ -58,6 +60,16 @@ public class IdGeneratorTest {
     public void initialiseIdCounter() {
         IdGenerator.initialiseIdCounter(A.class, 100);
         Assertions.assertEquals(100, IdGenerator.getId(A.class).id);
+    }
+
+    @Test
+    public void testSnapshot_whenCheckReturnedValue_thenEqualsSourceClassState() {
+        IdGenerator.initialiseIdCounter(A.class, 100);
+        IdGenerator.initialiseIdCounter(B.class, 200);
+        ImmutableMap<Class<?>, Long> snapshot = IdGenerator.snapshot();
+        for (Class<?> clazz : snapshot.keySet()) {
+            Assertions.assertEquals(snapshot.get(clazz), IdGenerator.getRawIdGenerator(clazz).get());
+        }
     }
 
     @Test

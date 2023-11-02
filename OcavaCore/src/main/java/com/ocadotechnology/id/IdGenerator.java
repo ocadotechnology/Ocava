@@ -16,8 +16,11 @@
 package com.ocadotechnology.id;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Generates per-class-unique type-safe or non-type-safe Ids.
@@ -71,6 +74,14 @@ public final class IdGenerator {
      */
     public static void initialiseIdCounter(Class<?> classForId, long initialId) {
         getRawIdGenerator(classForId).set(initialId);
+    }
+
+    /**
+     * Returns a copy of the current state of the id generator
+     */
+    public static ImmutableMap<Class<?>, Long> snapshot() {
+        return idCounters.entrySet().stream()
+                .collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().get()));
     }
 
     /**
