@@ -20,15 +20,14 @@ import java.util.Objects;
 
 import javax.annotation.Nonnegative;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.math.DoubleMath;
 
 /**
  * Implementation of TraversalSection for a section with constant, non-zero acceleration.
- *
- * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
- * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
  */
-public final class ConstantAccelerationTraversalSection implements TraversalSection, Serializable {
+public class ConstantAccelerationTraversalSection implements TraversalSection, Serializable {
     private static final long serialVersionUID = 1L;
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
 
@@ -41,6 +40,7 @@ public final class ConstantAccelerationTraversalSection implements TraversalSect
     /**
      * @throws TraversalCalculationException in the following cases: negative distance, negative time, negative initialSpeed, negative finalSpeed, zero acceleration, incompatible inputs.
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     ConstantAccelerationTraversalSection(double distance, double acceleration, double initialSpeed, double finalSpeed, double time) {
         if (distance < 0) {
             throw new TraversalCalculationException("Cannot have a ConstantAccelerationTraversalSection with a negative distance (May mean it is not possible to decelerate to rest in the distance available) distance: " + distance);

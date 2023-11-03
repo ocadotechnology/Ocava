@@ -20,29 +20,23 @@ import java.util.List;
 import java.util.UUID;
 
 import com.google.common.base.Preconditions;
-import com.ocadotechnology.validation.Failer;
 
 /**
  * A static utility providing deterministic "randomness" (via either seeding or fixing the value).  It should be
  * initialised at start of application before use via either `initialiseWithSeed` or `initialiseWithFixedValue`.
- * <p>
+ *
  * NOTE: this class does not provide any guarantees of determinism in a multi-threaded application.  It is possible for
  * applications which use concepts such as Stream.parallelStream to retain deterministic behaviour, but each thread must
  * be passed an independent random instance.  For these use cases, we provide {@link InstancedRepeatableRandom} which
  * is the backing class for this static interface.
- *
- * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
- * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
  */
-public final class RepeatableRandom {
+public class RepeatableRandom {
     public static final double MIN_FIXED_VALUE = 0.0;
     public static final double MAX_FIXED_VALUE = 0.999999999;
 
     private static InstancedRepeatableRandom instancedRepeatableRandom;
 
-    private RepeatableRandom() {
-        throw Failer.fail("Do not instantiate static utility class");
-    }
+    private RepeatableRandom() {}
 
     private static InstancedRepeatableRandom getInstance() {
         Preconditions.checkState(instancedRepeatableRandom != null, "Repeatable Random has not been initialised, please call an initialising function prior to this call.");
@@ -74,9 +68,9 @@ public final class RepeatableRandom {
      * origin (inclusive) and bound (inclusive).
      *
      * @param origin the least value returned
-     * @param bound  the upper bound (inclusive)
+     * @param bound the upper bound (inclusive)
      * @return a pseudorandom {@code double} value between the origin
-     * (inclusive) and the bound (inclusive)
+     *        (inclusive) and the bound (inclusive)
      */
     public static double nextDouble(double origin, double bound) {
         return getInstance().nextDouble(origin, bound);

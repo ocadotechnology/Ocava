@@ -34,16 +34,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.ocadotechnology.validation.Failer;
 
-/**
- * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
- * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
- */
-public final class ImmutableMapFactory {
-    private ImmutableMapFactory() {
-        throw Failer.fail("This class should not be instantiated.");
-    }
+public class ImmutableMapFactory {
+    private ImmutableMapFactory() {} //making the class not instantiable.
     /**
      * This function returns a new {@link ImmutableMap} based on a baseMap. This function takes a keyCreator and valueCreator which
      * are both {@link BiFunction}.

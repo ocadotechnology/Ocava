@@ -21,6 +21,8 @@ import javax.annotation.Nonnegative;
 
 import org.apache.commons.math3.complex.Complex;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.math.DoubleMath;
 import com.ocadotechnology.maths.CubicRootFinder;
@@ -28,11 +30,8 @@ import com.ocadotechnology.maths.PolynomialRootUtils;
 
 /**
  * Implementation of TraversalSection for a section with constant, non-zero jerk (rate of change of acceleration).
- *
- * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
- * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
  */
-final class ConstantJerkTraversalSection implements TraversalSection {
+public class ConstantJerkTraversalSection implements TraversalSection {
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
 
     final double duration;
@@ -46,6 +45,7 @@ final class ConstantJerkTraversalSection implements TraversalSection {
     /**
      * @throws TraversalCalculationException in the following cases: negative duration, negative distance, negative initialSpeed, negative finalSpeed, zero jerk.
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     ConstantJerkTraversalSection(
             double duration,
             double distance,

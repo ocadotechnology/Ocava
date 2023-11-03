@@ -22,8 +22,7 @@ class ConstantJerkSectionFactory {
     /**
      * Don't instantiate this static utility class
      */
-    private ConstantJerkSectionFactory() {
-    }
+    private ConstantJerkSectionFactory() {}
 
     /**
      * @throws TraversalCalculationException

@@ -46,11 +46,8 @@ import com.ocadotechnology.validation.Failer;
 /**
  * A realtime event scheduler using a {@link ScheduledThreadPoolExecutor} to schedule the execution of events for a
  * given time in the future.
- *
- * This class is final because we'd like to avoid finalizer attack and avoid CT_CONSTRUCTOR_THROW in Spotbugs. Quote from Spotbugs:
- * A finalizer attack can be prevented, by declaring the class final, using an empty finalizer declared as final, or by a clever use of a private constructor.
  */
-public final class ExecutorEventScheduler extends TypedEventScheduler {
+public class ExecutorEventScheduler extends TypedEventScheduler {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorEventScheduler.class);
 
     private static final PlaceholderScheduledFuture PLACEHOLDER_FUTURE = new PlaceholderScheduledFuture();
@@ -77,6 +74,7 @@ public final class ExecutorEventScheduler extends TypedEventScheduler {
      * Use {@link #ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type)} instead.
      */
     @Deprecated
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public ExecutorEventScheduler(TimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
         this(
                 Types.fromTypeOrFail(timeProvider, UtcTimeProvider.class),
@@ -129,6 +127,7 @@ public final class ExecutorEventScheduler extends TypedEventScheduler {
      * @param removeOnCancel whether cancelled tasks should be immediately removed from the work queue
      *                       - see {@link ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy}
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type, boolean removeOnCancel) {
         super(type);
         this.timeProvider = timeProvider;

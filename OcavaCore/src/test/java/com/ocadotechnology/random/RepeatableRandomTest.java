@@ -40,6 +40,7 @@ public class RepeatableRandomTest {
     public void clearRepeatableRandom() {
         RepeatableRandom.clear();
     }
+
     @Test
     public void whenUninitialised_thenThrows() {
         Assertions.assertThrows(IllegalStateException.class, RepeatableRandom::newInstance);
