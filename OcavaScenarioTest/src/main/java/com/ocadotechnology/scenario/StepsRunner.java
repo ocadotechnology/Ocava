@@ -93,7 +93,7 @@ public class StepsRunner extends Cleanable {
 
             currentStep.executeAndLog();
 
-            if (!isNextStep()) {
+            if (!isCurrentStepComplete()) {
                 break;
             }
 
@@ -132,8 +132,11 @@ public class StepsRunner extends Cleanable {
     }
 
     private void progressStepIfAble() {
-        if (isNextStep()) {
+        if (isCurrentStepComplete()) {
             currentStep = stepsCache.getNextStep();
+            if (currentStep != null) {
+                currentStep.setActive();
+            }
         }
     }
 
@@ -149,7 +152,7 @@ public class StepsRunner extends Cleanable {
         currentUnorderedStep = null;
     }
 
-    private boolean isNextStep() {
+    private boolean isCurrentStepComplete() {
         return currentStep == null || currentStep.isFinished();
     }
 

@@ -17,9 +17,27 @@ package com.ocadotechnology.scenario;
 
 public interface Executable {
     void setStepOrder(int stepOrder);
+
+    /**
+     * Run this step
+     */
     void executeAndLog();
+
+    /**
+     * @return true if this step is completed
+     */
     boolean isFinished();
+
+    /**
+     * @return true if it is necessary for this step to be {@link Executable#isFinished} for the test to have completed
+     * successfully
+     */
     boolean isRequired();
     boolean isMergeable();
     void merge(Executable step);
+
+    /**
+     * Inform the step that it is now the active step in the test execution.
+     */
+    void setActive();
 }

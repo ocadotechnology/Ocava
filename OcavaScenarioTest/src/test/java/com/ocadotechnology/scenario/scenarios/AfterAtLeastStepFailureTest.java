@@ -46,4 +46,14 @@ class AfterAtLeastStepFailureTest extends AbstractFrameworkTestStory {
         then.testEvent.occurs(FIRST_EVENT);
         then.testEvent.afterAtLeast(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
     }
+
+    @Test
+    void consecutiveCallsAreExecutedInOrder() {
+        when.simStarts();
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(5, SECOND_EVENT);
+
+        then.testEvent.afterAtLeast(2, TimeUnit.MILLISECONDS).occurs(FIRST_EVENT);
+        then.testEvent.afterAtLeast(4, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
+    }
 }

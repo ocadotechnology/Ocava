@@ -28,6 +28,8 @@ import com.ocadotechnology.scenario.Story;
 class WithinStepFailureTest extends AbstractFrameworkTestStory {
 
     private static final int MILLISECOND_LIMIT = 2;
+    public static final String FIRST_EVENT = "first";
+    public static final String SECOND_EVENT = "second";
 
     @Override
     public void executeTestSteps() {
@@ -41,10 +43,10 @@ class WithinStepFailureTest extends AbstractFrameworkTestStory {
     @Test
     void scenario() {
         when.simStarts();
-        when.testEvent.scheduled(2, "first");
-        when.testEvent.scheduled(5, "second");
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(5, SECOND_EVENT);
 
-        then.testEvent.occurs("first");
-        then.testEvent.within(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("second");
+        then.testEvent.occurs(FIRST_EVENT);
+        then.testEvent.within(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
     }
 }

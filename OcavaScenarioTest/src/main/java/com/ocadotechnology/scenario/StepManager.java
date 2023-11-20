@@ -53,18 +53,22 @@ public class StepManager<S extends Simulation> {
     }
 
     public void add(CheckStep<?> checkStep, CheckStepExecutionType checkStepExecutionType) {
-        if (checkStepExecutionType.getType() == CheckStepExecutionType.Type.ORDERED) {
-            addOrderedCheckStep(checkStep);
+        if (checkStepExecutionType.isOrdered()) {
+            addOrderedCheckStep(checkStepExecutionType.createOrderedStep(checkStep), checkStepExecutionType.isFailingStep());
         } else {
             addUnorderedStepOnExecutionOfStep(checkStepExecutionType, checkStep);
         }
     }
 
-    private void addOrderedCheckStep(CheckStep<?> checkStep) {
+    private void addOrderedCheckStep(CheckStep<?> checkStep, boolean isFailingStep) {
         checkStep.setStepName(LoggerUtil.getStepName());
         checkStep.setStepOrder(stepsCache.getNextStepCounter());
         notificationCache.addKnownNotification(checkStep.getType());
         stepsCache.addOrdered(checkStep);
+
+        if (isFailingStep) {
+            stepsCache.addFailingStep(checkStep);
+        }
     }
 
     public void add(String name, ValidationStep<?> step) {
@@ -88,9 +92,16 @@ public class StepManager<S extends Simulation> {
     }
 
     public void add(ExecuteStep executeStep) {
+        add(executeStep, false);
+    }
+
+    public void add(ExecuteStep executeStep, boolean isFailingStep) {
         executeStep.setStepOrder(stepsCache.getNextStepCounter());
         executeStep.setStepName(LoggerUtil.getStepName());
         stepsCache.addOrdered(executeStep);
+        if (isFailingStep) {
+            stepsCache.addFailingStep(executeStep);
+        }
     }
 
     public void addExecuteStep(Runnable r) {
@@ -144,7 +155,7 @@ public class StepManager<S extends Simulation> {
         add(new ExecuteStep() {
             @Override
             protected void executeStep() {
-                CheckStep<?> step = createUnorderedStepToAddNow(checkStepExecutionType, testStep);
+                CheckStep<?> step = checkStepExecutionType.createUnorderedStep(testStep);
                 if (checkStepExecutionType.isFailingStep()) {
                     // Remove the original step added and replace with the new wrapped step
                     stepsCache.removeFailingStep(testStep);
@@ -155,23 +166,6 @@ public class StepManager<S extends Simulation> {
                 addUnordered(checkStepExecutionType.getName(), step, getStepName(), getStepOrder());
             }
         });
-    }
-
-    private CheckStep<?> createUnorderedStepToAddNow(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
-        switch (checkStepExecutionType.getType()) {
-            case UNORDERED:
-                return new UnorderedCheckStep<>(testStep, true);
-            case NEVER:
-                return new NeverStep<>(testStep);
-            case WITHIN:
-                return new WithinStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
-            case AFTER_EXACTLY:
-                return new AfterExactlyStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
-            case AFTER_AT_LEAST:
-                return new AfterAtLeastStep<>(testStep, checkStepExecutionType.getScheduler(), checkStepExecutionType.getDuration());
-            default:
-                throw Failer.fail("Unhandled Check step type %s", checkStepExecutionType.getType());
-        }
     }
 
     private void addUnordered(String name, CheckStep<?> testStep, String stepName, int stepOrder) {
@@ -228,5 +222,4 @@ public class StepManager<S extends Simulation> {
             return StringIdGenerator.getId(ExecuteStepExecutionType.class).id;
         }
     }
-
 }

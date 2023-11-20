@@ -25,13 +25,26 @@ import com.ocadotechnology.scenario.Story;
 @Story
 class WithinStepSuccessTest extends AbstractFrameworkTestStory {
 
+    public static final String FIRST_EVENT = "first";
+    public static final String SECOND_EVENT = "second";
+
     @Test
     void scenario() {
         when.simStarts();
-        when.testEvent.scheduled(2, "first");
-        when.testEvent.scheduled(5, "second");
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(5, SECOND_EVENT);
 
-        then.testEvent.occurs("first");
-        then.testEvent.within(3, TimeUnit.MILLISECONDS).occurs("second");
+        then.testEvent.occurs(FIRST_EVENT);
+        then.testEvent.within(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
+    }
+
+    @Test
+    void consecutiveCallsAreExecutedInOrder() {
+        when.simStarts();
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(5, SECOND_EVENT);
+
+        then.testEvent.within(3, TimeUnit.MILLISECONDS).occurs(FIRST_EVENT);
+        then.testEvent.within(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
     }
 }

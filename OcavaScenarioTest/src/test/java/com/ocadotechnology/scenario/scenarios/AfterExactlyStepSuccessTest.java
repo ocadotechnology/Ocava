@@ -27,10 +27,9 @@ import com.ocadotechnology.scenario.Story;
 class AfterExactlyStepSuccessTest extends AbstractFrameworkTestStory {
     public static final String FIRST_EVENT = "first";
     public static final String SECOND_EVENT = "second";
-    public static final String STEP_NAME = "step_name";
 
     @Test
-    void timeUnitNoName() {
+    void timeUnitOrdered() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
         when.testEvent.scheduled(5, SECOND_EVENT);
@@ -43,25 +42,14 @@ class AfterExactlyStepSuccessTest extends AbstractFrameworkTestStory {
     void smallVarianceTest() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
-        when.testEvent.scheduled(5d + 1e-9, SECOND_EVENT);
+        when.testEvent.scheduled(5d + 1e-12, SECOND_EVENT);
 
         then.testEvent.occurs(FIRST_EVENT);
         then.testEvent.afterExactly(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
     }
 
     @Test
-    void timeUnitWithName() {
-        when.simStarts();
-        when.testEvent.scheduled(2, FIRST_EVENT);
-        when.testEvent.scheduled(5, SECOND_EVENT);
-
-        then.testEvent.occurs(FIRST_EVENT);
-        then.testEvent.afterExactly(STEP_NAME, 3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
-        then.unordered.waitForSteps(STEP_NAME);
-    }
-
-    @Test
-    void durationNoName() {
+    void durationOrdered() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
         when.testEvent.scheduled(5, SECOND_EVENT);
@@ -71,13 +59,12 @@ class AfterExactlyStepSuccessTest extends AbstractFrameworkTestStory {
     }
 
     @Test
-    void durationWithName() {
+    void consecutiveCallsAreExecutedInOrder() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
         when.testEvent.scheduled(5, SECOND_EVENT);
 
-        then.testEvent.occurs(FIRST_EVENT);
-        then.testEvent.afterExactly(STEP_NAME, Duration.ofMillis(3)).occurs(SECOND_EVENT);
-        then.unordered.waitForSteps(STEP_NAME);
+        then.testEvent.afterExactly(2, TimeUnit.MILLISECONDS).occurs(FIRST_EVENT);
+        then.testEvent.afterExactly(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
     }
 }

@@ -15,17 +15,46 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import org.junit.jupiter.api.Assertions;
 
+import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 
-class WithinStep<T> extends UnorderedCheckStep<T> {
-    WithinStep(CheckStep<T> checkStep, EventScheduler eventScheduler, double duration) {
-        super(checkStep, true);
-        eventScheduler.doIn(
-                duration,
-                () -> Assertions.assertTrue(isFinished(), String.format("Within step failed - didn't finish within %s", EventUtil.durationToString(duration))),
+/**
+ * A variant of CheckStep which enforces that the step is completed in less than a specified duration.
+ */
+@ParametersAreNonnullByDefault
+class WithinStep<T> extends CheckStep<T> {
+    private final Supplier<EventScheduler> schedulerSupplier;
+    private final StepFuture<Double> duration;
+
+    private final AtomicBoolean startedTimer = new AtomicBoolean(false);
+
+    WithinStep(CheckStep<T> checkStep, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        super(checkStep.type, checkStep.notificationCache, checkStep.predicate);
+        this.schedulerSupplier = schedulerSupplier;
+        this.duration = duration;
+    }
+
+    @Override
+    public void execute() {
+        Preconditions.checkState(startedTimer.get(), "Called execute on WithinStep before setActive");
+        super.execute();
+    }
+
+    @Override
+    public void setActive() {
+        Preconditions.checkState(!startedTimer.get(), "Started WithinStep twice");
+        schedulerSupplier.get().doIn(
+                duration.get(),
+                () -> Assertions.assertTrue(isFinished(), String.format("Within step failed - didn't finish within %s", EventUtil.durationToString(duration.get()))),
                 "Timeout event");
+        startedTimer.set(true);
     }
 }

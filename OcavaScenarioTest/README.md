@@ -24,12 +24,22 @@ could be used to assert that expected behaviour is shown before changing the sta
 ## Modified check steps
 
 CheckSteps steps can be decorated with a few modification methods to change their behaviour:
-`unordered`, `within`, `afterExactly`, `afterAtLeast` and `never`.
+`unordered`, `never`, `within`, `afterExactly` and `afterAtLeast`.
 Applying multiple modification methods to a single check step is not supported. 
-All of these decorations will make the step behave as an Unordered step.
-Unordered steps can occur in any order after the point they are declared in the test.
-They will not block execution of other steps, but most categories must complete for the test to pass.
-The only exception are steps decorated with the `never()` modification method, which are required to not complete.
+
+The `unordered` decoration will allow the step to complete in any order relative to other test steps
+after the point they are declared in the test. They do not block other steps from 
+completing. They must complete for the test to pass, unless they are removed by name
+by a subsequent call to `UnorderedSteps`.
+
+The `never` decoration also allows the rest of the test steps to continue unaffected.
+They are required to *not* complete, and can also be removed by using their name in a
+call to the `UnorderedSteps`.
+
+The `within`, `afterExactly` and `afterAtLeast` decorations do not allow the rest of
+the test steps to continue before they are completed.
+All of these steps start a timer when the step is reached, and assert that the
+appropriate amount of time has passed when they complete.
 
 ### Sequential creation of unordered steps
 

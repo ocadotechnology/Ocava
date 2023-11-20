@@ -25,26 +25,14 @@ import com.ocadotechnology.scenario.Story;
 class AfterExactlyWithStepFutureTest extends AbstractFrameworkTestStory {
     public static final String FIRST_EVENT = "first";
     public static final String SECOND_EVENT = "second";
-    public static final String STEP_NAME = "step_name";
 
     @Test
-    void timeUnitNoName() {
+    void timeUnitOrdered() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
         then.testEvent.occurs(FIRST_EVENT);
 
         StepFuture<Double> delay = when.testEvent.scheduled(5, SECOND_EVENT);
         then.testEvent.afterExactly(delay).occurs(SECOND_EVENT);
-    }
-
-    @Test
-    void timeUnitWithName() {
-        when.simStarts();
-        when.testEvent.scheduled(2, FIRST_EVENT);
-        then.testEvent.occurs(FIRST_EVENT);
-
-        StepFuture<Double> delay = when.testEvent.scheduled(5, SECOND_EVENT);
-        then.testEvent.afterExactly(STEP_NAME, delay).occurs(SECOND_EVENT);
-        then.unordered.waitForSteps(STEP_NAME);
     }
 }

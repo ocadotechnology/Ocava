@@ -20,17 +20,31 @@ import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.id.StringIdGenerator;
-
+import com.ocadotechnology.validation.Failer;
 /**
  * Defines the execution mode for one or more associated check steps. This is used with the AbstractThenSteps modifier
  * methods within, afterExactly, etc.
  */
 @ParametersAreNonnullByDefault
 public class CheckStepExecutionType {
-    enum Type {ORDERED, UNORDERED, NEVER, WITHIN, AFTER_EXACTLY, AFTER_AT_LEAST}
+    enum Type {
+        ORDERED(true),
+        UNORDERED(false),
+        NEVER(false),
+        WITHIN(true),
+        AFTER_EXACTLY(true),
+        AFTER_AT_LEAST(true);
+
+        private final boolean isOrdered;
+
+        Type(boolean isOrdered) {
+            this.isOrdered = isOrdered;
+        }
+    }
 
     /**
      * Internal id to be used if no name is provided for the steps.
@@ -71,12 +85,12 @@ public class CheckStepExecutionType {
         this(name, type, null, null, false);
     }
 
-    CheckStepExecutionType(@CheckForNull String name, Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, Double duration) {
-        this(name, type, schedulerSupplier, StepFuture.of(duration), false);
+    CheckStepExecutionType(Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, Double duration) {
+        this(null, type, schedulerSupplier, StepFuture.of(duration), false);
     }
 
-    CheckStepExecutionType(@CheckForNull String name, Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        this(name, type, schedulerSupplier, duration, false);
+    CheckStepExecutionType(Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        this(null, type, schedulerSupplier, duration, false);
     }
 
     private CheckStepExecutionType(
@@ -92,31 +106,7 @@ public class CheckStepExecutionType {
         this.isFailingStep = failingStep;
     }
 
-    public EventScheduler getScheduler() {
-        return Preconditions.checkNotNull(schedulerSupplier, "SchedulerSupplier not provided for a %s step.", type).get();
-    }
-
-    public double getDuration() {
-        Preconditions.checkNotNull(duration, "Duration not provided for a %s step", type);
-        Preconditions.checkState(duration.hasBeenPopulated(), "Duration not populated for a %s step", type);
-        return duration.get();
-    }
-
-    Type getType() {
-        return type;
-    }
-
-    /**
-     * @return Either the user-defined name for this group of steps, or an auto-generated numerical id.
-     */
-    public String getName() {
-        return name != null ? name : id;
-    }
-
-    public boolean isFailingStep() {
-        return isFailingStep;
-    }
-
+    //region Factory methods
     public static CheckStepExecutionType ordered() {
         return new CheckStepExecutionType(null, Type.ORDERED);
     }
@@ -138,43 +128,27 @@ public class CheckStepExecutionType {
     }
 
     public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return within(schedulerSupplier, StepFuture.of(duration));
+        return new CheckStepExecutionType(Type.WITHIN, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(null, Type.WITHIN, schedulerSupplier, duration);
-    }
-
-    public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(name, Type.AFTER_EXACTLY, schedulerSupplier, duration);
-    }
-
-    public static CheckStepExecutionType afterExactly(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return afterExactly(name, schedulerSupplier, StepFuture.of(duration));
+        return new CheckStepExecutionType(Type.WITHIN, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(null, Type.AFTER_EXACTLY, schedulerSupplier, duration);
+        return new CheckStepExecutionType(Type.AFTER_EXACTLY, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return afterExactly(schedulerSupplier, StepFuture.of(duration));
-    }
-
-    public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(name, Type.AFTER_AT_LEAST, schedulerSupplier, duration);
-    }
-
-    public static CheckStepExecutionType afterAtLeast(String name, Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return afterAtLeast(name, schedulerSupplier, StepFuture.of(duration));
+        return new CheckStepExecutionType(Type.AFTER_EXACTLY, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(null, Type.AFTER_AT_LEAST, schedulerSupplier, duration);
+        return new CheckStepExecutionType(Type.AFTER_AT_LEAST, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return afterAtLeast(schedulerSupplier, StepFuture.of(duration));
+        return new CheckStepExecutionType(Type.AFTER_AT_LEAST, schedulerSupplier, duration);
     }
 
     /**
@@ -182,6 +156,61 @@ public class CheckStepExecutionType {
      */
     public static CheckStepExecutionType failing() {
         return new CheckStepExecutionType(null, Type.ORDERED, null, null, true);
+    }
+    //endregion
+
+    /**
+     * @return Either the user-defined name for this group of steps, or an auto-generated numerical id.
+     */
+    public String getName() {
+        return name != null ? name : id;
+    }
+
+    public Supplier<EventScheduler> getSchedulerSupplier() {
+        return Preconditions.checkNotNull(schedulerSupplier, "SchedulerSupplier not provided for a %s step.", type);
+    }
+
+    private StepFuture<Double> getDuration() {
+        Preconditions.checkNotNull(duration, "Duration not provided for a %s step", type);
+        return duration;
+    }
+
+    public boolean isOrdered() {
+        return type.isOrdered;
+    }
+
+    public boolean isFailingStep() {
+        return isFailingStep;
+    }
+
+    public boolean isBasicOrderedStep() {
+        return type == Type.ORDERED;
+    }
+
+    CheckStep<?> createOrderedStep(CheckStep<?> baseStep) {
+        switch (type) {
+            case ORDERED:
+                return baseStep;
+            case WITHIN:
+                return new WithinStep<>(baseStep, getSchedulerSupplier(), getDuration());
+            case AFTER_EXACTLY:
+                return new AfterExactlyStep<>(baseStep, getSchedulerSupplier(), getDuration());
+            case AFTER_AT_LEAST:
+                return new AfterAtLeastStep<>(baseStep, getSchedulerSupplier(), getDuration());
+            default:
+                throw Failer.fail("Unsupported ordered check step type %s", type);
+        }
+    }
+
+    UnorderedCheckStep<?> createUnorderedStep(CheckStep<?> orderedStep) {
+        switch (type) {
+            case UNORDERED:
+                return new UnorderedCheckStep<>(orderedStep, true);
+            case NEVER:
+                return new NeverStep<>(orderedStep);
+            default:
+                throw Failer.fail("Unsupported unordered check step type %s", type);
+        }
     }
 
     /**
@@ -210,5 +239,10 @@ public class CheckStepExecutionType {
 
     private static String nextId() {
         return StringIdGenerator.getId(CheckStepExecutionType.class).id;
+    }
+
+    @VisibleForTesting
+    Type getTypeForTesting() {
+        return type;
     }
 }

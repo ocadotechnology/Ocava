@@ -60,18 +60,12 @@ public class AbstractThenStepsTest {
                 Type.AFTER_EXACTLY,
                 ats -> ats.afterExactly(Duration.ofMillis(10)),
                 ats -> ats.afterExactly(10, TimeUnit.MILLISECONDS),
-                ats -> ats.afterExactly(StepFuture.of(10d)),
-                ats -> ats.afterExactly(STEP_NAME, Duration.ofMillis(10)),
-                ats -> ats.afterExactly(STEP_NAME, 10, TimeUnit.MILLISECONDS),
-                ats -> ats.afterExactly(STEP_NAME, StepFuture.of(10d))),
+                ats -> ats.afterExactly(StepFuture.of(10d))),
         AFTER_AT_LEAST(
                 Type.AFTER_AT_LEAST,
                 ats -> ats.afterAtLeast(Duration.ofMillis(10)),
                 ats -> ats.afterAtLeast(10, TimeUnit.MILLISECONDS),
-                ats -> ats.afterAtLeast(StepFuture.of(10d)),
-                ats -> ats.afterAtLeast(STEP_NAME, Duration.ofMillis(10)),
-                ats -> ats.afterAtLeast(STEP_NAME, 10, TimeUnit.MILLISECONDS),
-                ats -> ats.afterAtLeast(STEP_NAME, StepFuture.of(10d))),
+                ats -> ats.afterAtLeast(StepFuture.of(10d))),
         FAILING_STEP(null, AbstractThenSteps::failingStep) {
             @Override
             public boolean executionTypeSatisfies(CheckStepExecutionType checkStepExecutionType) {
@@ -89,7 +83,7 @@ public class AbstractThenStepsTest {
         }
 
         public boolean executionTypeSatisfies(CheckStepExecutionType checkStepExecutionType) {
-            return checkStepExecutionType.getType().equals(executionType);
+            return checkStepExecutionType.getTypeForTesting().equals(executionType);
         }
 
         private static boolean areIncompatible(DecoratorType type1, DecoratorType type2) {

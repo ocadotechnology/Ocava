@@ -15,36 +15,54 @@
  */
 package com.ocadotechnology.scenario.scenarios;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
 import com.ocadotechnology.scenario.Story;
 
 @Story
-class AfterAtLeastStepSuccessTest extends AbstractFrameworkTestStory {
+public class OrderedTimeConstrainedStepsFailureTest extends AbstractFrameworkTestStory {
     public static final String FIRST_EVENT = "first";
     public static final String SECOND_EVENT = "second";
 
-    @Test
-    void timeUnitOrdered() {
-        when.simStarts();
-        when.testEvent.scheduled(2, FIRST_EVENT);
-        when.testEvent.scheduled(6, SECOND_EVENT);
-
-        then.testEvent.occurs(FIRST_EVENT);
-        then.testEvent.afterAtLeast(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
+    @Override
+    public void executeTestSteps() {
+        IllegalStateException e = Assertions.assertThrows(
+                IllegalStateException.class,
+                super::executeTestSteps);
+        Assertions.assertTrue(e.getMessage().contains("Missing step"));
     }
 
     @Test
-    void durationOrdered() {
+    void withinStep() {
         when.simStarts();
         when.testEvent.scheduled(2, FIRST_EVENT);
-        when.testEvent.scheduled(6, SECOND_EVENT);
+        when.testEvent.scheduled(4, SECOND_EVENT);
 
+        then.testEvent.within(5, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
         then.testEvent.occurs(FIRST_EVENT);
-        then.testEvent.afterAtLeast(Duration.ofMillis(3)).occurs(SECOND_EVENT);
+    }
+
+    @Test
+    void afterExactlyStep() {
+        when.simStarts();
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(4, SECOND_EVENT);
+
+        then.testEvent.afterExactly(4, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
+        then.testEvent.occurs(FIRST_EVENT);
+    }
+
+    @Test
+    void afterAtLeastStep() {
+        when.simStarts();
+        when.testEvent.scheduled(2, FIRST_EVENT);
+        when.testEvent.scheduled(4, SECOND_EVENT);
+
+        then.testEvent.afterAtLeast(3, TimeUnit.MILLISECONDS).occurs(SECOND_EVENT);
+        then.testEvent.occurs(FIRST_EVENT);
     }
 }

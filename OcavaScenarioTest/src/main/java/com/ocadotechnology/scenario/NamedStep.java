@@ -73,4 +73,9 @@ public abstract class NamedStep implements Executable {
     protected String info() {
         return "";
     }
+
+    @Override
+    public void setActive() {
+        //Most implementations of NamedStep do not need to be notified when they become active.
+    }
 }

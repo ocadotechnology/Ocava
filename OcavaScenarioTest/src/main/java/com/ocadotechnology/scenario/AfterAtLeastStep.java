@@ -15,30 +15,50 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import org.junit.jupiter.api.Assertions;
 
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.AtomicDouble;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.scheduling.EventScheduler;
-import com.ocadotechnology.time.TimeProvider;
 
-class AfterAtLeastStep<T> extends UnorderedCheckStep<T> {
-    private final TimeProvider timeProvider;
-    private final double earliestPermittedTime;
+/**
+ * A variant of CheckStep which enforces that the step is completed after at least a specified time has passed.
+ */
+@ParametersAreNonnullByDefault
+class AfterAtLeastStep<T> extends CheckStep<T> {
+    private final Supplier<EventScheduler> schedulerSupplier;
+    private final StepFuture<Double> duration;
 
-    AfterAtLeastStep(CheckStep<T> checkStep, EventScheduler eventScheduler, double duration) {
-        super(checkStep, true);
-        this.timeProvider = eventScheduler.getTimeProvider();
+    private final AtomicBoolean startedTimer = new AtomicBoolean(false);
+    private final AtomicDouble earliestPermittedTime = new AtomicDouble(Double.POSITIVE_INFINITY);
 
-        earliestPermittedTime = timeProvider.getTime() + duration;
+    AfterAtLeastStep(CheckStep<T> checkStep, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        super(checkStep.type, checkStep.notificationCache, checkStep.predicate);
+        this.schedulerSupplier = schedulerSupplier;
+        this.duration = duration;
     }
 
     @Override
     public void execute() {
+        Preconditions.checkState(startedTimer.get(), "Called execute on AfterAtLeastStep before setActive");
         super.execute();
 
         if (isFinished()) {
-            Assertions.assertTrue(timeProvider.getTime() >= earliestPermittedTime,
-                    String.format("After At Least step failed - finished before %s", EventUtil.eventTimeToString(earliestPermittedTime)));
+            Assertions.assertTrue(schedulerSupplier.get().getTimeProvider().getTime() >= earliestPermittedTime.get(),
+                    String.format("After At Least step failed - finished before %s", EventUtil.eventTimeToString(earliestPermittedTime.get())));
         }
+    }
+
+    @Override
+    public void setActive() {
+        Preconditions.checkState(!startedTimer.get(), "Started AfterAtLeastStep twice");
+        earliestPermittedTime.set(schedulerSupplier.get().getTimeProvider().getTime() + duration.get());
+        startedTimer.set(true);
     }
 }

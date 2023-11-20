@@ -28,7 +28,7 @@ import com.ocadotechnology.scenario.Story;
  */
 @FixRequired("failing step with fix required will pass")
 @Story
-class FixRequiredWithFailingStepWithExpectedFailure extends AbstractFrameworkTestStory {
+class FixRequiredWithFailingStepWithExpectedFailureTest extends AbstractFrameworkTestStory {
 
     /**
      * Validate the test passes with a failingStep
@@ -63,7 +63,6 @@ class FixRequiredWithFailingStepWithExpectedFailure extends AbstractFrameworkTes
     /**
      * Validate that failing step works with never
      */
-
     @Test
     void neverStepNeverCalled() {
         when.simStarts();
@@ -81,7 +80,6 @@ class FixRequiredWithFailingStepWithExpectedFailure extends AbstractFrameworkTes
     /**
      * Validate that failing step works with unordered, when the unordered fails
      */
-
     @Test
     void unorderedStepDoesntFinish() {
         when.simStarts();
@@ -113,6 +111,54 @@ class FixRequiredWithFailingStepWithExpectedFailure extends AbstractFrameworkTes
         when.simStarts();
         when.testEvent.scheduled(MILLISECOND_LIMIT * 10, "first");
         then.testEvent.within(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).failingStep().occurs("first");
+    }
+
+    /**
+     * Validate that failing step works with afterExactly
+     */
+    @Test
+    void afterExactlyHappensTooEarly() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT / 10.0, "first");
+        then.testEvent.failingStep().afterExactly(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("first");
+    }
+
+    @Test
+    void afterExactlyHappensTooEarlyOrdering() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT / 10.0, "first");
+        then.testEvent.afterExactly(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).failingStep().occurs("first");
+    }
+
+    @Test
+    void afterExactlyHappensTooLate() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT * 10.0, "first");
+        then.testEvent.failingStep().afterExactly(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("first");
+    }
+
+    @Test
+    void afterExactlyHappensTooLateOrdering() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT * 10.0, "first");
+        then.testEvent.afterExactly(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).failingStep().occurs("first");
+    }
+
+    /**
+     * Validate that failing step works with afterAtLeast
+     */
+    @Test
+    void afterAtLeastHappensTooEarly() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT / 10.0, "first");
+        then.testEvent.failingStep().afterAtLeast(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).occurs("first");
+    }
+
+    @Test
+    void afterAtLeastHappensTooEarlyOrdering() {
+        when.simStarts();
+        when.testEvent.scheduled(MILLISECOND_LIMIT / 10.0, "first");
+        then.testEvent.afterAtLeast(MILLISECOND_LIMIT, TimeUnit.MILLISECONDS).failingStep().occurs("first");
     }
 
 }
