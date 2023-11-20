@@ -21,9 +21,15 @@ when.lightTurnsGreen()
 
 could be used to assert that expected behaviour is shown before changing the state of the system to start the next part of the test.
 
-## Unordered check steps
+## Modified check steps
 
-CheckSteps steps can be decorated with a few modification methods to change their behaviour.  Most of these decorations will make the step behave as an Unordered step.  Unordered steps can occur in any order after the point they are declared in the test. They will not block execution of other steps, but most categories must complete for the test to pass. The only exception are steps decorated with the `never()` modification method, which are required to not complete.
+CheckSteps steps can be decorated with a few modification methods to change their behaviour:
+`unordered`, `within`, `afterExactly`, `afterAtLeast` and `never`.
+Applying multiple modification methods to a single check step is not supported. 
+All of these decorations will make the step behave as an Unordered step.
+Unordered steps can occur in any order after the point they are declared in the test.
+They will not block execution of other steps, but most categories must complete for the test to pass.
+The only exception are steps decorated with the `never()` modification method, which are required to not complete.
 
 ### Sequential creation of unordered steps
 

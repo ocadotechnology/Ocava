@@ -15,5 +15,5 @@
  */
 package com.ocadotechnology.scenario;
 
-public class ShapeNotification implements Notification {
+public class ShapeNotification implements TopLevelTestNotification {
 }

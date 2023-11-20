@@ -72,8 +72,6 @@ public class ScenarioTestWrapper implements BeforeAllCallback, TestInstancePostP
     public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
         exceptionHasOccurred = true;
         story.logStepFailure(throwable);
-        if (!story.isFixRequired()) {
-            throw throwable;
-        }
+        throw throwable;
     }
 }

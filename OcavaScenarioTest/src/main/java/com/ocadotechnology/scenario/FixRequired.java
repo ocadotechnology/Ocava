@@ -23,8 +23,11 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.Disabled;
 
 /**
- * This annotation can be used to identify tests that are currently expected to fail. In this case, tests that fail are considered "passed" in the test suite and vice versa.
+ * This annotation can be used to identify tests that are currently expected to fail. When this annotation is applied
+ * to a test that throws an exception during execution of its steps then the test will be marked as "passed" and vice versa.
  * This allows still valid, yet failing, tests to be highlighted so that the test/implementation can be updated as required.
+ * Errors encountered outside of executing the test steps (such as unsupported combinations of check step modifiers) will cause
+ * the test to fail as normal.
  *
  * A test which is failing intermittently (e.g. due to random seed instability) should be {@link Disabled} instead.
  **/

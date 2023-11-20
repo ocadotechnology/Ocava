@@ -18,9 +18,9 @@ package com.ocadotechnology.trafficlights.steps;
 import org.slf4j.LoggerFactory;
 
 import com.ocadotechnology.scenario.AbstractThenSteps;
+import com.ocadotechnology.scenario.CheckStepExecutionType;
 import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.StepManager;
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.trafficlights.SimulationEndedNotification;
 import com.ocadotechnology.trafficlights.TrafficSimulation;
 

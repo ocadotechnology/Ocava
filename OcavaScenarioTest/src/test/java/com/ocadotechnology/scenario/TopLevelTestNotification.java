@@ -15,5 +15,5 @@
  */
 package com.ocadotechnology.scenario;
 
-public interface Notification {
+public interface TopLevelTestNotification {
 }

@@ -36,12 +36,12 @@ public class NotificationCacheTest {
 
     private static Stream<Arguments> getArguments() {
         return Stream.of(
-                Arguments.arguments(List.of(Notification.class), new RedCircleNotification(), true),
+                Arguments.arguments(List.of(TopLevelTestNotification.class), new RedCircleNotification(), true),
                 Arguments.arguments(List.of(ShapeNotification.class), new RedCircleNotification(), true),
                 Arguments.arguments(List.of(CircleNotification.class), new RedCircleNotification(), true),
                 Arguments.arguments(List.of(RedCircleNotification.class), new RedCircleNotification(), true),
-                Arguments.arguments(List.of(Notification.class, ShapeNotification.class, CircleNotification.class, RedCircleNotification.class), new RedCircleNotification(), true),
-                Arguments.arguments(List.of(Notification.class, ShapeNotification.class, CircleNotification.class, RedCircleNotification.class), new TestEventNotification("dummy"), false)
+                Arguments.arguments(List.of(TopLevelTestNotification.class, ShapeNotification.class, CircleNotification.class, RedCircleNotification.class), new RedCircleNotification(), true),
+                Arguments.arguments(List.of(TopLevelTestNotification.class, ShapeNotification.class, CircleNotification.class, RedCircleNotification.class), new TestEventNotification("dummy"), false)
         );
     }
 }

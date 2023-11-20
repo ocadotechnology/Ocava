@@ -22,14 +22,13 @@ import java.util.function.Predicate;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.notification.Notification;
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType.Type;
+import com.ocadotechnology.scenario.CheckStepExecutionType.Type;
 import com.ocadotechnology.simulation.Simulation;
 
 /**
  * An abstract class which should be extended by each distinct set of then conditions that need to be implemented as
  * part of the testing package.  Each implementation should be generic on itself so that it can be correctly modified by
- * the {@link AbstractThenSteps#unordered}, {@link AbstractThenSteps#never} and {@link AbstractThenSteps#within} methods
+ * the decorator methods {@link AbstractThenSteps#unordered}, {@link AbstractThenSteps#never} etc
  */
 public abstract class AbstractThenSteps<S extends Simulation, T extends AbstractThenSteps<S, ?>> {
     private final StepManager<S> stepManager;
@@ -47,9 +46,11 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * order.  They will not block execution of other steps, but must complete for the test to pass.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T unordered() {
-        return create(stepManager, notificationCache, CheckStepExecutionType.unordered().applyModifiersFrom(checkStepExecutionType));
+        return create(stepManager, notificationCache, CheckStepExecutionType.unordered().merge(checkStepExecutionType));
     }
 
     /**
@@ -59,9 +60,11 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * UnorderedSteps}
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T unordered(String name) {
-        return create(stepManager, notificationCache, CheckStepExecutionType.unordered(name).applyModifiersFrom(checkStepExecutionType));
+        return create(stepManager, notificationCache, CheckStepExecutionType.unordered(name).merge(checkStepExecutionType));
     }
 
     /**
@@ -69,9 +72,11 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * They will not block execution of other steps.  If the steps are ever completed, the test will fail.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T never() {
-        return create(stepManager, notificationCache, CheckStepExecutionType.never().applyModifiersFrom(checkStepExecutionType));
+        return create(stepManager, notificationCache, CheckStepExecutionType.never().merge(checkStepExecutionType));
     }
 
     /**
@@ -80,9 +85,11 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * remove them if the test requires that they only hold for a portion of the scenario.  See {@link UnorderedSteps}
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T never(String name) {
-        return create(stepManager, notificationCache, CheckStepExecutionType.never(name).applyModifiersFrom(checkStepExecutionType));
+        return create(stepManager, notificationCache, CheckStepExecutionType.never(name).merge(checkStepExecutionType));
     }
 
     /**
@@ -90,6 +97,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * within the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T within(Duration duration) {
         return within(duration.toNanos(), TimeUnit.NANOSECONDS);
@@ -100,11 +109,13 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * within the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T within(double magnitude, TimeUnit timeUnit) {
         double timeLimit = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit).merge(checkStepExecutionType));
     }
 
     /**
@@ -113,10 +124,12 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * within the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T within(StepFuture<Double> timeLimit) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.within(stepManager.simulation::getEventScheduler, timeLimit).merge(checkStepExecutionType));
     }
 
     /**
@@ -124,6 +137,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(double magnitude, TimeUnit timeUnit) {
         double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
@@ -135,6 +150,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(String name, double magnitude, TimeUnit timeUnit) {
         double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
@@ -147,10 +164,12 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterExactly(stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterExactly(stepManager.simulation::getEventScheduler, delay).merge(checkStepExecutionType));
     }
 
     /**
@@ -159,10 +178,12 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(String name, StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterExactly(name, stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterExactly(name, stepManager.simulation::getEventScheduler, delay).merge(checkStepExecutionType));
     }
 
     /**
@@ -170,6 +191,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(Duration duration) {
         return afterExactly(duration.toNanos(), TimeUnit.NANOSECONDS);
@@ -180,6 +203,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after exactly the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterExactly(String name, Duration duration) {
         return afterExactly(name, duration.toNanos(), TimeUnit.NANOSECONDS);
@@ -190,6 +215,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(double magnitude, TimeUnit timeUnit) {
         double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
@@ -201,6 +228,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(String name, double magnitude, TimeUnit timeUnit) {
         double delay = TimeThenSteps.convertToUnit(magnitude, timeUnit, stepManager.getTimeUnit());
@@ -213,10 +242,12 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterAtLeast(stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterAtLeast(stepManager.simulation::getEventScheduler, delay).merge(checkStepExecutionType));
     }
 
     /**
@@ -225,10 +256,12 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(String name, StepFuture<Double> delay) {
         return create(stepManager, notificationCache,
-                CheckStepExecutionType.afterAtLeast(name, stepManager.simulation::getEventScheduler, delay).applyModifiersFrom(checkStepExecutionType));
+                CheckStepExecutionType.afterAtLeast(name, stepManager.simulation::getEventScheduler, delay).merge(checkStepExecutionType));
     }
 
     /**
@@ -236,6 +269,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(Duration duration) {
         return afterAtLeast(duration.toNanos(), TimeUnit.NANOSECONDS);
@@ -246,6 +281,8 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * after at least the specified duration from the time this step is executed.
      *
      * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
      */
     public T afterAtLeast(String name, Duration duration) {
         return afterAtLeast(name, duration.toNanos(), TimeUnit.NANOSECONDS);
@@ -255,9 +292,11 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates has the
      * {@code CheckStepExecutionType.isFailingStep} flag set to true. The failingStep flag is checked after the scenario test has completed
      * successfully or exceptionally and should be used in conjunction with {@link FixRequired}
+     *
+     * @throws IllegalStateException if called after a previous invocation of this method
      */
     public T failingStep() {
-        return create(stepManager, notificationCache, checkStepExecutionType.markFailingStep());
+        return create(stepManager, notificationCache, checkStepExecutionType.merge(CheckStepExecutionType.failing()));
     }
 
     protected abstract T create(StepManager<S> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType);
@@ -269,14 +308,13 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     protected <N extends Notification> void addCheckStep(CheckStep<N> checkStep) {
         if (checkStepExecutionType.isFailingStep()) {
             stepManager.getStepsCache().addFailingStep(checkStep);
-            stepManager.add(checkStep, checkStepExecutionType.markFailingStep());
-        } else {
-            stepManager.add(checkStep, checkStepExecutionType);
         }
+        stepManager.add(checkStep, checkStepExecutionType);
     }
 
     protected void addExecuteStep(Runnable runnable) {
-        Preconditions.checkState(checkStepExecutionType.getType() == Type.ORDERED, "Execute steps must be ORDERED.  Remove any within, unordered or never modification method calls from this line.");
+        Preconditions.checkState(checkStepExecutionType.getType() == Type.ORDERED,
+                "Execute steps must be ORDERED.  Remove any within, unordered or never modification method calls from this line.");
 
         ExecuteStep step = new SimpleExecuteStep(runnable);
         if (checkStepExecutionType.isFailingStep()) {

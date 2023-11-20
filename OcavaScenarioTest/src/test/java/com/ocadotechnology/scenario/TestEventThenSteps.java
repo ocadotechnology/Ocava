@@ -17,7 +17,6 @@ package com.ocadotechnology.scenario;
 
 import org.junit.jupiter.api.Assertions;
 
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.simulation.Simulation;
 
 public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventThenSteps> {

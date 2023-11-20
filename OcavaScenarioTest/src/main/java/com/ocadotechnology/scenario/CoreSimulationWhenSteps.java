@@ -16,7 +16,6 @@
 package com.ocadotechnology.scenario;
 
 import com.ocadotechnology.notification.Notification;
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.simulation.Simulation;
 
 public class CoreSimulationWhenSteps<S extends Simulation> extends AbstractWhenSteps<S> {

@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.scenario;
 
-import com.ocadotechnology.scenario.StepManager.CheckStepExecutionType;
 import com.ocadotechnology.simulation.Simulation;
 
 public class TestThen {
