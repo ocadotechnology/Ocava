@@ -19,12 +19,18 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.google.common.reflect.TypeToken;
 
+@ParametersAreNonnullByDefault
 public class NotificationCache extends Cleanable {
     private final Set<Class<?>> knownNotifications = new LinkedHashSet<>();
+    @CheckForNull
     private Object notification;
     // we have to keep both as there are cases where we have unordered steps check value A in notification and ordered step wait for value B in the same notification
+    @CheckForNull
     private Object unorderedNotification;
 
     public void addKnownNotification(Class<?> notificationClass) {
@@ -36,12 +42,14 @@ public class NotificationCache extends Cleanable {
         this.unorderedNotification = notification;
     }
 
+    @CheckForNull
     public Object getNotificationAndReset() {
         Object lastNotification = notification;
         notification = null;
         return lastNotification;
     }
 
+    @CheckForNull
     public Object getUnorderedNotification() {
         return unorderedNotification;
     }

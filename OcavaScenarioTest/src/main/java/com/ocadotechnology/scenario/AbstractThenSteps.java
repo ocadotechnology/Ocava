@@ -232,7 +232,7 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
 
     protected void addExecuteStep(Runnable runnable) {
         Preconditions.checkState(checkStepExecutionType.isBasicOrderedStep(),
-                "Execute steps must be ORDERED.  Remove any within, unordered or never modification method calls from this line.");
+                "Execute steps must be basic ordered steps.  Remove any modification method calls other than failingStep from this line.");
 
         stepManager.add(new SimpleExecuteStep(runnable), checkStepExecutionType.isFailingStep());
     }

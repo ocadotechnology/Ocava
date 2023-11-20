@@ -31,19 +31,15 @@ import com.ocadotechnology.validation.Failer;
  */
 @ParametersAreNonnullByDefault
 public class CheckStepExecutionType {
-    enum Type {
-        ORDERED(true),
-        UNORDERED(false),
-        NEVER(false),
-        WITHIN(true),
-        AFTER_EXACTLY(true),
-        AFTER_AT_LEAST(true);
+    enum OrderedModifier {
+        WITHIN,
+        AFTER_EXACTLY,
+        AFTER_AT_LEAST
+    }
 
-        private final boolean isOrdered;
-
-        Type(boolean isOrdered) {
-            this.isOrdered = isOrdered;
-        }
+    enum UnorderedModifier {
+        UNORDERED,
+        NEVER
     }
 
     /**
@@ -55,7 +51,20 @@ public class CheckStepExecutionType {
      */
     @CheckForNull
     private final String name;
-    private final Type type;
+    /**
+     * Optional modifier which changes the behaviour of the steps.
+     */
+    @CheckForNull
+    private final OrderedModifier orderedModifier;
+    /**
+     * Optional modifier which forces the steps to behave in an unordered manner.
+     */
+    @CheckForNull
+    private final UnorderedModifier unorderedModifier;
+    /**
+     * Used to mark this check step as expecting to fail
+     */
+    private final boolean isFailingStep;
     /**
      * Optional {@link EventScheduler} supplier, used with the time-constrained step modifiers.
      */
@@ -68,94 +77,86 @@ public class CheckStepExecutionType {
     private final StepFuture<Double> duration;
 
     /**
-     * Used to mark this check step as expecting to fail
-     */
-    private final boolean isFailingStep;
-
-    /**
      * Default constructor creates an ORDERED CheckStepExecutionType with the next id.
      * Can be used for dependency injection.
      */
     public CheckStepExecutionType() {
-        this(null, Type.ORDERED);
+        this(null, null, null, false, null, null);
     }
 
-    //Internal utility to make the factory methods nicer.
-    private CheckStepExecutionType(@CheckForNull String name, Type type) {
-        this(name, type, null, null, false);
+    private CheckStepExecutionType(@CheckForNull String name, UnorderedModifier modifier) {
+        this(name, null, modifier, false, null, null);
     }
 
-    CheckStepExecutionType(Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, Double duration) {
-        this(null, type, schedulerSupplier, StepFuture.of(duration), false);
-    }
-
-    CheckStepExecutionType(Type type, @CheckForNull Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        this(null, type, schedulerSupplier, duration, false);
+    private CheckStepExecutionType(OrderedModifier modifier, Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        this(null, modifier, null, false, schedulerSupplier, duration);
     }
 
     private CheckStepExecutionType(
             @CheckForNull String name,
-            Type type,
+            @CheckForNull OrderedModifier orderedModifier,
+            @CheckForNull UnorderedModifier unorderedModifier,
+            boolean isFailingStep,
             @CheckForNull Supplier<EventScheduler> schedulerSupplier,
-            @CheckForNull StepFuture<Double> duration,
-            boolean failingStep) {
+            @CheckForNull StepFuture<Double> duration) {
         this.name = name;
-        this.type = type;
+        this.orderedModifier = orderedModifier;
+        this.unorderedModifier = unorderedModifier;
+        this.isFailingStep = isFailingStep;
         this.schedulerSupplier = schedulerSupplier;
         this.duration = duration;
-        this.isFailingStep = failingStep;
     }
 
     //region Factory methods
     public static CheckStepExecutionType ordered() {
-        return new CheckStepExecutionType(null, Type.ORDERED);
+        return new CheckStepExecutionType();
     }
 
-    public static CheckStepExecutionType unordered(String name) {
-        return new CheckStepExecutionType(name, Type.UNORDERED);
+    public static CheckStepExecutionType unordered(@CheckForNull String name) {
+        return new CheckStepExecutionType(name, UnorderedModifier.UNORDERED);
     }
 
     public static CheckStepExecutionType unordered() {
-        return new CheckStepExecutionType(null, Type.UNORDERED);
+        return unordered(null);
     }
 
-    public static CheckStepExecutionType never(String name) {
-        return new CheckStepExecutionType(name, Type.NEVER);
+    public static CheckStepExecutionType never(@CheckForNull String name) {
+        return new CheckStepExecutionType(name, UnorderedModifier.NEVER);
     }
 
     public static CheckStepExecutionType never() {
-        return new CheckStepExecutionType(null, Type.NEVER);
+        return never(null);
     }
 
     public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return new CheckStepExecutionType(Type.WITHIN, schedulerSupplier, duration);
+        return within(schedulerSupplier, StepFuture.of(duration));
     }
 
     public static CheckStepExecutionType within(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(Type.WITHIN, schedulerSupplier, duration);
-    }
-
-    public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(Type.AFTER_EXACTLY, schedulerSupplier, duration);
+        return new CheckStepExecutionType(OrderedModifier.WITHIN, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return new CheckStepExecutionType(Type.AFTER_EXACTLY, schedulerSupplier, duration);
+        return afterExactly(schedulerSupplier, StepFuture.of(duration));
     }
 
-    public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
-        return new CheckStepExecutionType(Type.AFTER_AT_LEAST, schedulerSupplier, duration);
+    public static CheckStepExecutionType afterExactly(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        return new CheckStepExecutionType(OrderedModifier.AFTER_EXACTLY, schedulerSupplier, duration);
     }
 
     public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, double duration) {
-        return new CheckStepExecutionType(Type.AFTER_AT_LEAST, schedulerSupplier, duration);
+        return afterAtLeast(schedulerSupplier, StepFuture.of(duration));
+    }
+
+    public static CheckStepExecutionType afterAtLeast(Supplier<EventScheduler> schedulerSupplier, StepFuture<Double> duration) {
+        return new CheckStepExecutionType(OrderedModifier.AFTER_AT_LEAST, schedulerSupplier, duration);
     }
 
     /**
      * Create an ordered, failing execution type instance
      */
     public static CheckStepExecutionType failing() {
-        return new CheckStepExecutionType(null, Type.ORDERED, null, null, true);
+        return new CheckStepExecutionType(null, null, null, true, null, null);
     }
     //endregion
 
@@ -167,16 +168,16 @@ public class CheckStepExecutionType {
     }
 
     public Supplier<EventScheduler> getSchedulerSupplier() {
-        return Preconditions.checkNotNull(schedulerSupplier, "SchedulerSupplier not provided for a %s step.", type);
+        return Preconditions.checkNotNull(schedulerSupplier, "SchedulerSupplier not provided for a %s step.", orderedModifier);
     }
 
     private StepFuture<Double> getDuration() {
-        Preconditions.checkNotNull(duration, "Duration not provided for a %s step", type);
+        Preconditions.checkNotNull(duration, "Duration not provided for a %s step", orderedModifier);
         return duration;
     }
 
     public boolean isOrdered() {
-        return type.isOrdered;
+        return unorderedModifier == null;
     }
 
     public boolean isFailingStep() {
@@ -184,13 +185,15 @@ public class CheckStepExecutionType {
     }
 
     public boolean isBasicOrderedStep() {
-        return type == Type.ORDERED;
+        return orderedModifier == null && unorderedModifier == null;
     }
 
     CheckStep<?> createOrderedStep(CheckStep<?> baseStep) {
-        switch (type) {
-            case ORDERED:
-                return baseStep;
+        if (orderedModifier == null) {
+            return baseStep;
+        }
+
+        switch (orderedModifier) {
             case WITHIN:
                 return new WithinStep<>(baseStep, getSchedulerSupplier(), getDuration());
             case AFTER_EXACTLY:
@@ -198,32 +201,47 @@ public class CheckStepExecutionType {
             case AFTER_AT_LEAST:
                 return new AfterAtLeastStep<>(baseStep, getSchedulerSupplier(), getDuration());
             default:
-                throw Failer.fail("Unsupported ordered check step type %s", type);
+                throw Failer.fail("Unsupported ordered check step modifier %s", orderedModifier);
         }
     }
 
-    UnorderedCheckStep<?> createUnorderedStep(CheckStep<?> orderedStep) {
-        switch (type) {
+    UnorderedCheckStep<?> createUnorderedStep(CheckStep<?> baseStep) {
+        CheckStep<?> orderedStep = createOrderedStep(baseStep);
+        switch (Preconditions.checkNotNull(unorderedModifier, "Attempted to create an unordered step from an ordered execution type instance")) {
             case UNORDERED:
-                return new UnorderedCheckStep<>(orderedStep, true);
+                return new UnorderedCheckStep<>(orderedStep);
             case NEVER:
                 return new NeverStep<>(orderedStep);
             default:
-                throw Failer.fail("Unsupported unordered check step type %s", type);
+                throw Failer.fail("Unsupported unordered check step modifier %s", unorderedModifier);
         }
     }
 
     /**
-     * Combines two instances of CheckStepExecutionType, if possible.
+     * Combines two instances of CheckStepExecutionType, if they have compatible modifiers. This currently means that
      *
-     * @throws IllegalStateException if the instances are incompatible due to having incompatible types or independently
-     *          defined fields
+     * - An unordered modifier can be combined with any one of afterAtLeast, afterExactly or within
+     * - A "failing step" modifier can be combined with any other non-failing modifier
+     *
+     * @throws IllegalStateException if the instances are incompatible due to having incompatible modifiers.
+     * @throws IllegalStateException if the instances have inconsistent data defined such that merging them would result
+     *          in data loss. This is not expected to happen, as the checks for incompatible modifiers should catch any
+     *          such case.
      */
     public CheckStepExecutionType merge(CheckStepExecutionType other) {
-        Preconditions.checkState(Type.ORDERED.equals(this.type) || Type.ORDERED.equals(other.type),
-                "Cannot merge a CheckStepExecutionType %s with %s", this.type, other.type);
+        Preconditions.checkState(this.orderedModifier == null || other.orderedModifier == null,
+                "Cannot merge a CheckStepExecutionType %s with %s", this.orderedModifier, other.orderedModifier);
+        Preconditions.checkState(this.unorderedModifier == null || other.unorderedModifier == null,
+                "Cannot merge a CheckStepExecutionType %s with %s", this.unorderedModifier, other.unorderedModifier);
+
+        OrderedModifier mergedOrderedModifier = this.orderedModifier == null ? other.orderedModifier : this.orderedModifier;
+        UnorderedModifier mergedUnorderedModifier = this.unorderedModifier == null ? other.unorderedModifier : this.unorderedModifier;
+        Preconditions.checkState(areCompatible(mergedOrderedModifier, mergedUnorderedModifier),
+                "Cannot merge a CheckStepExecutionType %s with %s", mergedOrderedModifier, mergedUnorderedModifier);
+
         Preconditions.checkState(!this.isFailingStep || !other.isFailingStep,
                 "Cannot merge two failing CheckStepExecutionType instances");
+
         Preconditions.checkState(this.name == null || other.name == null,
                 "Cannot merge two CheckStepExecutionType instances with defined names");
         Preconditions.checkState(this.duration == null || other.duration == null,
@@ -231,10 +249,17 @@ public class CheckStepExecutionType {
 
         return new CheckStepExecutionType(
                 this.name == null ? other.name : this.name,
-                Type.ORDERED.equals(this.type) ? other.type : this.type,
+                mergedOrderedModifier,
+                mergedUnorderedModifier,
+                this.isFailingStep || other.isFailingStep,
                 this.schedulerSupplier != null ? this.schedulerSupplier : other.schedulerSupplier,
-                this.duration != null ? this.duration : other.duration,
-                other.isFailingStep || this.isFailingStep);
+                this.duration != null ? this.duration : other.duration);
+    }
+
+    private boolean areCompatible(@CheckForNull OrderedModifier orderedModifier, @CheckForNull UnorderedModifier unorderedModifier) {
+        return orderedModifier == null
+                || unorderedModifier == null
+                || UnorderedModifier.UNORDERED.equals(unorderedModifier);
     }
 
     private static String nextId() {
@@ -242,7 +267,14 @@ public class CheckStepExecutionType {
     }
 
     @VisibleForTesting
-    Type getTypeForTesting() {
-        return type;
+    @CheckForNull
+    OrderedModifier getOrderedModifierForTesting() {
+        return orderedModifier;
+    }
+
+    @VisibleForTesting
+    @CheckForNull
+    UnorderedModifier getUnorderedModifierForTesting() {
+        return unorderedModifier;
     }
 }

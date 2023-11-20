@@ -25,7 +25,8 @@ could be used to assert that expected behaviour is shown before changing the sta
 
 CheckSteps steps can be decorated with a few modification methods to change their behaviour:
 `unordered`, `never`, `within`, `afterExactly` and `afterAtLeast`.
-Applying multiple modification methods to a single check step is not supported. 
+It is valid to combine the `unordered` modifier with `within`, `afterExactly` or `afterAtLeast`.
+No other combinations of modifiers is permitted.
 
 The `unordered` decoration will allow the step to complete in any order relative to other test steps
 after the point they are declared in the test. They do not block other steps from 

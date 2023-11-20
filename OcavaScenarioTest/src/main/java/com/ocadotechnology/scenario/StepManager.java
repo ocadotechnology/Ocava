@@ -54,19 +54,20 @@ public class StepManager<S extends Simulation> {
 
     public void add(CheckStep<?> checkStep, CheckStepExecutionType checkStepExecutionType) {
         if (checkStepExecutionType.isOrdered()) {
-            addOrderedCheckStep(checkStepExecutionType.createOrderedStep(checkStep), checkStepExecutionType.isFailingStep());
+            addOrderedCheckStep(checkStepExecutionType, checkStep);
         } else {
             addUnorderedStepOnExecutionOfStep(checkStepExecutionType, checkStep);
         }
     }
 
-    private void addOrderedCheckStep(CheckStep<?> checkStep, boolean isFailingStep) {
+    private void addOrderedCheckStep(CheckStepExecutionType checkStepExecutionType, CheckStep<?> baseStep) {
+        CheckStep<?> checkStep = checkStepExecutionType.createOrderedStep(baseStep);
         checkStep.setStepName(LoggerUtil.getStepName());
         checkStep.setStepOrder(stepsCache.getNextStepCounter());
         notificationCache.addKnownNotification(checkStep.getType());
         stepsCache.addOrdered(checkStep);
 
-        if (isFailingStep) {
+        if (checkStepExecutionType.isFailingStep()) {
             stepsCache.addFailingStep(checkStep);
         }
     }
@@ -155,7 +156,7 @@ public class StepManager<S extends Simulation> {
         add(new ExecuteStep() {
             @Override
             protected void executeStep() {
-                CheckStep<?> step = checkStepExecutionType.createUnorderedStep(testStep);
+                UnorderedCheckStep<?> step = checkStepExecutionType.createUnorderedStep(testStep);
                 if (checkStepExecutionType.isFailingStep()) {
                     // Remove the original step added and replace with the new wrapped step
                     stepsCache.removeFailingStep(testStep);
@@ -168,7 +169,7 @@ public class StepManager<S extends Simulation> {
         });
     }
 
-    private void addUnordered(String name, CheckStep<?> testStep, String stepName, int stepOrder) {
+    private void addUnordered(String name, UnorderedCheckStep<?> testStep, String stepName, int stepOrder) {
         testStep.setStepOrder(stepOrder);
         testStep.setStepName(stepName);
         testStep.setName(name);

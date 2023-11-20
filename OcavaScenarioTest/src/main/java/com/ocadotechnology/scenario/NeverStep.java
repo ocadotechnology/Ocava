@@ -18,17 +18,19 @@ package com.ocadotechnology.scenario;
 import org.junit.jupiter.api.Assertions;
 
 class NeverStep<T> extends UnorderedCheckStep<T> {
-    private final CheckStep<T> checkStep;
+    NeverStep(CheckStep<T> wrapped) {
+        super(wrapped);
+    }
 
-    NeverStep(CheckStep<T> checkStep) {
-        super(checkStep, false);
-        this.checkStep = checkStep;
+    @Override
+    public boolean isRequired() {
+        return false;
     }
 
     @Override
     public void execute() {
         super.execute();
         Assertions.assertFalse(isFinished(),
-                "Never condition violated. Step: (" + this + " " + checkStep.info() + ") Notification: " + getLastSeen());
+                "Never condition violated. Step: (" + this + " " + wrapped.info() + ") Notification: " + wrapped.getLastSeen());
     }
 }

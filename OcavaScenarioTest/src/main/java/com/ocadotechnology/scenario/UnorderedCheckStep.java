@@ -15,22 +15,48 @@
  */
 package com.ocadotechnology.scenario;
 
-class UnorderedCheckStep<T> extends CheckStep<T> {
-    UnorderedCheckStep(CheckStep<T> checkStep, boolean required) {
-        super(checkStep.type, checkStep.notificationCache, required, checkStep.predicate);
+class UnorderedCheckStep<T> extends NamedStep implements Executable {
+    protected final CheckStep<T> wrapped;
+
+    UnorderedCheckStep(CheckStep<T> wrapped) {
+        super(wrapped.getType());
+        this.wrapped = wrapped;
+
+        // Unordered steps are only constructed when they are reached in the sequence of test execution.
+        // Therefore, it is appropriate to call setActive on the wrapped step immediately upon creation.
+        wrapped.setActive();
     }
 
     @Override
     public void execute() {
-        super.execute();
+        wrapped.execute(wrapped.notificationCache.getUnorderedNotification());
 
-        if (finished.get()) {
-            notificationCache.resetUnorderedNotification();
+        if (wrapped.isFinished()) {
+            wrapped.notificationCache.resetUnorderedNotification();
         }
     }
 
     @Override
-    Object getNotification() {
-        return notificationCache.getUnorderedNotification();
+    public boolean isFinished() {
+        return wrapped.isFinished();
+    }
+
+    @Override
+    public boolean isRequired() {
+        return true;
+    }
+
+    @Override
+    public boolean isMergeable() {
+        return false;
+    }
+
+    @Override
+    public void merge(Executable step) {
+        throw new UnsupportedOperationException("Cannot merge UnorderedCheckSteps");
+    }
+
+    public Class<?> getType() {
+        return wrapped.getType();
     }
 }

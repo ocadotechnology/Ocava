@@ -18,6 +18,7 @@ package com.ocadotechnology.scenario;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.junit.jupiter.api.Assertions;
@@ -43,9 +44,9 @@ class WithinStep<T> extends CheckStep<T> {
     }
 
     @Override
-    public void execute() {
+    public void execute(@CheckForNull Object notification) {
         Preconditions.checkState(startedTimer.get(), "Called execute on WithinStep before setActive");
-        super.execute();
+        super.execute(notification);
     }
 
     @Override

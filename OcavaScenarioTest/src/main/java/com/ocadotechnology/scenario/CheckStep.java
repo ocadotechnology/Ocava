@@ -17,25 +17,23 @@ package com.ocadotechnology.scenario;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
 class CheckStep<T> extends NamedStep implements Executable {
     protected final Class<T> type;
     protected final NotificationCache notificationCache;
-    private final boolean required;
     final Predicate<T> predicate;
 
-    protected final AtomicBoolean finished = new AtomicBoolean(false);
+    private final AtomicBoolean finished = new AtomicBoolean(false);
     private T lastSeen;
 
-    CheckStep(Class<T> type, NotificationCache notificationCache, boolean required, Predicate<T> predicate) {
+    CheckStep(Class<T> type, NotificationCache notificationCache, Predicate<T> predicate) {
         super(type);
         this.type = type;
         this.notificationCache = notificationCache;
-        this.required = required;
         this.predicate = predicate;
-    }
-
-    CheckStep(Class<T> type, NotificationCache notificationCache, Predicate<T> predicate) {
-        this(type, notificationCache, true, predicate);
     }
 
     Class<T> getType() {
@@ -44,7 +42,7 @@ class CheckStep<T> extends NamedStep implements Executable {
 
     @Override
     public final boolean isRequired() {
-        return required;
+        return true;
     }
 
     @Override
@@ -58,13 +56,17 @@ class CheckStep<T> extends NamedStep implements Executable {
 
     @Override
     public void execute() {
-        Object notification = getNotification();
+        execute(getNotification());
+    }
+
+    void execute(@CheckForNull Object notification) {
         if (notification != null && type.isAssignableFrom(notification.getClass())) {
             lastSeen = type.cast(notification);
             finished.set(predicate.test(lastSeen));
         }
     }
 
+    @CheckForNull
     Object getNotification() {
         return notificationCache.getNotificationAndReset();
     }
