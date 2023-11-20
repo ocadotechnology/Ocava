@@ -15,12 +15,14 @@
  */
 package com.ocadotechnology.scenario;
 
-public class TestGiven {
-    public final TimeoutGivenSteps timeout;
-    public final TestGivenSteps test;
+public class TestGivenSteps {
+    private final FrameworkTestSimulationApi simulationApi;
 
-    TestGiven(StepsRunner runner, FrameworkTestSimulationApi simulationApi) {
-        this.timeout = new TimeoutGivenSteps(runner, simulationApi);
-        this.test = new TestGivenSteps(simulationApi);
+    public TestGivenSteps(FrameworkTestSimulationApi simulationApi) {
+        this.simulationApi = simulationApi;
+    }
+
+    public void setSchedulerStartTime(double initialTime) {
+        simulationApi.setSchedulerStartTime(initialTime);
     }
 }

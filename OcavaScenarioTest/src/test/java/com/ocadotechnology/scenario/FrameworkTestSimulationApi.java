@@ -33,6 +33,7 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
     private static final Logger logger = LoggerFactory.getLogger(FrameworkTestSimulationApi.class);
 
     private SimpleDiscreteEventScheduler eventScheduler;
+    private double schedulerStartTime = 0.0;
 
     @Override
     public void clean() {
@@ -40,14 +41,19 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
         super.clean();
     }
 
+    public void setSchedulerStartTime(double startTime) {
+        schedulerStartTime = startTime;
+    }
+
     private void createCleanScheduler() {
         eventScheduler = new SimpleDiscreteEventScheduler(
             new EventExecutor(),
             () -> logger.info("Simulation Terminated"),
             ScenarioTestSchedulerType.INSTANCE,
-            new AdjustableTimeProvider(0));
+            new AdjustableTimeProvider(schedulerStartTime));
     }
 
+    @Override
     public SimpleDiscreteEventScheduler getEventScheduler() {
         return eventScheduler;
     }
@@ -76,7 +82,7 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
 
     @Override
     public double getSchedulerStartTime() {
-        return 0.0;
+        return schedulerStartTime;
     }
 
     @Override

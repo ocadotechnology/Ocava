@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimeoutGivenSteps {
     private final StepsRunner runner;
-    private final ScenarioSimulationApi simulation;
+    private final ScenarioSimulationApi<?> simulation;
 
-    public TimeoutGivenSteps(StepsRunner runner, ScenarioSimulationApi simulation) {
+    public TimeoutGivenSteps(StepsRunner runner, ScenarioSimulationApi<?> simulation) {
         this.runner = runner;
         this.simulation = simulation;
     }

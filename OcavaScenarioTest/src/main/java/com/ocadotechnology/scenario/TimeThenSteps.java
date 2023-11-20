@@ -33,6 +33,20 @@ public class TimeThenSteps<S extends Simulation> {
     }
 
     /**
+     * Extracts the simulation time at the point that this step executes, as returned by the simulation scheduler's timeProvider
+     *
+     * @return {@link StepFuture} which will contain the current simulation time at the point that this step executes
+     */
+    public StepFuture<Double> getCurrentTime() {
+        MutableStepFuture<Double> currentTime = new MutableStepFuture<>();
+        stepManager.addExecuteStep(() -> {
+            double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
+            currentTime.populate(now);
+        });
+        return currentTime;
+    }
+
+    /**
      * Waits until a specified duration since the start of the test
      */
     public void waitUntil(double time, TimeUnit unit) {

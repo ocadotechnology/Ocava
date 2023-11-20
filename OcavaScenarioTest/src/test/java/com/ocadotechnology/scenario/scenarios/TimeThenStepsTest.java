@@ -18,6 +18,8 @@ package com.ocadotechnology.scenario.scenarios;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.scenario.AbstractFrameworkTestStory;
@@ -45,6 +47,22 @@ class TimeThenStepsTest extends AbstractFrameworkTestStory {
         StepFuture<Double> future = when.testEvent.populateFuture(expectedTime);
         then.time.waitUntil(future);
         then.testEvent.timeIsExactly(expectedTime);
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {0.0, 100.0})
+    public void getCurrentTime(double simStartTime) {
+        double expectedTimeAfterOneMinute = (1000 * 60) + simStartTime;
+
+        given.test.setSchedulerStartTime(simStartTime);
+
+        when.simStarts();
+        StepFuture<Double> extractedSimStartTime = then.time.getCurrentTime();
+        then.futures.assertEquals(simStartTime, extractedSimStartTime);
+
+        then.time.waitUntil(1, TimeUnit.MINUTES);
+        StepFuture<Double> extractedTimeAfterOneMinute = then.time.getCurrentTime();
+        then.futures.assertEquals(expectedTimeAfterOneMinute, extractedTimeAfterOneMinute);
     }
 
     @Test
