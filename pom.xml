@@ -61,6 +61,7 @@
         <jackson-dataformat-cbor.version>2.16.0</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
         <logback-classic.version>1.4.14</logback-classic.version>
+        <jmh.version>1.37</jmh.version>
         <!-- EE dependency required for s3 to work -->
         <jaxb.version>2.3.1</jaxb.version>
         <!-- Static Analysis Plugin Versions -->
@@ -113,6 +114,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.ocadotechnology</groupId>
                 <artifactId>OcavaCore</artifactId>

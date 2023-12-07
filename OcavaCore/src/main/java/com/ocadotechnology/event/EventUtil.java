@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.event;
 
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -26,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
-import com.google.common.math.DoubleMath;
+import com.ocadotechnology.physics.units.TimeUnitConverter;
 
 /**
  * Utilities for converting time values to readable strings. Supports timestamps corresponding to dates no earlier than
@@ -43,57 +42,25 @@ public class EventUtil {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final long MIN_TIMESTAMP = -62135596800000L;  // 0001-01-01 00:00:00.000
 
-    private static long millisecondsInSimulationTimeUnitLong = 1000; // Default to assuming the simulation runs in seconds
-    private static double millisecondsInSimulationTimeUnitDouble = Double.NaN; // Only required for sub ms time units
+    private static TimeUnit simulationTimeUnit = TimeUnit.SECONDS; // Default to assuming the simulation runs in seconds
 
     /**
      * Sets the simulation time unit to allow for conversion to a standard display format
      *
-     * @param simulationTimeUnit the timeUnit that inputs to this class will be using
+     * @param timeUnit the timeUnit that inputs to this class will be using
      */
-    public static void setSimulationTimeUnit(TimeUnit simulationTimeUnit) {
-        millisecondsInSimulationTimeUnitLong = TimeUnit.MILLISECONDS.convert(1, simulationTimeUnit);
-        if (millisecondsInSimulationTimeUnitLong == 0) { // simulationTimeUnit < MILLISECONDS
-            millisecondsInSimulationTimeUnitDouble = 1.0 / simulationTimeUnit.convert(1, TimeUnit.MILLISECONDS);
-        }
+    public static void setSimulationTimeUnit(TimeUnit timeUnit) {
+        simulationTimeUnit = timeUnit;
     }
 
     private static String eventTimeToFormat(double eventTime, DateTimeFormatter dateTimeFormatter) {
         return Double.isFinite(eventTime)
-                ? milliEventTimeToFormat(convertToMillis(eventTime), dateTimeFormatter)
+                ? milliEventTimeToFormat(TimeUnitConverter.toTimeUnitLong(eventTime, simulationTimeUnit, TimeUnit.MILLISECONDS), dateTimeFormatter)
                 : Double.toString(eventTime);
     }
 
     private static String eventTimeToFormat(long eventTime, DateTimeFormatter dateTimeFormatter) {
-        return milliEventTimeToFormat(convertToMillis(eventTime), dateTimeFormatter);
-    }
-
-    private static long convertToMillis(double eventTime) {
-        try {
-            if (millisecondsInSimulationTimeUnitLong != 0) {
-                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitLong, RoundingMode.FLOOR);
-            } else {
-                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitDouble, RoundingMode.FLOOR);
-            }
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Invalid timestamp: " + eventTime, e);
-        }
-    }
-
-    private static long convertToMillis(long eventTime) {
-        try {
-            if (millisecondsInSimulationTimeUnitLong != 0) {
-                long milliTime = eventTime * millisecondsInSimulationTimeUnitLong;
-                if (milliTime / millisecondsInSimulationTimeUnitLong != eventTime) {
-                    throw new IllegalArgumentException("Invalid timestamp - overflows Long: " + eventTime);
-                }
-                return milliTime;
-            } else {
-                return DoubleMath.roundToLong(eventTime * millisecondsInSimulationTimeUnitDouble, RoundingMode.FLOOR);
-            }
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Invalid timestamp: " + eventTime, e);
-        }
+        return milliEventTimeToFormat(TimeUnitConverter.toTimeUnitLong(eventTime, simulationTimeUnit, TimeUnit.MILLISECONDS), dateTimeFormatter);
     }
 
     private static String milliEventTimeToFormat(long eventTimeInMillis, DateTimeFormatter dateTimeFormatter) {
