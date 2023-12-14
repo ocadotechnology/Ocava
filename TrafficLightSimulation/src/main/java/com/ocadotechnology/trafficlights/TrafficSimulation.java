@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Runnables;
@@ -66,14 +68,14 @@ public class TrafficSimulation implements Simulation {
     private CarSpawner carSpawner;
     private PedestrianSimulation pedestrianSimulation;
     private PedestrianSpawner pedestrianSpawner;
-
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     private TrafficSimulation(Config<TrafficConfig> trafficConfig) {
         this.trafficConfig = trafficConfig;
 
         this.scheduler = createScheduler(trafficConfig);
         Logging.configure(scheduler.getTimeProvider());
     }
-
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public static TrafficSimulation create(String... args) {
         ConfigManager config = createConfigManager(args);
         Config<TrafficConfig> trafficConfig  = config.getConfig(TrafficConfig.class);

@@ -103,6 +103,7 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
      * @param removeOnCancel whether cancelled tasks should be immediately removed from the work queue
      *                       - see {@link ScheduledThreadPoolExecutor#setRemoveOnCancelPolicy}
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public ExecutorEventScheduler(TimeUnit timeUnit, String name, boolean daemon, EventSchedulerType type, boolean removeOnCancel) {
         this(new UtcTimeProvider(timeUnit), name, daemon, type, removeOnCancel);
     }
@@ -114,6 +115,7 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
      * @param type the type of this scheduler (for use with execution layers
      *             - see {@link com.ocadotechnology.notification.NotificationRouter})
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
         this(timeProvider, name, daemon, type, false);
     }

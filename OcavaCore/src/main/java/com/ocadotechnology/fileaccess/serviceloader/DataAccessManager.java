@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.config.Config;
@@ -41,6 +43,7 @@ public class DataAccessManager {
      * @param initialConfigMap Map containing modes and their respective initialConfigurations that the application prefers to use
      * @throws ServiceConfigurationError if Multiple ServiceProviders with the same mode are available in classpath
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public DataAccessManager(ImmutableMap<String, Config<?>> initialConfigMap) {
         Preconditions.checkNotNull(initialConfigMap, "initial config cannot be null");
         this.providerMap = buildProviderMap();
