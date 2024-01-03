@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.assertj.core.api.Condition;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +42,7 @@ public interface UtilityClassTest extends ClassTest {
 
             if (constructor.getParameterCount() == 0) {
                 constructor.setAccessible(true);
-                assertThatThrownBy(constructor::newInstance).hasCauseInstanceOf(UnsupportedOperationException.class);
+                assertThatThrownBy((ThrowingCallable) constructor::newInstance).hasCauseInstanceOf(UnsupportedOperationException.class);
             }
         }
 
