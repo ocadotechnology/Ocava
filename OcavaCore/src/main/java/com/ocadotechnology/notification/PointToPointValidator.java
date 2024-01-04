@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * Enforces that there is at most ONE subscribing class for any PointToPointNotification.
@@ -30,7 +29,17 @@ import java.util.stream.Stream;
  */
 class PointToPointValidator {
     //Map from P2P notification class to subscribing class
-    private final Map<Class<?>, Class<?>> subscriptions = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Subscription> subscriptions = new ConcurrentHashMap<>();
+
+    private static final class Subscription {
+        final Class<?> subscriberClass;
+        final Class<?> notificationClass;
+
+        private Subscription(Class<?> subscriberClass, Class<?> notificationClass) {
+            this.subscriberClass = subscriberClass;
+            this.notificationClass = notificationClass;
+        }
+    }
 
     PointToPointValidator() {
     }
@@ -38,18 +47,20 @@ class PointToPointValidator {
     /** This method is and needs to remain ThreadSafe. */
     void validate(Object subscriber, List<Class<?>> subscribedNotifications) {
         Class<?> subscriberClass = subscriber.getClass();
-        subscribedNotifications.stream()
-                .filter(PointToPointNotification.class::isAssignableFrom)
-                .flatMap(this::streamP2PSupertypes)
-                .forEach(classImplementingP2P -> {
-                    Class<?> previousSubscriberClass = subscriptions.putIfAbsent(classImplementingP2P, subscriberClass);
-                    if (previousSubscriberClass != null) {
-                        throw new IllegalStateException(getErrorMessage(subscriberClass, classImplementingP2P, previousSubscriberClass));
+        for (Class<?> subscribedNotification : subscribedNotifications) {
+            if (PointToPointNotification.class.isAssignableFrom(subscribedNotification)) {
+                for (Class<?> supertypeClass : getP2PSupertypes(subscribedNotification)) {
+                    Subscription newSubscription = new Subscription(subscriberClass, subscribedNotification);
+                    Subscription oldSubscription = subscriptions.putIfAbsent(supertypeClass, newSubscription);
+                    if (oldSubscription != null) {
+                        throw new IllegalStateException(getErrorMessage(newSubscription, oldSubscription));
                     }
-                });
+                }
+            }
+        }
     }
 
-    private Stream<Class<?>> streamP2PSupertypes(Class<?> clazz) {
+    private List<Class<?>> getP2PSupertypes(Class<?> clazz) {
         List<Class<?>> classesToCheck = new ArrayList<>();
         classesToCheck.add(clazz);
 
@@ -64,7 +75,7 @@ class PointToPointValidator {
             }
         }
 
-        return classesToCheck.stream();
+        return classesToCheck;
     }
 
     private void addIfClassImplementsP2P(Class<?> clazz, List<Class<?>> classesToCheck) {
@@ -77,16 +88,32 @@ class PointToPointValidator {
         return PointToPointNotification.class.isAssignableFrom(clazz) && !clazz.equals(PointToPointNotification.class);
     }
 
-    private String getErrorMessage(Class<?> subscriberClass, Class<?> notification, Class<?> otherSubscriberClass) {
-        if (subscriberClass.equals(otherSubscriberClass)) {
-            return String.format("Too many P2P subscribers. PointToPointNotification %s (or one of its superclasses) is subscribed to twice by %s",
-                    notification.getSimpleName(),
-                    subscriberClass.getSimpleName());
+    private String getErrorMessage(Subscription newSubscription, Subscription oldSubscription) {
+        if (newSubscription.subscriberClass.equals(oldSubscription.subscriberClass)) {
+            return String.format(
+                    "Too many P2P subscribers. PointToPointNotification %s is subscribed to twice by %s",
+                    newSubscription.notificationClass.getSimpleName(),
+                    newSubscription.subscriberClass.getSimpleName());
         }
-        return String.format("Too many P2P subscribers. PointToPointNotification %s (or one of its superclasses) is subscribed to by both %s and %s",
-                notification.getSimpleName(),
-                subscriberClass.getSimpleName(),
-                otherSubscriberClass.getSimpleName());
+        if (newSubscription.notificationClass.equals(oldSubscription.notificationClass)) {
+            return String.format(
+                    "Too many P2P subscribers. A subscriber of type %s, and one of type %s (which both listen to notification %s, which is P2P) have been registered",
+                    newSubscription.subscriberClass.getSimpleName(),
+                    oldSubscription.subscriberClass.getSimpleName(),
+                    newSubscription.notificationClass.getSimpleName());
+        }
+
+        String ancestorDescendant = newSubscription.notificationClass.isAssignableFrom(oldSubscription.notificationClass) ?
+                "descendant" :
+                "ancestor";
+
+        return String.format(
+                "Too many P2P subscribers. A subscriber of type %s which listens to notifications of type %s, and one of type %s which listens to its P2P %s %s have been registered",
+                newSubscription.subscriberClass.getSimpleName(),
+                newSubscription.notificationClass.getSimpleName(),
+                oldSubscription.subscriberClass.getSimpleName(),
+                ancestorDescendant,
+                oldSubscription.notificationClass.getSimpleName());
     }
 
     void reset() {

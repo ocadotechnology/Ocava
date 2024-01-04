@@ -65,6 +65,15 @@ class PointToPointValidatorTest {
     }
 
     @Test
+    void whenSameInstanceContainsMultipleSubscriptionsToSameNotificationClass_thenException() {
+        DummySubscriberA subscriber = new DummySubscriberA();
+        validator.validate(subscriber, ImmutableList.of(DummyP2PNotification.class));
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(subscriber, ImmutableList.of(DummyP2PNotification.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummyP2PNotification.class.getSimpleName()));
+    }
+
+    @Test
     void whenTwoP2PSubscribers_thenException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummyP2PNotification.class));
         IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
@@ -98,6 +107,15 @@ class PointToPointValidatorTest {
         validator.validate(new DummySubscriberB(), ImmutableList.of(DummySupertypeNotification.class));
     }
 
+    @Test
+    void whenP2PIsImplementedViaSupertypeAndSubscriberIsSame_thenException() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummySubtypeNotification.class));
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberA(), ImmutableList.of(DummySubtypeNotification.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotification.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummySubscriberA.class.getSimpleName()));
+    }
+
     /**
      * P2P <-- DummyP2PSupertypeNotification <-- DummySubtypeNotification
      */
@@ -113,6 +131,15 @@ class PointToPointValidatorTest {
         IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
                 () -> validator.validate(new DummySubscriberB(), ImmutableList.of(DummySubtypeNotification.class)));
         Assertions.assertTrue(e.getMessage().contains(DummyP2PSupertypeNotification.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotification.class.getSimpleName()));
+    }
+    @Test
+    void whenSupertypeIsP2P_thenExceptionRegardlessOfRegistrationOrder() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummySubtypeNotification.class));
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberB(), ImmutableList.of(DummyP2PSupertypeNotification.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummyP2PSupertypeNotification.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotification.class.getSimpleName()));
     }
 
     /**
