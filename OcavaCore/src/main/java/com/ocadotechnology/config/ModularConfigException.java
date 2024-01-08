@@ -23,4 +23,8 @@ public class ModularConfigException extends RuntimeException {
     public ModularConfigException(String message) {
         super(message);
     }
+
+    public ModularConfigException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

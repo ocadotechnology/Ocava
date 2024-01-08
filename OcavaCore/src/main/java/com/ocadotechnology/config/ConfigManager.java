@@ -540,10 +540,15 @@ public class ConfigManager {
 
             for (String fileName : filesExtended) {
                 if (alreadyVisitedInputs.contains(fileName)) {
-                    throw new ModularConfigException("Properties files in a loop! Already visited: " + alreadyVisitedInputs);
+                    throw new ModularConfigException("Properties file loop detected. Attempted to visit: " + fileName + " Already visited: " + alreadyVisitedInputs);
                 }
 
-                Properties parentProperties = readResource(configSettingCollector, fileName, alreadyVisitedInputs);
+                Properties parentProperties;
+                try {
+                    parentProperties = readResource(configSettingCollector, fileName, alreadyVisitedInputs);
+                } catch (RuntimeException e) {
+                    throw new ModularConfigException("Unable to load file " + fileName + " referenced in [" + resource + "]. Already visited [" + alreadyVisitedInputs + "]", e);
+                }
 
                 // Anything defined by the child overrides the parent. We look for conflicts in the parent
                 // only for properties that are not in the child overrides.

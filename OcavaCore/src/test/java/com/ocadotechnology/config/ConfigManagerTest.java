@@ -210,7 +210,8 @@ class ConfigManagerTest {
 
         assertThatThrownBy(
                 () -> builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/extending-invalid-file.properties"), ImmutableSet.of(TestConfig.class)).build())
-                .cause()
+                .hasMessageContaining("referenced in [modularconfig/extending-invalid-file.properties]")
+                .rootCause()
                 .isInstanceOf(IOException.class)
                 .hasMessageContaining(invalidFileName);
     }
@@ -220,7 +221,9 @@ class ConfigManagerTest {
         assertThatThrownBy(
                 () -> builder.loadConfigFromResourceOrFile(ImmutableList.of("modularconfig/loop-1.properties"), ImmutableSet.of(TestConfig.class)).build())
                 .isInstanceOf(ModularConfigException.class)
-                .hasMessageContaining("loop");
+                .hasMessageContaining("referenced in [modularconfig/loop-1.properties]")
+                .rootCause()
+                .hasMessageContaining("Properties file loop detected");
     }
 
     @Test
