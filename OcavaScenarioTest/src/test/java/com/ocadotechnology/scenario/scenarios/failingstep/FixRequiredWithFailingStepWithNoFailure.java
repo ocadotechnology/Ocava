@@ -111,4 +111,27 @@ public class FixRequiredWithFailingStepWithNoFailure extends AbstractFrameworkTe
         when.testEvent.scheduled(2, "first");
         then.testEvent.within(5, TimeUnit.MILLISECONDS).failingStep().occurs("first");
     }
+
+    /**
+     * Validate that failing step works with sequenced, if the sequenced step passes.
+     */
+    @Test
+    void sequencedStepPasses() {
+        when.simStarts();
+        when.testEvent.scheduled(1, "A-1");
+        when.testEvent.scheduled(4, "A-2");
+
+        then.testEvent.sequenced("A").occurs("A-1");
+        then.testEvent.failingStep().sequenced("A").occurs("A-2");
+    }
+
+    @Test
+    void sequencedStepPassesOrdering() {
+        when.simStarts();
+        when.testEvent.scheduled(1, "A-1");
+        when.testEvent.scheduled(4, "A-2");
+
+        then.testEvent.sequenced("A").occurs("A-1");
+        then.testEvent.sequenced("A").failingStep().occurs("A-2");
+    }
 }

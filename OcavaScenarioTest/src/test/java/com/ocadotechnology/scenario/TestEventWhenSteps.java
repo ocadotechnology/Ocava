@@ -18,31 +18,50 @@ package com.ocadotechnology.scenario;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
 
-public class TestEventWhenSteps {
+public class TestEventWhenSteps extends AbstractWhenSteps<FrameworkTestSimulation, TestEventWhenSteps>{
 
-    private final StepManager<?> stepManager;
-    private final ScenarioSimulationApi<?> simulationHolder;
+    public TestEventWhenSteps(StepManager<FrameworkTestSimulation> stepManager) {
+        this(stepManager, NamedStepExecutionType.ordered());
+    }
 
-    public TestEventWhenSteps(StepManager<?> stepManager, ScenarioSimulationApi<?> simulationHolder) {
-        this.stepManager = stepManager;
-        this.simulationHolder = simulationHolder;
+    private TestEventWhenSteps(StepManager<FrameworkTestSimulation> stepManager, NamedStepExecutionType namedStepExecutionType) {
+        super(stepManager, namedStepExecutionType);
+    }
+
+    @Override
+    protected TestEventWhenSteps create(StepManager<FrameworkTestSimulation> stepManager, NamedStepExecutionType executionType) {
+        return new TestEventWhenSteps(stepManager, executionType);
     }
 
     public <T> StepFuture<T> populateFuture(T value) {
         MutableStepFuture<T> future = new MutableStepFuture<>();
-        stepManager.addExecuteStep(() -> future.populate(value));
+        addExecuteStep(() -> future.populate(value));
         return future;
     }
 
     public StepFuture<Double> scheduled(double time, String name) {
         MutableStepFuture<Double> scheduleTime = new MutableStepFuture<>();
-        stepManager.addExecuteStep(() -> {
-            EventScheduler eventScheduler = simulationHolder.getEventScheduler();
+        addExecuteStep(() -> {
+            EventScheduler eventScheduler = getSimulation().getEventScheduler();
             scheduleTime.populate(time - eventScheduler.getTimeProvider().getTime());
             eventScheduler.doAt(
                         time,
                         () -> NotificationRouter.get().broadcast(new TestEventNotification(name)),
                         "scheduled(" + time + ", \"" + name + "\")");
+        });
+        return scheduleTime;
+    }
+
+    public StepFuture<Double> scheduledIn(double delay, String name) {
+        MutableStepFuture<Double> scheduleTime = new MutableStepFuture<>();
+        addExecuteStep(() -> {
+            EventScheduler eventScheduler = getSimulation().getEventScheduler();
+            double eventTime = eventScheduler.getTimeProvider().getTime() + delay;
+            scheduleTime.populate(delay - eventScheduler.getTimeProvider().getTime());
+            eventScheduler.doAt(
+                        eventTime,
+                        () -> NotificationRouter.get().broadcast(new TestEventNotification(name)),
+                        "scheduledIn(" + delay + ", \"" + name + "\")");
         });
         return scheduleTime;
     }

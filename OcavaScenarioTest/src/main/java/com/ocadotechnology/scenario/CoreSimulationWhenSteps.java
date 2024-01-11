@@ -18,16 +18,17 @@ package com.ocadotechnology.scenario;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.simulation.Simulation;
 
-public class CoreSimulationWhenSteps<S extends Simulation> extends AbstractWhenSteps<S> {
+public class CoreSimulationWhenSteps<S extends Simulation> {
+    private final StepManager<S> stepManager;
     private final ScenarioSimulationApi<S> simulationAPI;
     private final ScenarioNotificationListener listener;
     private final SimulationThenSteps<S> simulationThen;
 
-    public CoreSimulationWhenSteps(StepManager<S> stepManager, ScenarioSimulationApi<S> simulationAPI, ScenarioNotificationListener listener, NotificationCache notificationCache) {
-        super(stepManager);
+    public CoreSimulationWhenSteps(StepManager<S> stepManager, ScenarioSimulationApi<S> simulationAPI, ScenarioNotificationListener listener) {
+        this.stepManager = stepManager;
         this.simulationAPI = simulationAPI;
         this.listener = listener;
-        this.simulationThen = new SimulationThenSteps<>(stepManager, notificationCache);
+        this.simulationThen = new SimulationThenSteps<>(stepManager, stepManager.notificationCache);
     }
 
     /**
@@ -35,7 +36,7 @@ public class CoreSimulationWhenSteps<S extends Simulation> extends AbstractWhenS
      * has been created successfully.  This is required to trigger the execution of all following steps.
      */
     public void starts(Class<? extends Notification> simulationStartedNotificationClass) {
-        addExecuteStep(() -> simulationAPI.start(listener));
+        stepManager.addExecuteStep(() -> simulationAPI.start(listener));
         simulationThen.notificationReceived(simulationStartedNotificationClass);
     }
 
@@ -50,7 +51,7 @@ public class CoreSimulationWhenSteps<S extends Simulation> extends AbstractWhenS
      * CARE - this step must always be followed by a then step of some kind.
      */
     public void attemptedStartupDoesNotComplete(Class<? extends Notification> simulationStartedNotificationClass) {
-        addExecuteStep(() -> simulationAPI.start(listener));
+        stepManager.addExecuteStep(() -> simulationAPI.start(listener));
         simulationThen.never().notificationReceived(simulationStartedNotificationClass);
     }
 

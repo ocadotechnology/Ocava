@@ -91,6 +91,20 @@ any other unordered step.
 If this step is not completed after processing a notification, then the notification will be passed through to
 the next unordered step.
 
+## Sequenced Steps
+
+Most of the framework-level step classes and abstract step classes include the modification method
+`sequenced`.  Sequenced steps act part-way between unordered and ordered steps, in that they observe
+a strict order within each defined sequence, but separate sequences (and any unmodified steps) can
+execute independently of each other.
+
+The `sequenced` modifier is compatible with the `failingStep` modifier, where that is also offered.
+For Then steps, `sequenced` can also be combined with `within`, `afterExactly` or `afterAtLeast`
+modifiers, with the timer starting as soon as the sequenced step becomes the next within its
+distinct queue.
+
+(See the [worked examples](EXAMPLE_SEQUENCED_STEPS.md) for step-by-step examples of how this works)
+
 ## Mutable state in Then steps
 
 We do not recommend storing mutable data as fields in Then steps. If you do, please be aware of the following.

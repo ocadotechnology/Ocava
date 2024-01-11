@@ -85,6 +85,27 @@ public class FixRequiredWithFailingStepWithUnexpectedFailure extends AbstractFra
     }
 
     /**
+     * Validate that failing step works with sequenced, if the sequenced step passes.
+     */
+    @Test
+    void sequencedStepPasses() {
+        when.simStarts();
+        when.testEvent.scheduled(1, "A-1");
+
+        then.testEvent.failingStep().sequenced("A").occurs("A-1");
+        then.testEvent.sequenced("A").occurs("A-2");
+    }
+
+    @Test
+    void sequencedStepPassesOrdering() {
+        when.simStarts();
+        when.testEvent.scheduled(1, "A-1");
+
+        then.testEvent.sequenced("A").failingStep().occurs("A-1");
+        then.testEvent.sequenced("A").occurs("A-2");
+    }
+
+    /**
      * Validate that failing step works with never, when the never violated
      */
     @FixRequired("failing step with fix required will pass")

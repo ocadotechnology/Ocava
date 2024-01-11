@@ -49,7 +49,11 @@ public abstract class NamedStep implements Executable {
     public String getStepName() {
         return stepName;
     }
-    
+
+    public Class<?> getNotificationType() {
+        return notificationType;
+    }
+
     public void setName(String name) {
         this.name = name;
     }

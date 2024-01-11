@@ -35,7 +35,7 @@ public class TrafficSimulationStory extends AbstractStory<TrafficSimulation> {
     private TrafficSimulationStory(TrafficSimulationApi simulationApi) {
         super(simulationApi);
         given = new Given(stepManager, simulationApi, listener, notificationCache);
-        when = new When(stepManager, simulationApi, listener, notificationCache);
+        when = new When(stepManager, simulationApi, listener);
         then = new Then(stepManager, simulationApi, listener, notificationCache);
 
         //continue simulation for a short time to check we are not about to fail

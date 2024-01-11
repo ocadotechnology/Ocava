@@ -36,10 +36,6 @@ class CheckStep<T> extends NamedStep implements Executable {
         this.predicate = predicate;
     }
 
-    Class<T> getType() {
-        return type;
-    }
-
     @Override
     public final boolean isRequired() {
         return true;

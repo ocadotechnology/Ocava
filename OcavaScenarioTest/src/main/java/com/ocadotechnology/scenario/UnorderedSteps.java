@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Assertions;
 
@@ -29,38 +31,70 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.simulation.Simulation;
 
-public class UnorderedSteps<S extends Simulation> {
+/**
+ * Collection of steps used for manipulating previously defined unordered/never/sequenced steps.
+ */
+@ParametersAreNonnullByDefault
+public final class UnorderedSteps<S extends Simulation> {
     private final StepCache stepCache;
     private final StepManager<S> stepManager;
-    private final boolean isFailingStep;
+    private final NamedStepExecutionType namedStepExecutionType;
 
-    private UnorderedSteps(StepManager<S> stepManager, boolean isFailingStep) {
+    private UnorderedSteps(StepManager<S> stepManager, NamedStepExecutionType namedStepExecutionType) {
         this.stepManager = stepManager;
         this.stepCache = stepManager.getStepsCache();
-        this.isFailingStep = isFailingStep;
+        this.namedStepExecutionType = namedStepExecutionType;
     }
 
     public UnorderedSteps(StepManager<S> stepManager) {
-        this(stepManager, false);
+        this(stepManager, NamedStepExecutionType.ordered());
     }
 
+    /**
+     * @return an instance of UnorderedSteps where the steps it creates will use the supplied NamedStepExecutionType
+     *          object. Used in composite steps which contain a {@link UnorderedSteps} instance.
+     */
+    public UnorderedSteps<S> modify(NamedStepExecutionType executionType) {
+        return new UnorderedSteps<>(stepManager, executionType);
+    }
+
+    /**
+     * @return an instance of UnorderedSteps where the steps it creates will use a NamedStepExecutionType object created
+     *          from the supplied CheckStepExecutionType object. Used in composite steps which contain an
+     *          {@link UnorderedSteps} instance.
+     */
+    public UnorderedSteps<S> modify(CheckStepExecutionType executionType) {
+        return modify(executionType.getNamedStepExecutionType());
+    }
+
+    /**
+     * @return an instance of the UnorderedSteps where the steps it creates has the
+     * {@code NamedStepExecutionType.isFailingStep} flag set to true. The failingStep flag is checked after the scenario
+     * test has completed successfully or exceptionally and should be used in conjunction with {@link FixRequired}
+     *
+     * @throws IllegalStateException if called after a previous invocation of this method
+     */
     public UnorderedSteps<S> failingStep() {
-        return new UnorderedSteps<>(stepManager, true);
+        return new UnorderedSteps<>(stepManager, NamedStepExecutionType.failingStep().merge(namedStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the UnorderedSteps where the steps it creates are linked to
+     * create an ordered sub-sequence with other steps of the same name.
+     *
+     * @throws IllegalStateException if called after a previous invocation of this method
+     * @throws NullPointerException if the name is null
+     */
+    public UnorderedSteps<S> sequenced(String name) {
+        return new UnorderedSteps<>(stepManager, NamedStepExecutionType.sequenced(name).merge(namedStepExecutionType));
     }
 
     private void addSimpleExecuteStep(Runnable runnable) {
-        ExecuteStep step = new SimpleExecuteStep(runnable);
-        if (isFailingStep) {
-            stepCache.addFailingStep(step);
-        }
-        stepManager.add(step);
+        addExecuteStep(new SimpleExecuteStep(runnable));
     }
 
     private void addExecuteStep(ExecuteStep step) {
-        if (isFailingStep) {
-            stepCache.addFailingStep(step);
-        }
-        stepManager.add(step);
+        stepManager.add(step, namedStepExecutionType);
     }
 
     /**
@@ -324,7 +358,6 @@ public class UnorderedSteps<S extends Simulation> {
      * @param b the name of the step which should finish second
      */
     public void stepAIsFinishedBeforeStepB(String a, String b) {
-        String name = stepCache.getRandomUnorderedStepName();
         ExecuteStep step = new ExecuteStep() {
             private boolean finished = false;
 
@@ -344,9 +377,6 @@ public class UnorderedSteps<S extends Simulation> {
                 return finished;
             }
         };
-        if (isFailingStep) {
-            stepCache.addFailingStep(step);
-        }
-        stepManager.add(name, step);
+        addExecuteStep(step);
     }
 }

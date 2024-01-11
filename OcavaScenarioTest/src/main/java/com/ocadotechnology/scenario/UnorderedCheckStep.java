@@ -19,11 +19,12 @@ class UnorderedCheckStep<T> extends NamedStep implements Executable {
     protected final CheckStep<T> wrapped;
 
     UnorderedCheckStep(CheckStep<T> wrapped) {
-        super(wrapped.getType());
+        super(wrapped.getNotificationType());
         this.wrapped = wrapped;
+    }
 
-        // Unordered steps are only constructed when they are reached in the sequence of test execution.
-        // Therefore, it is appropriate to call setActive on the wrapped step immediately upon creation.
+    @Override
+    public void setActive() {
         wrapped.setActive();
     }
 
@@ -54,9 +55,5 @@ class UnorderedCheckStep<T> extends NamedStep implements Executable {
     @Override
     public void merge(Executable step) {
         throw new UnsupportedOperationException("Cannot merge UnorderedCheckSteps");
-    }
-
-    public Class<?> getType() {
-        return wrapped.getType();
     }
 }

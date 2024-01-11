@@ -17,10 +17,8 @@ package com.ocadotechnology.scenario;
 
 import java.util.concurrent.TimeUnit;
 
-import com.ocadotechnology.simulation.Simulation;
-
 @StoryContent
-public abstract class AbstractFrameworkTestStory extends AbstractStory<Simulation> {
+public abstract class AbstractFrameworkTestStory extends AbstractStory<FrameworkTestSimulation> {
 
     public final TestWhen when;
     public final TestThen then;
@@ -29,7 +27,7 @@ public abstract class AbstractFrameworkTestStory extends AbstractStory<Simulatio
     private AbstractFrameworkTestStory(FrameworkTestSimulationApi simulationApi) {
         super(simulationApi);
 
-        when = new TestWhen(stepManager, simulationApi, listener, notificationCache);
+        when = new TestWhen(stepManager, simulationApi, listener);
         then = new TestThen(stepManager, notificationCache, simulationApi, listener);
         given = new TestGiven(stepsRunner, simulationApi);
         stepsRunner.setPostStepsRunTime(10, TimeUnit.MILLISECONDS);

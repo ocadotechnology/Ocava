@@ -165,12 +165,12 @@ public abstract class AbstractStory<S extends Simulation> {
     protected void execute() {
         try {
             while (!simulation.isStarted()) {
-                stepsRunner.tryToExecuteNextStep(false);
+                stepsRunner.tryToExecuteNextStep();
             }
             stepCache.getFinalSteps().forEach(Executable::executeAndLog);
         } catch (Throwable exception) {
             if (stepsRunner.validateException(exception)) {
-                stepsRunner.tryToExecuteNextStep(false); //Tidy up the now complete Exception step
+                stepsRunner.tryToExecuteNextStep(); //Tidy up the now complete Exception step
             } else {
                 throw exception;
             }

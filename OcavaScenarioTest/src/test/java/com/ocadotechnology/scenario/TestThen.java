@@ -15,8 +15,6 @@
  */
 package com.ocadotechnology.scenario;
 
-import com.ocadotechnology.simulation.Simulation;
-
 public class TestThen {
     public final TimeThenSteps<?> time;
     public final UnorderedSteps<?> unordered;
@@ -25,11 +23,11 @@ public class TestThen {
 
     public final TestEventThenSteps testEvent;
 
-    public TestThen(StepManager<Simulation> stepManager, NotificationCache notificationCache, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener) {
+    public TestThen(StepManager<FrameworkTestSimulation> stepManager, NotificationCache notificationCache, FrameworkTestSimulationApi simulationApi, ScenarioNotificationListener listener) {
         this.time = new TimeThenSteps<>(simulationApi, stepManager, listener);
         this.unordered = new UnorderedSteps<>(stepManager);
         this.exception = new ExceptionThenSteps<>(stepManager);
         this.futures = new FuturesThenSteps(stepManager);
-        this.testEvent = new TestEventThenSteps(stepManager, notificationCache, CheckStepExecutionType.ordered(), simulationApi);
+        this.testEvent = new TestEventThenSteps(stepManager, notificationCache);
     }
 }

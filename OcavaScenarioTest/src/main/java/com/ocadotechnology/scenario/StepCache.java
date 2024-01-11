@@ -16,30 +16,37 @@
 package com.ocadotechnology.scenario;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import javax.annotation.CheckForNull;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import com.ocadotechnology.event.scheduling.Cancelable;
 
 public class StepCache extends Cleanable {
     private static final Predicate<Throwable> EXCEPTION_CHECKER_DEFAULT = t -> false;
-    private LinkedList<Executable> orderedSteps = new LinkedList<>();
+    private final LinkedList<Executable> orderedSteps = new LinkedList<>();
     private Executable lastStep;
-    private Multimap<String, Executable> unorderedSteps = LinkedHashMultimap.create();
-    private final Set<String> allUnorderedStepNames = new HashSet<>();
+    private final Multimap<String, Executable> unorderedSteps = LinkedHashMultimap.create();
+    private final ListMultimap<String, Executable> sequencedSteps = MultimapBuilder.linkedHashKeys().arrayListValues().build();
+    private final Set<String> allUnorderedStepNames = new LinkedHashSet<>();
+    private final Set<String> allSequenceStepNames = new LinkedHashSet<>();
     private int stepCounter = 0;
-    private List<Executable> finalSteps = new ArrayList<>();
+    private final List<Executable> finalSteps = new ArrayList<>();
     private Predicate<Throwable> exceptionChecker = EXCEPTION_CHECKER_DEFAULT;
-    private List<Executable> failingSteps = new ArrayList<>();
+    private final List<Executable> failingSteps = new ArrayList<>();
 
     public int getNextStepCounter() {
         return stepCounter++;
@@ -84,7 +91,9 @@ public class StepCache extends Cleanable {
 
     public void clearUnorderedSteps() {
         unorderedSteps.clear();
+        sequencedSteps.clear();
         allUnorderedStepNames.clear();
+        allSequenceStepNames.clear();
     }
 
     public ImmutableList<Executable> getOrderedStepsView() {
@@ -111,12 +120,12 @@ public class StepCache extends Cleanable {
     }
 
     public boolean isUnorderedStepFinished(String name) {
-        return !unorderedSteps.containsKey(name);
+        return !unorderedSteps.containsKey(name) && !sequencedSteps.containsKey(name);
     }
 
     public String getRandomUnorderedStepName() {
         String name = String.valueOf(System.nanoTime());
-        while (unorderedSteps.containsKey(name)) {
+        while (allUnorderedStepNames.contains(name) || allSequenceStepNames.contains(name)) {
             name = String.valueOf(System.nanoTime());
         }
         return name;
@@ -124,55 +133,81 @@ public class StepCache extends Cleanable {
 
     public void addUnordered(String name, Executable testStep) {
         allUnorderedStepNames.add(name);
+        Preconditions.checkState(!allSequenceStepNames.contains(name),
+                "Cannot add unordered step with name [%s] as it has already been used for a sequenced step.", name);
+
         unorderedSteps.put(name, testStep);
     }
 
+    public void addSequenced(String name, Executable testStep) {
+        allSequenceStepNames.add(name);
+        Preconditions.checkState(!allUnorderedStepNames.contains(name),
+                "Cannot add sequenced step with name [%s] as it has already been used for an unordered step.", name);
+
+        if (!sequencedSteps.containsKey(name)) {
+            //Sequenced steps should be executed as soon as they reach the head of the queue
+            testStep.setActive();
+            testStep.executeAndLog();
+        }
+        if (!testStep.isFinished()) {
+            sequencedSteps.put(name, testStep);
+        }
+    }
+
     public ImmutableSet<String> getAllUnorderedStepNames() {
-        return ImmutableSet.copyOf(allUnorderedStepNames);
+        return ImmutableSet.<String>builder()
+                .addAll(allUnorderedStepNames)
+                .addAll(allSequenceStepNames)
+                .build();
     }
 
     public boolean hasAddedStepWithName(String name) {
-        return allUnorderedStepNames.contains(name);
+        return allUnorderedStepNames.contains(name) || allSequenceStepNames.contains(name);
     }
 
     public void removeAndCancel(String name) {
-        Preconditions.checkState(unorderedSteps.containsKey(name),
-                "Tried to remove unordered steps with name '%s', but didn't find one. unorderedSteps: %s", name, unorderedSteps);
+        Preconditions.checkState(unorderedSteps.containsKey(name) || sequencedSteps.containsKey(name),
+                "Tried to remove unordered or sequenced steps with name '%s', but didn't find one. Known unorderedSteps: %s, sequencedSteps %s",
+                name,
+                unorderedSteps,
+                sequencedSteps);
         removeAndCancelIfPresent(name);
     }
 
     public void removeAndCancelIfPresent(String name) {
         unorderedSteps.removeAll(name).stream().filter(step -> step instanceof Cancelable).forEach(step -> ((Cancelable) step).cancel());
+        sequencedSteps.removeAll(name).stream().filter(step -> step instanceof Cancelable).forEach(step -> ((Cancelable) step).cancel());
     }
 
-    public Collection<Executable> getUnorderedSteps() {
-        return unorderedSteps.values();
+    public Iterator<Executable> getUnorderedStepsIterator() {
+        return new UnorderedStepsIterator();
     }
 
     public boolean isFinished() {
-        for (Executable unorderedStep : unorderedSteps.values()) {
-            if (unorderedStep.isRequired() && !unorderedStep.isFinished()) {
-                return false;
-            }
-        }
-        return orderedSteps.isEmpty();
+        boolean unorderedStepsFinished = Stream.concat(
+                        unorderedSteps.values().stream(),
+                        sequencedSteps.values().stream())
+                .noneMatch(step -> step.isRequired() && !step.isFinished());
+
+        return unorderedStepsFinished && orderedSteps.isEmpty();
     }
 
+    @CheckForNull
     public Executable getUnfinishedUnorderedStep() {
-        for (Executable unorderedStep : unorderedSteps.values()) {
-            if (unorderedStep.isRequired() && !unorderedStep.isFinished()) {
-                return unorderedStep;
-            }
-        }
-        return null;
+        return Stream.concat(unorderedSteps.values().stream(), sequencedSteps.values().stream())
+                .filter(step -> step.isRequired() && !step.isFinished())
+                .findAny()
+                .orElse(null);
     }
 
     @Override
     public void clean() {
-        orderedSteps = new LinkedList<>();
-        unorderedSteps = LinkedHashMultimap.create();
+        orderedSteps.clear();
+        unorderedSteps.clear();
+        sequencedSteps.clear();
         allUnorderedStepNames.clear();
-        finalSteps = new ArrayList<>();
+        allSequenceStepNames.clear();
+        finalSteps.clear();
         stepCounter = 0;
         exceptionChecker = EXCEPTION_CHECKER_DEFAULT;
     }
@@ -186,7 +221,7 @@ public class StepCache extends Cleanable {
     }
 
     public boolean hasSteps() {
-        return !orderedSteps.isEmpty() || !unorderedSteps.isEmpty() || !finalSteps.isEmpty();
+        return !orderedSteps.isEmpty() || !unorderedSteps.isEmpty() || !sequencedSteps.isEmpty() || !finalSteps.isEmpty();
     }
 
     public List<Executable> getFailingSteps() {
@@ -197,11 +232,45 @@ public class StepCache extends Cleanable {
         this.failingSteps.add(failingStep);
     }
 
-    /**
-     * Unordered steps create new CheckSteps when the scenario is running, the original check steps are removed using
-     * this method to avoid incorrectly reporting which steps are marked as failingSteps. see: StepManager.addUnorderedStepOnExecutionOfStep
-     */
-    void removeFailingStep(Executable step) {
-        this.failingSteps.remove(step);
+    private class UnorderedStepsIterator implements Iterator<Executable> {
+        private final Iterator<Executable> unorderedStepsIterator;
+        private Iterator<String> sequenceNames;
+        private String currentSequence = null;
+
+        private UnorderedStepsIterator() {
+            this.unorderedStepsIterator = unorderedSteps.values().iterator();
+            this.sequenceNames = sequencedSteps.keySet().iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return unorderedStepsIterator.hasNext() || sequenceNames.hasNext();
+        }
+
+        @Override
+        public Executable next() {
+            if (unorderedStepsIterator.hasNext()) {
+                return unorderedStepsIterator.next();
+            }
+            currentSequence = sequenceNames.next();
+            return sequencedSteps.get(currentSequence).get(0);
+        }
+
+        @Override
+        public void remove() {
+            if (currentSequence == null) {
+                unorderedStepsIterator.remove();
+            } else {
+                advanceSequence(currentSequence);
+                this.sequenceNames = sequencedSteps.keySet().iterator(); // Reset this in case the head step from an earlier sequence is now complete
+            }
+        }
+
+        private void advanceSequence(String currentSequence) {
+            sequencedSteps.get(currentSequence).remove(0);
+            if (sequencedSteps.containsKey(currentSequence)) {
+                sequencedSteps.get(currentSequence).get(0).setActive();
+            }
+        }
     }
 }

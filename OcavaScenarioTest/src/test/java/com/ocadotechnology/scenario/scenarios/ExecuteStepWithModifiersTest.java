@@ -69,6 +69,6 @@ class ExecuteStepWithModifiersTest extends AbstractFrameworkTestStory {
 
     private void verifyStepCreationFails(Executable r) {
         IllegalStateException e = Assertions.assertThrows(IllegalStateException.class, r, "Expected exception not thrown");
-        Assertions.assertEquals("Execute steps must be basic ordered steps.  Remove any modification method calls other than failingStep from this line.", e.getMessage());
+        Assertions.assertEquals("Execute steps must be basic ordered or sequenced steps.  Remove any modification method calls other than sequenced and failingStep from this line.", e.getMessage());
     }
 }

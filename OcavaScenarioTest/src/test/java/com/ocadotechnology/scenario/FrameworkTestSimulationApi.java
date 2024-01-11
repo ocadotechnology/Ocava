@@ -20,16 +20,16 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventExecutor;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationBus;
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.simulation.Simulation;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 
-public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Simulation> {
+public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<FrameworkTestSimulation> {
     private static final Logger logger = LoggerFactory.getLogger(FrameworkTestSimulationApi.class);
 
     private SimpleDiscreteEventScheduler eventScheduler;
@@ -88,5 +88,10 @@ public class FrameworkTestSimulationApi extends AbstractScenarioSimulationApi<Si
     @Override
     public TimeUnit getSchedulerTimeUnit() {
         return TimeUnit.MILLISECONDS;
+    }
+
+    @Override
+    public FrameworkTestSimulation getSimulation() {
+        return new FrameworkTestSimulation(Preconditions.checkNotNull(eventScheduler));
     }
 }

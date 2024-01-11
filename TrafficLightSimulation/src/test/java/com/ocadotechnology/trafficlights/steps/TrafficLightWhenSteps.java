@@ -16,24 +16,30 @@
 package com.ocadotechnology.trafficlights.steps;
 
 import com.ocadotechnology.scenario.AbstractWhenSteps;
+import com.ocadotechnology.scenario.NamedStepExecutionType;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.trafficlights.TrafficSimulation;
-import com.ocadotechnology.trafficlights.TrafficSimulationApi;
 import com.ocadotechnology.trafficlights.controller.LightColour;
 
-public class TrafficLightWhenSteps extends AbstractWhenSteps<TrafficSimulation> {
-    private final TrafficSimulationApi simulationApi;
+public class TrafficLightWhenSteps extends AbstractWhenSteps<TrafficSimulation, TrafficLightWhenSteps> {
+    public TrafficLightWhenSteps(StepManager<TrafficSimulation> stepManager) {
+        this(stepManager, NamedStepExecutionType.ordered());
+    }
 
-    public TrafficLightWhenSteps(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi) {
-        super(stepManager);
-        this.simulationApi = simulationApi;
+    private TrafficLightWhenSteps(StepManager<TrafficSimulation> stepManager, NamedStepExecutionType executionType) {
+        super(stepManager, executionType);
+    }
+
+    @Override
+    protected TrafficLightWhenSteps create(StepManager<TrafficSimulation> stepManager, NamedStepExecutionType executionType) {
+        return new TrafficLightWhenSteps(stepManager, executionType);
     }
 
     public void isChangedTo(LightColour colour) {
-        addExecuteStep(() -> simulationApi.getSimulation().getTrafficLightController().setTrafficLight(colour));
+        addExecuteStep(() -> getSimulation().getTrafficLightController().setTrafficLight(colour));
     }
 
     public void placeUnderManualControl() {
-        addExecuteStep(() -> simulationApi.getSimulation().getTrafficLightController().placeUnderManualControl());
+        addExecuteStep(() -> getSimulation().getTrafficLightController().placeUnderManualControl());
     }
 }

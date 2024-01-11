@@ -17,19 +17,79 @@ package com.ocadotechnology.scenario;
 
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import org.junit.jupiter.api.Assertions;
 
 import com.ocadotechnology.simulation.Simulation;
 
-public class TimeThenSteps<S extends Simulation> {
+/**
+ * Collection of steps used for pausing step execution for a fixed time, or making assertions about the simulation time.
+ * These steps are final so that the decorator methods will work with them.
+ */
+@ParametersAreNonnullByDefault
+public final class TimeThenSteps<S extends Simulation> {
     private final ScenarioSimulationApi<S> scenarioSimulationApi;
     private final StepManager<S> stepManager;
     private final ScenarioNotificationListener scenarioNotificationListener;
+    private final NamedStepExecutionType namedStepExecutionType;
 
     public TimeThenSteps(ScenarioSimulationApi<S> scenarioSimulationApi, StepManager<S> stepManager, ScenarioNotificationListener scenarioNotificationListener) {
+        this(scenarioSimulationApi, stepManager, scenarioNotificationListener, NamedStepExecutionType.ordered());
+    }
+
+    private TimeThenSteps(
+            ScenarioSimulationApi<S> scenarioSimulationApi,
+            StepManager<S> stepManager,
+            ScenarioNotificationListener scenarioNotificationListener,
+            NamedStepExecutionType namedStepExecutionType) {
         this.scenarioSimulationApi = scenarioSimulationApi;
         this.stepManager = stepManager;
         this.scenarioNotificationListener = scenarioNotificationListener;
+        this.namedStepExecutionType = namedStepExecutionType;
+    }
+
+    /**
+     * @return an instance of the TimeThenSteps where the steps it creates will use the supplied NamedStepExecutionType
+     *          object. Used in composite steps which contain a {@link TimeThenSteps} instance.
+     */
+    public TimeThenSteps<S> modify(NamedStepExecutionType executionType) {
+        return new TimeThenSteps<>(scenarioSimulationApi, stepManager, scenarioNotificationListener, executionType);
+    }
+
+    /**
+     * @return an instance of the TimeThenSteps where the steps it creates will use a NamedStepExecutionType calculated
+     *          from the supplied CheckStepExecutionType object. Used in composite steps which contain a
+     *          {@link TimeThenSteps} instance.
+     */
+    public TimeThenSteps<S> modify(CheckStepExecutionType executionType) {
+        return modify(executionType.getNamedStepExecutionType());
+    }
+
+    /**
+     * @return an instance of the TimeThenSteps where the steps it creates has the
+     * {@code NamedStepExecutionType.isFailingStep} flag set to true. The failingStep flag is checked after the scenario
+     * test has completed successfully or exceptionally and should be used in conjunction with {@link FixRequired}
+     *
+     * @throws IllegalStateException if called after a previous invocation of this method
+     */
+    public TimeThenSteps<S> failingStep() {
+        return new TimeThenSteps<>(scenarioSimulationApi, stepManager, scenarioNotificationListener, NamedStepExecutionType.failingStep().merge(namedStepExecutionType));
+    }
+
+    /**
+     * @return an instance of the TimeThenSteps where the steps it creates are linked to
+     * create an ordered sub-sequence with other steps of the same name.
+     *
+     * @throws IllegalStateException if called after a previous invocation of this method
+     * @throws NullPointerException if the name is null
+     */
+    public TimeThenSteps<S> sequenced(String name) {
+        return new TimeThenSteps<>(scenarioSimulationApi, stepManager, scenarioNotificationListener, NamedStepExecutionType.sequenced(name).merge(namedStepExecutionType));
+    }
+
+    private void addExecuteStep(Runnable runnable) {
+        stepManager.add(new SimpleExecuteStep(runnable), namedStepExecutionType);
     }
 
     /**
@@ -39,7 +99,7 @@ public class TimeThenSteps<S extends Simulation> {
      */
     public StepFuture<Double> getCurrentTime() {
         MutableStepFuture<Double> currentTime = new MutableStepFuture<>();
-        stepManager.addExecuteStep(() -> {
+        addExecuteStep(() -> {
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
             currentTime.populate(now);
         });
@@ -55,7 +115,7 @@ public class TimeThenSteps<S extends Simulation> {
             protected double time() {
                 return scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
             }
-        });
+        }, namedStepExecutionType);
     }
 
     /**
@@ -69,7 +129,7 @@ public class TimeThenSteps<S extends Simulation> {
             protected double time() {
                 return instant.get();
             }
-        });
+        }, namedStepExecutionType);
     }
 
     /**
@@ -81,7 +141,7 @@ public class TimeThenSteps<S extends Simulation> {
             protected double time() {
                 return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + scenarioSimulationApi.getEventScheduler().getMinimumTimeDelta();
             }
-        });
+        }, namedStepExecutionType);
     }
 
     /**
@@ -93,7 +153,7 @@ public class TimeThenSteps<S extends Simulation> {
             protected double time() {
                 return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + convertToUnit(duration, unit, stepManager.getTimeUnit());
             }
-        });
+        }, namedStepExecutionType);
     }
 
     /**
@@ -105,7 +165,7 @@ public class TimeThenSteps<S extends Simulation> {
             protected double time() {
                 return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + duration.get();
             }
-        });
+        }, namedStepExecutionType);
     }
 
     /**
@@ -114,7 +174,7 @@ public class TimeThenSteps<S extends Simulation> {
      * {@link ScenarioSimulationApi#getSchedulerStartTime()})
      */
     public void timeIsLessThan(double time, TimeUnit unit) {
-        stepManager.addExecuteStep(() -> {
+        addExecuteStep(() -> {
             double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
             Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
@@ -126,7 +186,7 @@ public class TimeThenSteps<S extends Simulation> {
      * The provided time is compared with the time returned by the simulation scheduler's timeProvider.
      */
     public void timeIsLessThan(StepFuture<Double> instant) {
-        stepManager.addExecuteStep(() -> {
+        addExecuteStep(() -> {
             double beforeTime = instant.get();
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
             Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);

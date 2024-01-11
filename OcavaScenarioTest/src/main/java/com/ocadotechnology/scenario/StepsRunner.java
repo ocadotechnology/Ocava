@@ -75,13 +75,10 @@ public class StepsRunner extends Cleanable {
         return stepsCache.getUnfinishedUnorderedStep();
     }
 
-    public void tryToExecuteNextStep(boolean onlyUnordered) {
+    public void tryToExecuteNextStep() {
         checkForTimeout();
         if (simulation.isStarted()) {
             executeUnorderedSteps();
-        }
-        if (onlyUnordered) {
-            return;
         }
 
         while (true) {
@@ -141,7 +138,7 @@ public class StepsRunner extends Cleanable {
     }
 
     private void executeUnorderedSteps() {
-        Iterator<Executable> iterator = stepsCache.getUnorderedSteps().iterator();
+        Iterator<Executable> iterator = stepsCache.getUnorderedStepsIterator();
         while (iterator.hasNext()) {
             currentUnorderedStep = iterator.next();
             currentUnorderedStep.executeAndLog();

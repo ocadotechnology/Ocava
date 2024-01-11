@@ -17,19 +17,18 @@ package com.ocadotechnology.scenario;
 
 import org.junit.jupiter.api.Assertions;
 
-import com.ocadotechnology.simulation.Simulation;
+public class TestEventThenSteps extends AbstractThenSteps<FrameworkTestSimulation, TestEventThenSteps> {
+    TestEventThenSteps(StepManager<FrameworkTestSimulation> stepManager, NotificationCache notificationCache) {
+        this(stepManager, notificationCache, CheckStepExecutionType.ordered());
+    }
 
-public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventThenSteps> {
-    private final ScenarioSimulationApi<Simulation> scenarioSimulationApi;
-
-    TestEventThenSteps(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType, ScenarioSimulationApi<Simulation> scenarioSimulationApi) {
+    private TestEventThenSteps(StepManager<FrameworkTestSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType checkStepExecutionType) {
         super(stepManager, notificationCache, checkStepExecutionType);
-        this.scenarioSimulationApi = scenarioSimulationApi;
     }
 
     @Override
-    protected TestEventThenSteps create(StepManager<Simulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
-        return new TestEventThenSteps(stepManager, notificationCache, executionType, scenarioSimulationApi);
+    protected TestEventThenSteps create(StepManager<FrameworkTestSimulation> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType) {
+        return new TestEventThenSteps(stepManager, notificationCache, executionType);
     }
 
     public void occurs(String name) {
@@ -44,9 +43,7 @@ public class TestEventThenSteps extends AbstractThenSteps<Simulation, TestEventT
     }
 
     public void timeIsExactly(double time) {
-        addExecuteStep(() -> {
-            Assertions.assertEquals(time, scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime(), "Time is not as expected");
-        });
+        addExecuteStep(() -> Assertions.assertEquals(time, getSimulation().getEventScheduler().getTimeProvider().getTime(), "Time is not as expected"));
     }
 
     public void executeStep(boolean shouldFail) {

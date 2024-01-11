@@ -23,26 +23,19 @@ import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.Subscriber;
 
-public class ScenarioNotificationListener extends Cleanable implements Subscriber {
+public class ScenarioNotificationListener implements Subscriber {
     private final Logger logger = LoggerFactory.getLogger(ScenarioNotificationListener.class);
     private final NotificationCache notificationCache;
     private final StepsRunner stepsRunner;
-
-    private boolean onlyUnordered = false;
 
     public ScenarioNotificationListener(NotificationCache notificationCache, StepsRunner stepsRunner) {
         this.notificationCache = notificationCache;
         this.stepsRunner = stepsRunner;
     }
 
-    public void suspend() {
-        onlyUnordered = true;
-    }
-
-    public void resume() {
+    public void clearCachedNotifications() {
         notificationCache.resetUnorderedNotification();
         notificationCache.getNotificationAndReset();
-        onlyUnordered = false;
     }
 
     @Override
@@ -56,16 +49,11 @@ public class ScenarioNotificationListener extends Cleanable implements Subscribe
             logger.debug("Received notification {}", notification);
             notificationCache.set(notification);
 
-            tryToExecuteNextStep(onlyUnordered);
+            tryToExecuteNextStep();
         }
     }
 
-    @Override
-    public void clean() {
-        onlyUnordered = false;
-    }
-
-    public void tryToExecuteNextStep(boolean onlyUnordered) {
-        stepsRunner.tryToExecuteNextStep(onlyUnordered);
+    public void tryToExecuteNextStep() {
+        stepsRunner.tryToExecuteNextStep();
     }
 }

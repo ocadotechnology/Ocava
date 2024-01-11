@@ -55,8 +55,10 @@ public class StepManager<S extends Simulation> {
     public void add(CheckStep<?> checkStep, CheckStepExecutionType checkStepExecutionType) {
         if (checkStepExecutionType.isOrdered()) {
             addOrderedCheckStep(checkStepExecutionType, checkStep);
+        } else if (checkStepExecutionType.isSequenced()) {
+            addSequencedStep(() -> checkStepExecutionType.createSequencedStep(checkStep), checkStepExecutionType.getName(), checkStepExecutionType.isFailingStep());
         } else {
-            addUnorderedStepOnExecutionOfStep(checkStepExecutionType, checkStep);
+            addUnorderedCheckStep(checkStepExecutionType, checkStep);
         }
     }
 
@@ -64,7 +66,7 @@ public class StepManager<S extends Simulation> {
         CheckStep<?> checkStep = checkStepExecutionType.createOrderedStep(baseStep);
         checkStep.setStepName(LoggerUtil.getStepName());
         checkStep.setStepOrder(stepsCache.getNextStepCounter());
-        notificationCache.addKnownNotification(checkStep.getType());
+        notificationCache.addKnownNotification(checkStep.getNotificationType());
         stepsCache.addOrdered(checkStep);
 
         if (checkStepExecutionType.isFailingStep()) {
@@ -80,39 +82,14 @@ public class StepManager<S extends Simulation> {
         stepsCache.addUnordered(name, step);
     }
 
-    public void add(BroadcastStep broadcastStep) {
-        broadcastStep.setStepOrder(stepsCache.getNextStepCounter());
-        broadcastStep.setStepName(LoggerUtil.getStepName());
-        stepsCache.addOrdered(broadcastStep);
-    }
-
     public void add(ExceptionCheckStep exceptionCheckStep) {
         exceptionCheckStep.setStepOrder(stepsCache.getNextStepCounter());
         exceptionCheckStep.setStepName(LoggerUtil.getStepName());
         stepsCache.addCheckStep(exceptionCheckStep);
     }
 
-    public void add(ExecuteStep executeStep) {
-        add(executeStep, false);
-    }
-
-    public void add(ExecuteStep executeStep, boolean isFailingStep) {
-        executeStep.setStepOrder(stepsCache.getNextStepCounter());
-        executeStep.setStepName(LoggerUtil.getStepName());
-        stepsCache.addOrdered(executeStep);
-        if (isFailingStep) {
-            stepsCache.addFailingStep(executeStep);
-        }
-    }
-
     public void addExecuteStep(Runnable r) {
         add(new SimpleExecuteStep(r));
-    }
-
-    public void add(PeriodicExecuteStep periodicExecuteStep) {
-        periodicExecuteStep.setStepOrder(stepsCache.getNextStepCounter());
-        periodicExecuteStep.setStepName(LoggerUtil.getStepName());
-        stepsCache.addOrdered(periodicExecuteStep);
     }
 
     public void add(ExecuteStep executeStep, ExecuteStepExecutionType executeStepExecutionType) {
@@ -131,50 +108,65 @@ public class StepManager<S extends Simulation> {
         stepsCache.addFinalStep(executeStep);
     }
 
-    public void add(String name, ExecuteStep executeStep) {
-        executeStep.setStepOrder(stepsCache.getNextStepCounter());
-        executeStep.setStepName(LoggerUtil.getStepName());
-        executeStep.setName(name);
-        stepsCache.addUnordered(name, executeStep);
+    public void add(NamedStep step) {
+        add(step, false);
     }
 
-    public void add(WaitStep scheduledStep) {
-        scheduledStep.setStepOrder(stepsCache.getNextStepCounter());
-        scheduledStep.setStepName(LoggerUtil.getStepName());
-        stepsCache.addOrdered(scheduledStep);
+    public void add(NamedStep step, boolean isFailingStep) {
+        step.setStepOrder(stepsCache.getNextStepCounter());
+        step.setStepName(LoggerUtil.getStepName());
+        stepsCache.addOrdered(step);
+        if (isFailingStep) {
+            stepsCache.addFailingStep(step);
+        }
     }
 
-    public void add(ScheduledStep scheduledStep) {
-        scheduledStep.setStepOrder(stepsCache.getNextStepCounter());
-        scheduledStep.setStepName(LoggerUtil.getStepName());
-        stepsCache.addOrdered(scheduledStep);
+    public void add(NamedStep step, NamedStepExecutionType executionType) {
+        if (executionType.isSequenced()) {
+            addSequencedStep(() -> step, executionType.getName(), executionType.isFailingStep());
+        } else {
+            add(step, executionType.isFailingStep());
+        }
     }
 
-    private void addUnorderedStepOnExecutionOfStep(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
-        notificationCache.addKnownNotification(testStep.getType());
+    private void addSequencedStep(Supplier<NamedStep> stepSupplier, String name, boolean isFailingStep) {
+        add(new ExecuteStep() {
+            @Override
+            protected void executeStep() {
+                NamedStep step = stepSupplier.get();
+                if (isFailingStep) {
+                    stepsCache.addFailingStep(step);
+                }
+
+                notificationCache.resetUnorderedNotification();
+                step.setStepOrder(getStepOrder());
+                step.setStepName(getStepName());
+                step.setName(name);
+                notificationCache.addKnownNotification(step.getNotificationType());
+                stepsCache.addSequenced(name, step);
+            }
+        });
+    }
+
+    private void addUnorderedCheckStep(CheckStepExecutionType checkStepExecutionType, CheckStep<?> testStep) {
+        notificationCache.addKnownNotification(testStep.getNotificationType());
 
         add(new ExecuteStep() {
             @Override
             protected void executeStep() {
                 UnorderedCheckStep<?> step = checkStepExecutionType.createUnorderedStep(testStep);
                 if (checkStepExecutionType.isFailingStep()) {
-                    // Remove the original step added and replace with the new wrapped step
-                    stepsCache.removeFailingStep(testStep);
                     stepsCache.addFailingStep(step);
                 }
 
                 notificationCache.resetUnorderedNotification();
-                addUnordered(checkStepExecutionType.getName(), step, getStepName(), getStepOrder());
+                step.setStepOrder(getStepOrder());
+                step.setStepName(getStepName());
+                step.setName(checkStepExecutionType.getName());
+                notificationCache.addKnownNotification(step.getNotificationType());
+                stepsCache.addUnordered(checkStepExecutionType.getName(), step);
             }
         });
-    }
-
-    private void addUnordered(String name, UnorderedCheckStep<?> testStep, String stepName, int stepOrder) {
-        testStep.setStepOrder(stepOrder);
-        testStep.setStepName(stepName);
-        testStep.setName(name);
-        notificationCache.addKnownNotification(testStep.getType());
-        stepsCache.addUnordered(name, testStep);
     }
 
     public static class ExecuteStepExecutionType {

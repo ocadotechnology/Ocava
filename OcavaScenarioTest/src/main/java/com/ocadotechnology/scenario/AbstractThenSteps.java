@@ -19,7 +19,8 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import com.google.common.base.Preconditions;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.simulation.Simulation;
@@ -29,6 +30,7 @@ import com.ocadotechnology.simulation.Simulation;
  * part of the testing package.  Each implementation should be generic on itself so that it can be correctly modified by
  * the decorator methods {@link AbstractThenSteps#unordered}, {@link AbstractThenSteps#never} etc
  */
+@ParametersAreNonnullByDefault
 public abstract class AbstractThenSteps<S extends Simulation, T extends AbstractThenSteps<S, ?>> {
     private final StepManager<S> stepManager;
     private final CheckStepExecutionType checkStepExecutionType;
@@ -38,6 +40,24 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
         this.stepManager = stepManager;
         this.notificationCache = notificationCache;
         this.checkStepExecutionType = checkStepExecutionType;
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates will use a
+     *          CheckStepExecutionType object created from the supplied NamedStepExecutionType object. Used in composite
+     *          steps which contain an {@link AbstractThenSteps} instance.
+     */
+    public T modify(NamedStepExecutionType executionType) {
+        return modify(executionType.getCheckStepExecutionType());
+    }
+
+    /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates will use the
+     *          supplied CheckStepExecutionType object. Used in composite steps which contain an
+     *          {@link AbstractThenSteps} instance.
+     */
+    public T modify(CheckStepExecutionType executionType) {
+        return create(stepManager, notificationCache, executionType);
     }
 
     /**
@@ -210,6 +230,22 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     }
 
     /**
+     * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates are linked to
+     * create an ordered sub-sequence with other steps of the same name.
+     *
+     * See OcavaScenarioTest/README.md file for explanation of what notifications the created step will receive.
+     *
+     * @throws IllegalStateException if called after an incompatible modifier
+     * @throws NullPointerException if the name is null
+     */
+    public T sequenced(String name) {
+        return create(
+                stepManager,
+                notificationCache,
+                CheckStepExecutionType.sequenced(name).merge(checkStepExecutionType));
+    }
+
+    /**
      * @return an instance of the concrete sub-class of AbstractThenSteps where the steps it creates has the
      * {@code CheckStepExecutionType.isFailingStep} flag set to true. The failingStep flag is checked after the scenario test has completed
      * successfully or exceptionally and should be used in conjunction with {@link FixRequired}
@@ -231,10 +267,7 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     }
 
     protected void addExecuteStep(Runnable runnable) {
-        Preconditions.checkState(checkStepExecutionType.isBasicOrderedStep(),
-                "Execute steps must be basic ordered steps.  Remove any modification method calls other than failingStep from this line.");
-
-        stepManager.add(new SimpleExecuteStep(runnable), checkStepExecutionType.isFailingStep());
+        stepManager.add(new SimpleExecuteStep(runnable), checkStepExecutionType.getNamedStepExecutionType());
     }
 
     public void notificationsReceived(ImmutableSet<Class<? extends Notification>> notifications) {

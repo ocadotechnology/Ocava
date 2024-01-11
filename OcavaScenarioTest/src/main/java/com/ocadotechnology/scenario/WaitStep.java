@@ -21,14 +21,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Causes a scenario test to wait until the specified time.
  */
 public abstract class WaitStep extends NamedStep implements Executable {
-    private final ScenarioSimulationApi scenarioSimulationApi;
+    private final ScenarioSimulationApi<?> scenarioSimulationApi;
     private final ScenarioNotificationListener listener;
 
     private final AtomicBoolean finished = new AtomicBoolean(false);
 
     private boolean executed;
 
-    public WaitStep(ScenarioSimulationApi scenarioSimulationApi, ScenarioNotificationListener listener) {
+    public WaitStep(ScenarioSimulationApi<?> scenarioSimulationApi, ScenarioNotificationListener listener) {
         this.scenarioSimulationApi = scenarioSimulationApi;
         this.listener = listener;
     }
@@ -51,9 +51,6 @@ public abstract class WaitStep extends NamedStep implements Executable {
         }
         executed = true;
 
-        // We don't care about notifications we receive whilst waiting
-        listener.suspend();
-
         scenarioSimulationApi.getEventScheduler().doAt(time(), this::executeScheduledStep, "Execute ScheduledStep Test Step: " + this);
     }
 
@@ -66,9 +63,9 @@ public abstract class WaitStep extends NamedStep implements Executable {
     public void merge(Executable step) {}
 
     private void executeScheduledStep() {
-        listener.resume();
+        listener.clearCachedNotifications();
         finished.set(true);
-        listener.tryToExecuteNextStep(false);
+        listener.tryToExecuteNextStep();
     }
 
     /**

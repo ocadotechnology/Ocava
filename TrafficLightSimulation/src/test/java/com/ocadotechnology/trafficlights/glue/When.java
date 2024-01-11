@@ -15,8 +15,6 @@
  */
 package com.ocadotechnology.trafficlights.glue;
 
-import com.ocadotechnology.scenario.CoreSimulationWhenSteps;
-import com.ocadotechnology.scenario.NotificationCache;
 import com.ocadotechnology.scenario.ScenarioNotificationListener;
 import com.ocadotechnology.scenario.StepManager;
 import com.ocadotechnology.trafficlights.TrafficSimulation;
@@ -27,7 +25,6 @@ import com.ocadotechnology.trafficlights.steps.SimulationWhenSteps;
 import com.ocadotechnology.trafficlights.steps.TrafficLightWhenSteps;
 
 public class When {
-
     //generic steps
     public final SimulationWhenSteps simulation;
 
@@ -36,12 +33,10 @@ public class When {
     public final PedestrianWhenSteps pedestrian;
     public final TrafficLightWhenSteps trafficLight;
 
-    public When(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener, NotificationCache notificationCache) {
-        CoreSimulationWhenSteps<TrafficSimulation> coreSteps = new CoreSimulationWhenSteps<>(stepManager, simulationApi, listener, notificationCache);
-
-        simulation = new SimulationWhenSteps(stepManager, coreSteps);
-        car = new CarWhenSteps(stepManager, simulationApi);
-        pedestrian = new PedestrianWhenSteps(stepManager, simulationApi);
-        trafficLight = new TrafficLightWhenSteps(stepManager, simulationApi);
+    public When(StepManager<TrafficSimulation> stepManager, TrafficSimulationApi simulationApi, ScenarioNotificationListener listener) {
+        simulation = new SimulationWhenSteps(stepManager, simulationApi, listener);
+        car = new CarWhenSteps(stepManager);
+        pedestrian = new PedestrianWhenSteps(stepManager);
+        trafficLight = new TrafficLightWhenSteps(stepManager);
     }
 }

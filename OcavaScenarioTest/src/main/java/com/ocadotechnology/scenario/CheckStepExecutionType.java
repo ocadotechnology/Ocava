@@ -30,7 +30,7 @@ import com.ocadotechnology.validation.Failer;
  * methods within, afterExactly, etc.
  */
 @ParametersAreNonnullByDefault
-public class CheckStepExecutionType {
+public final class CheckStepExecutionType {
     enum OrderedModifier {
         WITHIN,
         AFTER_EXACTLY,
@@ -39,7 +39,8 @@ public class CheckStepExecutionType {
 
     enum UnorderedModifier {
         UNORDERED,
-        NEVER
+        NEVER,
+        SEQUENCED
     }
 
     /**
@@ -92,7 +93,7 @@ public class CheckStepExecutionType {
         this(null, modifier, null, false, schedulerSupplier, duration);
     }
 
-    private CheckStepExecutionType(
+    CheckStepExecutionType(
             @CheckForNull String name,
             @CheckForNull OrderedModifier orderedModifier,
             @CheckForNull UnorderedModifier unorderedModifier,
@@ -152,6 +153,10 @@ public class CheckStepExecutionType {
         return new CheckStepExecutionType(OrderedModifier.AFTER_AT_LEAST, schedulerSupplier, duration);
     }
 
+    public static CheckStepExecutionType sequenced(String name) {
+        return new CheckStepExecutionType(Preconditions.checkNotNull(name, "Sequenced steps must have a name"), UnorderedModifier.SEQUENCED);
+    }
+
     /**
      * Create an ordered, failing execution type instance
      */
@@ -178,6 +183,10 @@ public class CheckStepExecutionType {
 
     public boolean isOrdered() {
         return unorderedModifier == null;
+    }
+
+    public boolean isSequenced() {
+        return UnorderedModifier.SEQUENCED.equals(unorderedModifier);
     }
 
     public boolean isFailingStep() {
@@ -209,12 +218,33 @@ public class CheckStepExecutionType {
         CheckStep<?> orderedStep = createOrderedStep(baseStep);
         switch (Preconditions.checkNotNull(unorderedModifier, "Attempted to create an unordered step from an ordered execution type instance")) {
             case UNORDERED:
-                return new UnorderedCheckStep<>(orderedStep);
+                UnorderedCheckStep<?> unorderedCheckStep = new UnorderedCheckStep<>(orderedStep);
+                unorderedCheckStep.setActive(); //Unordered steps are active as soon as they are created
+                return unorderedCheckStep;
             case NEVER:
-                return new NeverStep<>(orderedStep);
+                NeverStep<?> neverStep = new NeverStep<>(orderedStep);
+                neverStep.setActive(); //Never steps are active as soon as they are created
+                return neverStep;
             default:
                 throw Failer.fail("Unsupported unordered check step modifier %s", unorderedModifier);
         }
+    }
+
+    NamedStep createSequencedStep(CheckStep<?> baseStep) {
+        Preconditions.checkState(isSequenced(), "Attempted to create a sequenced step from a non-sequenced execution type");
+        CheckStep<?> orderedStep = createOrderedStep(baseStep);
+        //Wrapping the ordered step in an unordered ensures that it uses the unordered manner of acquiring a notification
+        //Sequenced steps are active only when all of their prerequisites are complete, so don't trigger it here
+        return new UnorderedCheckStep<>(orderedStep);
+    }
+
+    NamedStepExecutionType getNamedStepExecutionType() {
+        Preconditions.checkState(
+                orderedModifier == null
+                        && (isOrdered() || isSequenced()),
+                "Execute steps must be basic ordered or sequenced steps.  Remove any modification method calls other than sequenced and failingStep from this line.");
+
+        return new NamedStepExecutionType(name, isSequenced(), isFailingStep);
     }
 
     /**
@@ -258,8 +288,7 @@ public class CheckStepExecutionType {
 
     private boolean areCompatible(@CheckForNull OrderedModifier orderedModifier, @CheckForNull UnorderedModifier unorderedModifier) {
         return orderedModifier == null
-                || unorderedModifier == null
-                || UnorderedModifier.UNORDERED.equals(unorderedModifier);
+                || !UnorderedModifier.NEVER.equals(unorderedModifier);
     }
 
     private static String nextId() {

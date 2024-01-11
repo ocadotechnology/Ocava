@@ -45,7 +45,7 @@ public class AbstractThenStepsTest {
     private static final String STEP_NAME = "STEP_NAME";
 
     private final CapturingStepManager stepManager = new CapturingStepManager();
-    private final AbstractThenSteps<?, ?> steps = new TestEventThenSteps(stepManager, null, CheckStepExecutionType.ordered(), null);
+    private final AbstractThenSteps<?, ?> steps = new TestEventThenSteps(stepManager, null);
 
     enum DecoratorType {
         UNORDERED(
@@ -76,6 +76,10 @@ public class AbstractThenStepsTest {
                 ats -> ats.afterAtLeast(Duration.ofMillis(10)),
                 ats -> ats.afterAtLeast(10, TimeUnit.MILLISECONDS),
                 ats -> ats.afterAtLeast(StepFuture.of(10d))),
+        SEQUENCED(
+                null,
+                UnorderedModifier.SEQUENCED,
+                ats -> ats.sequenced(STEP_NAME)),
         FAILING_STEP(
                 null,
                 null,
@@ -108,21 +112,35 @@ public class AbstractThenStepsTest {
             throw new IllegalStateException("Neither ordered or unordered modifiers are set");
         }
 
-        private static boolean areIncompatible(DecoratorType type1, DecoratorType type2) {
+        public boolean executionTypeSatisfies(NamedStepExecutionType namedStepExecutionType) {
+            if (FAILING_STEP.equals(this)) {
+                return namedStepExecutionType.isFailingStep();
+            } if (SEQUENCED.equals(this)) {
+                return namedStepExecutionType.isSequenced() && namedStepExecutionType.getName() != null;
+            }
+            return false;
+        }
+
+        private static boolean areCompatible(DecoratorType type1, DecoratorType type2) {
             switch (type1) {
                 case UNORDERED:
-                    return !Set.of(WITHIN, AFTER_EXACTLY, AFTER_AT_LEAST, FAILING_STEP).contains(type2);
+                case SEQUENCED:
+                    return Set.of(WITHIN, AFTER_EXACTLY, AFTER_AT_LEAST, FAILING_STEP).contains(type2);
                 case NEVER:
-                    return !FAILING_STEP.equals(type2);
+                    return FAILING_STEP.equals(type2);
                 case WITHIN:
                 case AFTER_EXACTLY:
                 case AFTER_AT_LEAST:
-                    return !Set.of(UNORDERED, FAILING_STEP).contains(type2);
+                    return Set.of(UNORDERED, SEQUENCED, FAILING_STEP).contains(type2);
                 case FAILING_STEP:
-                    return FAILING_STEP.equals(type2);
+                    return !FAILING_STEP.equals(type2);
                 default:
                     throw new UnsupportedOperationException("Unsupported type: " + type1);
             }
+        }
+
+        private boolean isApplicableToExecuteSteps() {
+            return SEQUENCED.equals(this) || FAILING_STEP.equals(this);
         }
     }
 
@@ -134,22 +152,30 @@ public class AbstractThenStepsTest {
     @ParameterizedTest
     @MethodSource("getAllPairs")
     void testDecoratorPairs(DecoratorType type1, DecoratorType type2) {
-        boolean shouldFail = DecoratorType.areIncompatible(type1, type2);
+        boolean shouldSucceed = DecoratorType.areCompatible(type1, type2);
+        boolean executeShouldWork = type1.isApplicableToExecuteSteps() && type2.isApplicableToExecuteSteps();
 
         for (UnaryOperator<AbstractThenSteps<?, ?>> type1Invocation : type1.invocations) {
             for (UnaryOperator<AbstractThenSteps<?, ?>> type2Invocation : type2.invocations) {
-                if (shouldFail) {
-                    Assertions.assertThrows(IllegalStateException.class,
-                            () -> type2Invocation.apply(type1Invocation.apply(steps)));
-                } else {
+                if (shouldSucceed) {
                     AbstractThenSteps<?, ?> result = type2Invocation.apply(type1Invocation.apply(steps));
-                    //Execute steps cannot be modified by anything other than a failingStep method call.
-                    Assertions.assertThrows(IllegalStateException.class, () -> result.addExecuteStep(System.out::println));
 
                     result.addCheckStep(Notification.class, n -> true);
                     CheckStepExecutionType checkStepExecutionType = stepManager.getAndResetRecordedCheckStepType();
                     Assertions.assertTrue(type1.executionTypeSatisfies(checkStepExecutionType));
                     Assertions.assertTrue(type2.executionTypeSatisfies(checkStepExecutionType));
+
+                    if (executeShouldWork) {
+                        result.addExecuteStep(() -> {});
+                        NamedStepExecutionType namedStepExecutionType = stepManager.getAndResetRecordedNamedStepType();
+                        Assertions.assertTrue(type1.executionTypeSatisfies(namedStepExecutionType));
+                        Assertions.assertTrue(type2.executionTypeSatisfies(namedStepExecutionType));
+                    } else {
+                        Assertions.assertThrows(IllegalStateException.class, () -> result.addExecuteStep(System.out::println));
+                    }
+                } else {
+                    Assertions.assertThrows(IllegalStateException.class,
+                            () -> type2Invocation.apply(type1Invocation.apply(steps)));
                 }
             }
         }
@@ -164,10 +190,10 @@ public class AbstractThenStepsTest {
     private static Stream<List<DecoratorType>> getAllValidTriplesAsList() {
         return Stream.of(DecoratorType.values())
                 .flatMap(t1 -> Stream.of(DecoratorType.values()).map(t2 -> List.of(t1, t2)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(0), args.get(1)))
+                .filter(args -> DecoratorType.areCompatible(args.get(0), args.get(1)))
                 .flatMap(args -> Stream.of(DecoratorType.values()).map(t3 -> List.of(args.get(0), args.get(1), t3)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(0), args.get(2)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(1), args.get(2)));
+                .filter(args -> DecoratorType.areCompatible(args.get(0), args.get(2)))
+                .filter(args -> DecoratorType.areCompatible(args.get(1), args.get(2)));
     }
 
     @ParameterizedTest
@@ -194,9 +220,9 @@ public class AbstractThenStepsTest {
     void assertNoValidQuadsExist() {
         List<List<DecoratorType>> validQuads = getAllValidTriplesAsList()
                 .flatMap(args -> Stream.of(DecoratorType.values()).map(t4 -> List.of(args.get(0), args.get(1), args.get(2), t4)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(0), args.get(3)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(1), args.get(3)))
-                .filter(args -> !DecoratorType.areIncompatible(args.get(2), args.get(3)))
+                .filter(args -> DecoratorType.areCompatible(args.get(0), args.get(3)))
+                .filter(args -> DecoratorType.areCompatible(args.get(1), args.get(3)))
+                .filter(args -> DecoratorType.areCompatible(args.get(2), args.get(3)))
                 .collect(Collectors.toList());
         Assertions.assertTrue(validQuads.isEmpty());
     }

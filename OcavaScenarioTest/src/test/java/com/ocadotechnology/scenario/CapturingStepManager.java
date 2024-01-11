@@ -18,10 +18,10 @@ package com.ocadotechnology.scenario;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.ocadotechnology.simulation.Simulation;
 
-public class CapturingStepManager extends StepManager<Simulation> {
+public class CapturingStepManager extends StepManager<FrameworkTestSimulation> {
     private CheckStepExecutionType recordedCheckStepType;
+    private NamedStepExecutionType recordedNamedStepType;
 
     public CapturingStepManager() {
         super(new StepCache(), new FrameworkTestSimulationApi(), null, null);
@@ -38,9 +38,21 @@ public class CapturingStepManager extends StepManager<Simulation> {
         recordedCheckStepType = checkStepExecutionType;
     }
 
+    @Override
+    public void add(NamedStep namedStep, NamedStepExecutionType namedStepExecutionType) {
+        Preconditions.checkState(recordedNamedStepType == null, "Received two calls to add a named step");
+        recordedNamedStepType = namedStepExecutionType;
+    }
+
     public CheckStepExecutionType getAndResetRecordedCheckStepType() {
         CheckStepExecutionType type = recordedCheckStepType;
         recordedCheckStepType = null;
+        return type;
+    }
+
+    public NamedStepExecutionType getAndResetRecordedNamedStepType() {
+        NamedStepExecutionType type = recordedNamedStepType;
+        recordedNamedStepType = null;
         return type;
     }
 }
