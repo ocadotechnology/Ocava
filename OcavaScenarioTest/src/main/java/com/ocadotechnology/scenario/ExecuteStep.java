@@ -32,7 +32,7 @@ public abstract class ExecuteStep extends NamedStep implements Executable {
 
     @Override
     public void execute() {
-        finished.set(true);
+        finished.set(true); //Has to mark the step as finished first because starting the simulation is a step which does not terminate until the simulation ends
         executeStep();
     }
     

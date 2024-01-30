@@ -47,13 +47,15 @@ public class ScenarioNotificationListener implements Subscriber {
     public void handleNotification(Notification notification) {
         if (notificationCache.knownNotification(notification)) {
             logger.debug("Received notification {}", notification);
-            notificationCache.set(notification);
-
-            tryToExecuteNextStep();
+            tryToExecuteNextStep(() -> notificationCache.set(notification));
         }
     }
 
     public void tryToExecuteNextStep() {
-        stepsRunner.tryToExecuteNextStep();
+        this.tryToExecuteNextStep(() -> {});
+    }
+
+    private void tryToExecuteNextStep(Runnable runnable) {
+        stepsRunner.tryToExecuteNextSteps(runnable);
     }
 }

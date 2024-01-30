@@ -16,6 +16,8 @@
 package com.ocadotechnology.scenario;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
@@ -25,8 +27,8 @@ import org.slf4j.LoggerFactory;
 public class StepsRunner extends Cleanable {
     private static final Logger logger = LoggerFactory.getLogger(StepsRunner.class);
 
-    private StepCache stepsCache;
-    private ScenarioSimulationApi simulation;
+    private final StepCache stepsCache;
+    private final ScenarioSimulationApi<?> simulation;
 
     /**
      * Required to latch the stopping of the simulation otherwise a notification will prompt another stop
@@ -41,6 +43,9 @@ public class StepsRunner extends Cleanable {
     private boolean hasWallClockTimeout;
     private long trackedWallClockStartTime;
     private long wallClockTimeoutMillis;
+
+    private boolean isExecutingStepCycle = false;
+    private Queue<Runnable> runnableQueue = new LinkedList<>();
 
     public StepsRunner(StepCache stepsCache, ScenarioSimulationApi simulation) {
         this.stepsCache = stepsCache;
@@ -75,8 +80,48 @@ public class StepsRunner extends Cleanable {
         return stepsCache.getUnfinishedUnorderedStep();
     }
 
-    public void tryToExecuteNextStep() {
+    /**
+     * Executes as many steps as possible. Does not prevent steps from being interrupted by another invocation.
+     * This is deliberate since the code which starts a simulation is not expected to return until the simulation (and
+     * thus test) has run to completion.
+     */
+    public void executeNextStepsUnblocking() {
+        executeNextSteps();
+    }
+
+    /**
+     * Attempts to execute as many steps as possible. If steps are already executing, this will queue another execution
+     * of the cycle to occur after this one is complete.
+     *
+     * @param runnable - A task to execute before entering this cycle. Typically used to populate the notification cache
+     */
+    public void tryToExecuteNextSteps(Runnable runnable) {
+        runnableQueue.add(runnable);
+        if (isExecutingStepCycle) {
+            return;
+        }
+
+        while (!runnableQueue.isEmpty()) {
+            isExecutingStepCycle = true;
+            try {
+                runnableQueue.poll().run();
+                executeNextSteps();
+            } finally {
+                isExecutingStepCycle = false;
+            }
+        }
+    }
+
+    private void executeNextSteps() {
         checkForTimeout();
+        executeStepCycle();
+
+        if (isFinished() && !stopped) {
+            stopSimulation();
+        }
+    }
+
+    private void executeStepCycle() {
         if (simulation.isStarted()) {
             executeUnorderedSteps();
         }
@@ -94,32 +139,31 @@ public class StepsRunner extends Cleanable {
                 break;
             }
 
+            progressStepIfAble();
             // Check steps should only be executed off the back of a notification, which will call tryToExecuteNextStep
             // Otherwise, they may pick up on old notifications in the NotificationCache.
-            // Advance to the next step anyway, otherwise if the test fails, the wrong step would be reported as the problem.
-            progressStepIfAble();
             if (currentStep instanceof CheckStep) {
                 break;
             }
         }
+    }
 
-        if (isFinished() && !stopped) {
-            // The test has finished - stop the simulation, but give it 5s to catch any failures immediately following the test
-            stopped = true;
+    private void stopSimulation() {
+        // The test has finished - stop the simulation, but give it 5s to catch any failures immediately following the test
+        stopped = true;
 
-            logger.info("Last Step finished. Continuing simulation for {} {} to check that we aren't about to fail", postStepsRunTime, simulation.getSchedulerTimeUnit());
+        logger.info("Last Step finished. Continuing simulation for {} {} to check that we aren't about to fail", postStepsRunTime, simulation.getSchedulerTimeUnit());
 
-            simulation.getEventScheduler().doIn(
-                    postStepsRunTime,
-                    () -> {
-                        // The scenario test hasn't included "end simulation" step(s),
-                        // so we're effectively hard-stopping at a (random) point in time.
-                        // We can/should leave "proper" shutdown to post-test cleanup.
-                        logger.info("Scenario test complete");
-                        simulation.getEventScheduler().stop();
-                    },
-                    "Scenario test stop event");
-        }
+        simulation.getEventScheduler().doIn(
+                postStepsRunTime,
+                () -> {
+                    // The scenario test hasn't included "end simulation" step(s),
+                    // so we're effectively hard-stopping at a (random) point in time.
+                    // We can/should leave "proper" shutdown to post-test cleanup.
+                    logger.info("Scenario test complete");
+                    simulation.getEventScheduler().stop();
+                },
+                "Scenario test stop event");
     }
 
     private void checkForTimeout() {

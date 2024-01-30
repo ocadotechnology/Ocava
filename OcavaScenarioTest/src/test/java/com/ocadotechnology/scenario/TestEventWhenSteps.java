@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.util.List;
+
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.notification.NotificationRouter;
 
@@ -36,6 +38,16 @@ public class TestEventWhenSteps extends AbstractWhenSteps<FrameworkTestSimulatio
     public <T> StepFuture<T> populateFuture(T value) {
         MutableStepFuture<T> future = new MutableStepFuture<>();
         addExecuteStep(() -> future.populate(value));
+        return future;
+    }
+
+    public StepFuture<List<String>> broadcastThenPopulateFuture(String... values) {
+        MutableStepFuture<List<String>> future = new MutableStepFuture<>();
+        addExecuteStep(() -> {
+            List<String> valuesList = List.of(values);
+            valuesList.forEach(v -> NotificationRouter.get().broadcast(new TestEventNotification(v)));
+            future.populate(valuesList);
+        });
         return future;
     }
 
