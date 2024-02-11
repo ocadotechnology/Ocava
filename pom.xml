@@ -81,7 +81,7 @@
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.8.3</spotbugs.version>
-        <spotbugs-maven-plugin.version>4.8.3.0</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.8.3.1</spotbugs-maven-plugin.version>
         <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
