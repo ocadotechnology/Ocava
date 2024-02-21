@@ -21,7 +21,7 @@ import com.ocadotechnology.simulation.Simulation;
 
 /**
  * An abstract class which should be extended by each distinct set of when events that need to be implemented as
- * part of the testing package.  Each implementation should be generic on itself so that it can be correctly modified by
+ * part of the testing package. Each implementation should be generic on itself so that it can be correctly modified by
  * the decorator method {@link AbstractWhenSteps#sequenced(String)}
  */
 @ParametersAreNonnullByDefault
@@ -41,7 +41,7 @@ public abstract class AbstractWhenSteps<S extends Simulation, W extends Abstract
 
     /**
      * @return an instance of the concrete sub-class of AbstractWhenSteps where the steps it creates will use the
-     *          supplied NamedStepExecutionType object. Used in composite steps which contain a
+     *          supplied NamedStepExecutionType object. Used in composite steps which contain an
      *          {@link AbstractWhenSteps} instance.
      */
     public W modify(NamedStepExecutionType executionType) {

@@ -116,9 +116,9 @@ CAR_2_ROUTE : [
 }
 ```
 
-Say that next, `CAR_2` arrives at junction 2.  The same would happen (note that the head step of
+Say that next, `CAR_2` arrives at junction 2. The same would happen (note that the head step of
 `CAR_1`'s sequence is written to not fail on the other car arriving at the "wrong" junction) and 
-`CAR_2`'s sequence would move on to wait for the car to arrive at the third junction
+`CAR_2`'s sequence would move on to wait for the car to arrive at the third junction.
 
 ```
 Step queue:

@@ -234,17 +234,17 @@ public class StepCache extends Cleanable {
 
     private class UnorderedStepsIterator implements Iterator<Executable> {
         private final Iterator<Executable> unorderedStepsIterator;
-        private Iterator<String> sequenceNames;
-        private String currentSequence = null;
+        private Iterator<String> sequenceNamesIterator;
+        private String currentSequenceName = null;
 
         private UnorderedStepsIterator() {
             this.unorderedStepsIterator = unorderedSteps.values().iterator();
-            this.sequenceNames = sequencedSteps.keySet().iterator();
+            this.sequenceNamesIterator = sequencedSteps.keySet().iterator();
         }
 
         @Override
         public boolean hasNext() {
-            return unorderedStepsIterator.hasNext() || sequenceNames.hasNext();
+            return unorderedStepsIterator.hasNext() || sequenceNamesIterator.hasNext();
         }
 
         @Override
@@ -252,17 +252,17 @@ public class StepCache extends Cleanable {
             if (unorderedStepsIterator.hasNext()) {
                 return unorderedStepsIterator.next();
             }
-            currentSequence = sequenceNames.next();
-            return sequencedSteps.get(currentSequence).get(0);
+            currentSequenceName = sequenceNamesIterator.next();
+            return sequencedSteps.get(currentSequenceName).get(0);
         }
 
         @Override
         public void remove() {
-            if (currentSequence == null) {
+            if (currentSequenceName == null) {
                 unorderedStepsIterator.remove();
             } else {
-                advanceSequence(currentSequence);
-                this.sequenceNames = sequencedSteps.keySet().iterator(); // Reset this in case the head step from an earlier sequence is now complete
+                advanceSequence(currentSequenceName);
+                this.sequenceNamesIterator = sequencedSteps.keySet().iterator(); // Reset this in case the head step from an earlier sequence is now complete
             }
         }
 

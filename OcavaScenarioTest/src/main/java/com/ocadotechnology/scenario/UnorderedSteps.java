@@ -52,7 +52,7 @@ public final class UnorderedSteps<S extends Simulation> {
 
     /**
      * @return an instance of UnorderedSteps where the steps it creates will use the supplied NamedStepExecutionType
-     *          object. Used in composite steps which contain a {@link UnorderedSteps} instance.
+     *          object. Used in composite steps which contain an {@link UnorderedSteps} instance.
      */
     public UnorderedSteps<S> modify(NamedStepExecutionType executionType) {
         return new UnorderedSteps<>(stepManager, executionType);
