@@ -42,7 +42,7 @@
         <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
 
         <!-- Extra rules for maven enforcer -->
-        <extra-enforcer-rules.version>1.7.0</extra-enforcer-rules.version>
+        <extra-enforcer-rules.version>1.8.0</extra-enforcer-rules.version>
 
         <!-- Dependency versions -->
         <guava.version>33.0.0-jre</guava.version>
