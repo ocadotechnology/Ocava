@@ -20,12 +20,16 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.ocadotechnology.config.TestConfig.FirstSubConfig;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.physics.units.LengthUnit;
@@ -90,15 +94,68 @@ class SimpleConfigBuilderTest {
 
         assertThat(config.getValue(TestConfig.FOO).asInt()).isEqualTo(42);
     }
-
     @Test
     @DisplayName("can be built using Collection values")
     void testSimpleConfig_canBeBuiltWithCollectionValues() {
-        ImmutableList<Id<Object>> of = ImmutableList.of(Id.create(42), Id.create(43), Id.create(44));
-        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, of)
+        ImmutableList<Id<Object>> idList = ImmutableList.of(Id.create(42), Id.create(43), Id.create(44));
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, idList)
                 .buildWrapped();
 
         assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("42,43,44");
+        assertThat(config.getValue(TestConfig.FOO).asList().ofIds()).isEqualTo(idList);
+    }
+
+    @Test
+    @DisplayName("can be built using empty Collection values")
+    void testSimpleConfig_canBeBuiltWithEmptyCollectionValues() {
+        ImmutableList<String> emptyList = ImmutableList.of();
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, emptyList)
+                .buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("");
+        assertThat(config.getValue(TestConfig.FOO).asList().ofStrings()).isEqualTo(emptyList);
+    }
+
+    @Test
+    @DisplayName("can be built using Map values")
+    void testSimpleConfig_canBeBuiltWithMapValues() {
+        ImmutableMap<String, Integer> map = ImmutableMap.of("a", 1, "b", 2);
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, map).buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).doesNotContainAnyWhitespaces();
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("a=1;b=2");
+        assertThat(config.getValue(TestConfig.FOO).asMap().withKeyAndValueParsers(Function.identity(), Integer::parseInt)).isEqualTo(map);
+    }
+
+    @Test
+    @DisplayName("can be built using an empty Map")
+    void testSimpleConfig_canBeBuiltWithAnEmptyMap() {
+        ImmutableMap<String, String> expected = ImmutableMap.of();
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, expected).buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("");
+        assertThat(config.getValue(TestConfig.FOO).asMap().ofStrings()).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("can be built using a Multimap")
+    void testSimpleConfig_canBeBuiltWithMultiMap() {
+        ImmutableSetMultimap<String, Integer> multimap = ImmutableSetMultimap.of("a", 1, "a", 2, "b", 3, "b", 4);
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, multimap).buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).doesNotContainAnyWhitespaces();
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("a=1;a=2;b=3;b=4");
+        assertThat(config.getValue(TestConfig.FOO).asSetMultimap().withKeyAndValueParsers(Function.identity(), Integer::parseInt)).isEqualTo(multimap);
+    }
+
+    @Test
+    @DisplayName("can be built using an empty Multimap")
+    void testSimpleConfig_canBeBuiltWithAnEmptyMultiMap() {
+        ImmutableMultimap<String, String> emptyMultimap = ImmutableMultimap.of();
+        Config<TestConfig> config = configBuilder.put(TestConfig.FOO, emptyMultimap).buildWrapped();
+
+        assertThat(config.getValue(TestConfig.FOO).asString()).isEqualTo("");
+        assertThat(config.getValue(TestConfig.FOO).asSetMultimap().ofStrings()).isEqualTo(emptyMultimap);
     }
 
     @Test

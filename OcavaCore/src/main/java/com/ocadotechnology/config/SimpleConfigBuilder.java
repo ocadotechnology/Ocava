@@ -27,6 +27,7 @@ import javax.annotation.CheckForNull;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.ocadotechnology.physics.units.LengthUnit;
 
 /**
@@ -121,6 +122,34 @@ public class SimpleConfigBuilder<E extends Enum<E>> {
      */
     public SimpleConfigBuilder<E> put(Enum<?> key, Collection<?> values) {
         return put(getKeyName(key), Joiner.on(",").join(values));
+    }
+
+    /**
+     * Adds a config value to the builder.
+     * @param key An enum key.
+     * @param map A map of objects to be stored as one config value. This will be converted to a String using
+     *               the {@code toString()} method of each key and value, with entries separated by equals sign and
+     *               each pair separated by semicolons.
+     * @return {@code this}, to facilitate fluent call chains.
+     */
+    public SimpleConfigBuilder<E> put(Enum<?> key, Map<?, ?> map) {
+        return put(getKeyName(key), Joiner.on(";").withKeyValueSeparator("=").join(map));
+    }
+
+    /**
+     * Adds a config value to the builder.
+     * @param key An enum key.
+     * @param multimap A multimap of objects to be stored as one config value. This will be converted to a String using
+     *                 the {@code toString()} method of each key and value, with entries separated by equals sign and
+     *                 each pair separated by semicolons. Multiple values for the same key are comma-separated.
+     * @return {@code this}, to facilitate fluent call chains.
+     */
+    public SimpleConfigBuilder<E> put(Enum<?> key, Multimap<?, ?> multimap) {
+        String stringValue = multimap.entries().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining(";"));
+
+        return put(getKeyName(key), stringValue);
     }
 
     /**
