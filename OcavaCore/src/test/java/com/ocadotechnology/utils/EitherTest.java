@@ -27,7 +27,10 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.ocadotechnology.function.ThrowingFunction;
 
 public class EitherTest {
     @Test
@@ -154,6 +157,54 @@ public class EitherTest {
         Either<String, Integer> e = Either.createRight(1);
         Integer i = e.reduce(l -> { fail(); return 0; }, r -> r);
         assertSame(i, e.rightValue());
+    }
+
+    @Test
+    public void reduceOrThrow_appliesLeftFunction_whenEitherIsLeft() throws Exception {
+        ThrowingFunction<String, String, Exception> leftFunction = s -> s + " processed";
+        ThrowingFunction<Integer, String, UnsupportedOperationException> rightFunction = i -> { throw new UnsupportedOperationException("Should not be called"); };
+
+        Either<String, Integer> either = Either.createLeft("Hello");
+
+        String result = either.reduceOrThrow(leftFunction, rightFunction);
+
+        assertEquals("Hello processed", result);
+    }
+
+    @Test
+    public void reduceOrThrow_appliesRightFunction_whenEitherIsRight() throws Exception {
+        ThrowingFunction<String, String, Exception> leftFunction = s -> { throw new Exception("Should not be called"); };
+        ThrowingFunction<Integer, String, Exception> rightFunction = i -> "Number: " + i;
+
+        Either<String, Integer> either = Either.createRight(42);
+
+        String result = either.reduceOrThrow(leftFunction, rightFunction);
+
+        assertEquals("Number: 42", result);
+    }
+
+    @Test
+    public void reduceOrThrow_throwsException_whenLeftFunctionThrows() {
+        ThrowingFunction<String, String, UnsupportedOperationException> leftFunction = s -> { throw new UnsupportedOperationException("Left function exception"); };
+        ThrowingFunction<Integer, String, UnsupportedOperationException> rightFunction = i -> "Number: " + i;
+
+        Either<String, Integer> either = Either.createLeft("Hello");
+
+        assertThrows(UnsupportedOperationException.class, () -> either.reduceOrThrow(leftFunction, rightFunction));
+    }
+
+    @Test
+    public void reduceOrThrow_throwsException_whenRightFunctionThrows() {
+        ThrowingFunction<String, String, Exception> leftFunction = s -> s + " processed";
+        ThrowingFunction<Integer, String, UnsupportedOperationException> rightFunction = i -> { throw new UnsupportedOperationException("Right function exception"); };
+
+        Either<String, Integer> either = Either.createRight(42);
+        try {
+            either.reduceOrThrow(leftFunction, rightFunction);
+            Assertions.fail("Should have thrown");
+        } catch (Exception e) {  // common class is Exception, so have to catch that (don't use assertThrows as it wraps)
+            assertEquals(UnsupportedOperationException.class, e.getClass());
+        }
     }
 
     @Test

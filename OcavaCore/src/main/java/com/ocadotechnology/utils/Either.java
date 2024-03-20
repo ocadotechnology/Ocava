@@ -25,6 +25,7 @@ import java.util.function.ToIntFunction;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.ocadotechnology.function.ThrowingFunction;
 
 /** This class loosely follows the implementation of Either used within the Scala Standard Library:
  *  https://www.scala-lang.org/api/2.12.0/scala/util/Either.html <br>
@@ -143,6 +144,21 @@ public abstract class Either<A, B> {
      * @return The result of the reduction
      */
     public abstract <C> C reduce(Function<A, C> leftReduce, Function<B, C> rightReduce);
+
+    /**
+     * Reduce an either into a single value of type C. It applies one of the provided functions to the left or right values respectively.
+     * If an exception is thrown during the application of the function, it is propagated up to the caller.
+     *
+     * @param leftReduce The function used to reduce a left either to C. This function can throw an exception of type X.
+     * @param rightReduce The function used to reduce a right either to C. This function can throw an exception of type X.
+     * @param <C> The type of the new value.
+     * @param <X> The type of the exception that can be thrown by the leftReduce and rightReduce functions.
+     * @return The result of the reduction, a value of type C.
+     * @throws X if an exception of type X is thrown by the leftReduce or rightReduce functions.
+     */
+    public abstract <C, X extends Exception> C reduceOrThrow(
+            ThrowingFunction<A, C, ? extends X> leftReduce, ThrowingFunction<B, C, ? extends X> rightReduce) throws X;
+
     /**
      * Reduce an either into a double
      * @param leftReduce The function used to reduce a left either to double
@@ -294,6 +310,12 @@ public abstract class Either<A, B> {
         }
 
         @Override
+        public <C, X extends Exception> C reduceOrThrow(
+                ThrowingFunction<A, C, ? extends X> leftReduce, ThrowingFunction<B, C, ? extends X> rightReduce) throws X {
+            return leftReduce.apply(leftValue);
+        }
+
+        @Override
         public double reduceToDouble(ToDoubleFunction<A> leftReduce, ToDoubleFunction<B> rightReduce) {
             return leftReduce.applyAsDouble(leftValue);
         }
@@ -414,6 +436,12 @@ public abstract class Either<A, B> {
 
         @Override
         public <C> C reduce(Function<A, C> leftReduce, Function<B, C> rightReduce) {
+            return rightReduce.apply(rightValue);
+        }
+
+        @Override
+        public <C, X extends Exception> C reduceOrThrow(
+                ThrowingFunction<A, C, ? extends X> leftReduce, ThrowingFunction<B, C, ? extends X> rightReduce) throws X {
             return rightReduce.apply(rightValue);
         }
 
