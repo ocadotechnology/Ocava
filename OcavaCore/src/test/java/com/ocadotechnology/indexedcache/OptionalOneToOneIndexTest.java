@@ -143,6 +143,26 @@ class OptionalOneToOneIndexTest {
             }
 
             @Test
+            void count_isAlwaysSameAsStream() {
+                assertThat(cache.size()).isEqualTo(0);
+                assertThat(index.count()).isEqualTo(0);
+
+                TestState one = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                cache.add(one);
+                assertThat(index.count()).isEqualTo(1);
+
+                TestState two = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.create(1, 1)));
+                cache.add(two);
+                assertThat(index.count()).isEqualTo(2);
+
+                cache.update(one, null);
+                assertThat(index.count()).isEqualTo(1);
+
+                cache.delete(two.getId());
+                assertThat(index.count()).isEqualTo(0);
+            }
+
+            @Test
             void add_whenNewValueHasSameKeyAsOld_thenThrowsExceptionAndRollsBackChanges() {
                 TestState original = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
                 TestState clash = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));

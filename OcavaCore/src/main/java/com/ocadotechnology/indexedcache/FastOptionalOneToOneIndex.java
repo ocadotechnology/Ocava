@@ -88,6 +88,11 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
     }
 
     @Override
+    public int count() {
+        return indexValues.size();
+    }
+
+    @Override
     public ImmutableMap<R, C> snapshot() {
         if (snapshot == null) {
             snapshot = ImmutableMap.copyOf(indexValues);

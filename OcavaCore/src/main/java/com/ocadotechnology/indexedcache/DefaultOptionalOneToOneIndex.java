@@ -92,6 +92,11 @@ public final class DefaultOptionalOneToOneIndex<R, C extends Identified<?>> exte
     }
 
     @Override
+    public int count() {
+        return indexValues.size();
+    }
+
+    @Override
     protected void remove(C object) {
         indexingFunction.apply(object).ifPresent(val -> {
             indexValues.remove(val);

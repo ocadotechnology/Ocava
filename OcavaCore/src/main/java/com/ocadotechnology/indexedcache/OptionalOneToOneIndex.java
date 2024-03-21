@@ -48,4 +48,6 @@ public interface OptionalOneToOneIndex<R, C extends Identified<?>> {
 
     ImmutableMap<R, C> snapshot();
 
+    /** @return same as {@link #streamKeys()}.count() */
+    int count();
 }

@@ -122,4 +122,8 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
     public Set<R> keySet() {
         return indexValues.keySet();
     }
+
+    public int countKeySet() {
+        return indexValues.size();
+    }
 }

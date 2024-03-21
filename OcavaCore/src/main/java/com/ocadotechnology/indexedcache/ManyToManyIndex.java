@@ -43,7 +43,7 @@ public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractI
     }
 
     public boolean containsKey(R r) {
-        return indexValues.keySet().contains(r);
+        return indexValues.containsKey(r);
     }
 
     public Stream<C> stream(R r) {
@@ -61,6 +61,10 @@ public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractI
 
     public int count(R r) {
         return getMutable(r).size();
+    }
+
+    public int countKeys() {
+        return indexValues.size();
     }
 
     @Override
@@ -82,5 +86,4 @@ public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractI
     public Stream<C> streamIncludingDuplicates(ImmutableCollection<R> keys) {
         return keys.stream().flatMap(this::stream);
     }
-
 }

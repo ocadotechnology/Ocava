@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
@@ -160,6 +161,22 @@ class ManyToOneIndexTest {
             assertThat(index.getOrNull(CoordinateLikeTestObject.create(1, 0))).isEqualTo(stateTwo);
             assertThat(index.getOrNull(CoordinateLikeTestObject.create(2, 0))).isEqualTo(stateTwo);
             assertThat(index.getOrNull(CoordinateLikeTestObject.create(3, 0))).isEqualTo(stateTwo);
+        }
+
+        @Test
+        void countMatchesStreamCount() {
+            ImmutableSet<CoordinateLikeTestObject> manyOne = ImmutableSet.of(CoordinateLikeTestObject.create(0, 1), CoordinateLikeTestObject.create(0, 2), CoordinateLikeTestObject.create(0, 3));
+            TestState stateOne = new TestState(Id.create(1), manyOne);
+            ImmutableSet<CoordinateLikeTestObject> manyTwo = ImmutableSet.of(CoordinateLikeTestObject.create(1, 0), CoordinateLikeTestObject.create(2, 0), CoordinateLikeTestObject.create(3, 0));
+            TestState stateTwo = new TestState(Id.create(2), manyTwo);
+
+            assertThat(index.countKeySet()).isEqualTo(0);
+            assertThat(index.streamKeySet().count()).isEqualTo(0);
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+
+            int size = Sets.union(manyOne, manyTwo).size();
+            assertThat(index.countKeySet()).isEqualTo(size);
+            assertThat(index.streamKeySet().count()).isEqualTo(size);
         }
     }
 
