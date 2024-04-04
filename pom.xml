@@ -77,7 +77,7 @@
         <reports-plugin.version>3.5.0</reports-plugin.version>
         <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>
-        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.8.3</spotbugs.version>
