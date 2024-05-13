@@ -17,6 +17,7 @@ package com.ocadotechnology.maths.stats;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.ChiSquaredDistribution;
@@ -30,6 +31,7 @@ import com.google.common.base.Preconditions;
 import com.ocadotechnology.random.InstancedRepeatableRandom;
 import com.ocadotechnology.random.RepeatableRandom;
 
+@ParametersAreNonnullByDefault
 public class RandomGeneratorDistributions implements Distributions {
     @Nullable
     private RandomGenerator randomGenerator;

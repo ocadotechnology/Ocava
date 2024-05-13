@@ -151,26 +151,15 @@ class RandomGeneratorDistributionsTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> distributions.getBernoulli(-1));
     }
 
-    private MeanAndStandardDeviation getSampledMeanAndStandardDeviation(Supplier<Double> sampler) {
-
-        var samples = Stream.generate(sampler)
-                .limit(SAMPLE_SIZE)
-                .collect(Collectors.toList());
-
-        var mean = samples.stream().mapToDouble(Double::doubleValue).summaryStatistics().getAverage();
-        var variance = samples.stream()
-                .reduce(0D, (s, sample) -> s + Math.pow(sample - mean, 2)) / (samples.size() - 1);
-        return new MeanAndStandardDeviation(
-                mean,
-                Math.sqrt(variance)
-        );
-    }
-
     private void assertMeanAndVarianceConvergence(
             Supplier<Double> distribution,
             MeanAndStandardDeviation meanAndStandardDeviation
     ) {
-        var sampledMeanAndStdDeviation = getSampledMeanAndStandardDeviation(distribution);
+        var samples = Stream.generate(distribution)
+                .limit(SAMPLE_SIZE)
+                .collect(Collectors.toList());
+
+        var sampledMeanAndStdDeviation = MeanAndStandardDeviation.calculateObservedMeanAndStandardDeviation(samples);
 
         Assertions.assertEquals(
                 meanAndStandardDeviation.getMean(),
