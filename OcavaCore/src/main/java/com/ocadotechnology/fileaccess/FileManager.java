@@ -25,10 +25,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.CheckForNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.google.common.base.Preconditions;
