@@ -139,6 +139,16 @@ public class S3FileManager extends FileManager {
         throw Failer.fail("Failed to download %s:%s from S3 after %s attempts", fullyQualifiedBucket, key, MAX_RETRY_ATTEMPTS);
     }
 
+    /**
+     * Not interested in doing any post-processing on the file so do nothing
+     * @param file the file to apply the callback to
+     * @return file with the callback applied
+     */
+    @Override
+    protected File applyCallbackAndGetFile(File file) {
+        return file;
+    }
+
     @Override
     protected void getFileAndWriteToDestination(String fullyQualifiedBucket, String key, File writableFileHandle) {
         for (int retry = 0; retry < MAX_RETRY_ATTEMPTS; retry++) {

@@ -89,6 +89,9 @@ public abstract class FileManager implements Serializable {
         File writableFileHandle = fileCache.createWritableFileHandle(fullyQualifiedBucket, key);
         logger.info("Writing file {}:{} to cache at {}", fullyQualifiedBucket, key, writableFileHandle.getAbsolutePath());
         getFileAndWriteToDestination(fullyQualifiedBucket, key, writableFileHandle);
+
+        logger.info("Applying callback to {}", writableFileHandle.getAbsolutePath());
+        writableFileHandle = applyCallbackAndGetFile(writableFileHandle);
         releaseLock(channel, lock, lockFileHandle);
         return writableFileHandle;
     }
@@ -104,6 +107,7 @@ public abstract class FileManager implements Serializable {
             logger.info("Cache disabled, writing file {}:{} to temp file at {} (will delete on JVM termination)",
                     fullyQualifiedBucket, key, tempFile.getAbsolutePath());
             getFileAndWriteToDestination(fullyQualifiedBucket, key, tempFile);
+            tempFile = applyCallbackAndGetFile(tempFile);
             return tempFile;
         } catch (IOException e) {
             e.printStackTrace();
@@ -152,4 +156,7 @@ public abstract class FileManager implements Serializable {
     protected abstract boolean verifyFileSize(File cachedFile, String bucket, String key);
 
     protected abstract void getFileAndWriteToDestination(String bucket, String key, File writeableFileHandle);
+
+    protected abstract File applyCallbackAndGetFile(File file);
+
 }
