@@ -52,6 +52,15 @@ class NormalDistributionAnomaliesTest {
     public static final Probability LAX_THRESHOLD = Probability.ZERO;
 
     @Test
+    void create_identifiesNoAnomaliesWhenAllTheValuesAreTheSame() {
+        Map<Id<Car>, Double> carSpeeds = Car.ALL_CARS.stream().collect(Collectors.toMap(car -> car.carId, anything -> 3d));
+        NormalDistributionAnomalies<Id<Car>> highAndLowCarSpeeds = NormalDistributionAnomalies.create(carSpeeds, MIDDLING_THRESHOLD);
+        Assertions.assertEquals(highAndLowCarSpeeds.getObservedMean(), 3.0);
+        Assertions.assertEquals(highAndLowCarSpeeds.getAnomalouslyHighObservationsAsMap(), ImmutableMap.of());
+        Assertions.assertEquals(highAndLowCarSpeeds.getAnomalouslyLowObservationsAsMap(), ImmutableMap.of());
+    }
+
+    @Test
     void create_identifiesObservedMeanAndHighAndLowValues() {
         Map<Id<Car>, Double> carSpeeds = Car.ALL_CARS.stream().collect(Collectors.toMap(car -> car.carId, car -> car.speed));
         NormalDistributionAnomalies<Id<Car>> highAndLowCarSpeeds = NormalDistributionAnomalies.create(carSpeeds, MIDDLING_THRESHOLD);

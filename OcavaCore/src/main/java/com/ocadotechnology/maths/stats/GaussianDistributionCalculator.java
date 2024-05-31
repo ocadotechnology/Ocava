@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.maths.stats;
 
+import java.util.Optional;
+
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -24,11 +26,14 @@ import org.apache.commons.math3.distribution.NormalDistribution;
  */
 @ParametersAreNonnullByDefault
 public class GaussianDistributionCalculator {
-    private final NormalDistribution normalDistribution;
+    private final Optional<NormalDistribution> normalDistribution;
     private final double observedMean;
 
     public GaussianDistributionCalculator(MeanAndStandardDeviation observedMeanAndStandardDeviation) {
-        this.normalDistribution = new NormalDistribution(observedMeanAndStandardDeviation.getMean(), observedMeanAndStandardDeviation.getStdDev());
+        double stdDev = observedMeanAndStandardDeviation.getStdDev();
+        this.normalDistribution = stdDev > 0 ?
+                Optional.of(new NormalDistribution(observedMeanAndStandardDeviation.getMean(), stdDev)) :
+                Optional.empty();
 
         this.observedMean = observedMeanAndStandardDeviation.getMean();
     }
@@ -42,6 +47,7 @@ public class GaussianDistributionCalculator {
      */
     public Probability calculateProbability(double observation) {
         double distanceFromMean = Math.abs(observation - observedMean);
-        return new Probability(2 * normalDistribution.cumulativeProbability(observedMean - distanceFromMean));
+        return normalDistribution.map(distribution -> new Probability(2 * distribution.cumulativeProbability(observedMean - distanceFromMean)))
+                .orElseGet(() -> distanceFromMean == 0d ? Probability.ONE : Probability.ZERO);
     }
 }
