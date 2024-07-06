@@ -56,7 +56,7 @@
         <mockito.version>5.12.0</mockito.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
-        <aws-java-sdk-s3.version>1.12.756</aws-java-sdk-s3.version>
+        <aws-java-sdk-s3.version>1.12.757</aws-java-sdk-s3.version>
         <jackson-databind.version>2.17.2</jackson-databind.version>
         <jackson-dataformat-cbor.version>2.17.2</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
