@@ -20,6 +20,7 @@ public class TestThen {
     public final UnorderedSteps<?> unordered;
     public final ExceptionThenSteps<?> exception;
     public final FuturesThenSteps futures;
+    public final AssertionThenSteps<?> assertThat;
 
     public final TestEventThenSteps testEvent;
 
@@ -29,5 +30,6 @@ public class TestThen {
         this.exception = new ExceptionThenSteps<>(stepManager);
         this.futures = new FuturesThenSteps(stepManager);
         this.testEvent = new TestEventThenSteps(stepManager, notificationCache);
+        this.assertThat = new AssertionThenSteps<>(stepManager, notificationCache);
     }
 }
