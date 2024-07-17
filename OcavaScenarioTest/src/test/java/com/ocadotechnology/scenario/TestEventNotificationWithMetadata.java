@@ -15,20 +15,12 @@
  */
 package com.ocadotechnology.scenario;
 
-import org.junit.jupiter.api.Assertions;
+public class TestEventNotificationWithMetadata extends TestEventNotification {
 
-public class FuturesThenSteps {
-    private final StepManager<?> stepManager;
+    public final String metadata;
 
-    public FuturesThenSteps(StepManager<?> stepManager) {
-        this.stepManager = stepManager;
-    }
-
-    public <T> void assertEquals(T expected, StepFuture<T> futureActual) {
-        stepManager.addExecuteStep(() -> Assertions.assertEquals(expected, futureActual.get()));
-    }
-
-    public <T> void assertNotPopulated(StepFuture<T> futureActual) {
-        stepManager.addExecuteStep(() -> Assertions.assertFalse(futureActual.hasBeenPopulated()));
+    public TestEventNotificationWithMetadata(String name, String metadata) {
+        super(name);
+        this.metadata = metadata;
     }
 }

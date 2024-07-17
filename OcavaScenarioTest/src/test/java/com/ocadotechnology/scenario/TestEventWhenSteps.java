@@ -52,14 +52,18 @@ public class TestEventWhenSteps extends AbstractWhenSteps<FrameworkTestSimulatio
     }
 
     public StepFuture<Double> scheduled(double time, String name) {
+        return scheduled(time, new TestEventNotification(name));
+    }
+
+    public StepFuture<Double> scheduled(double time, TestEventNotification notification) {
         MutableStepFuture<Double> scheduleTime = new MutableStepFuture<>();
         addExecuteStep(() -> {
             EventScheduler eventScheduler = getSimulation().getEventScheduler();
             scheduleTime.populate(time - eventScheduler.getTimeProvider().getTime());
             eventScheduler.doAt(
                         time,
-                        () -> NotificationRouter.get().broadcast(new TestEventNotification(name)),
-                        "scheduled(" + time + ", \"" + name + "\")");
+                        () -> NotificationRouter.get().broadcast(notification),
+                        "scheduled(" + time + ", \"" + notification.name + "\")");
         });
         return scheduleTime;
     }

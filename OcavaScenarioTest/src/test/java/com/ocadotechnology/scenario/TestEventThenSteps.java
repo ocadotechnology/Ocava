@@ -35,6 +35,18 @@ public class TestEventThenSteps extends AbstractThenSteps<FrameworkTestSimulatio
         addCheckStep(TestEventNotification.class, n -> n.name.equals(name));
     }
 
+    public StepFuture<String> occursAndPopulateFutureWithEventMetadata(String name) {
+        MutableStepFuture<String> metadataFuture = new MutableStepFuture<>();
+
+        addCheckStepWithCompletionCallback(
+                TestEventNotificationWithMetadata.class,
+                n -> n.name.equals(name),
+                n -> metadataFuture.populate(n.metadata)
+        );
+
+        return metadataFuture;
+    }
+
     public void occursStrictlyNext(String name) {
         addCheckStep(TestEventNotification.class, n -> {
             Assertions.assertEquals(name, n.name, "Incorrect event triggered next.");

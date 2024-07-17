@@ -17,6 +17,7 @@ package com.ocadotechnology.scenario;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -257,6 +258,30 @@ public abstract class AbstractThenSteps<S extends Simulation, T extends Abstract
     }
 
     protected abstract T create(StepManager<S> stepManager, NotificationCache notificationCache, CheckStepExecutionType executionType);
+
+    /**
+     * A wrapper around{@link #addCheckStep(Class, Predicate)} that allows for a callback to be executed
+     * when the step is complete.
+     *
+     * @param notificationType the type of notification that this check step will listen for
+     * @param predicate the predicate that will be tested against the notification to check if the step is complete
+     * @param stepCompletionCallback the callback that will be called if the step is complete
+     */
+    protected <N extends Notification> void addCheckStepWithCompletionCallback(
+            Class<N> notificationType,
+            Predicate<N> predicate,
+            Consumer<N> stepCompletionCallback
+    ) {
+        addCheckStep(notificationType, n -> {
+            boolean isPredicateTrue = predicate.test(n);
+
+            if (isPredicateTrue) {
+                stepCompletionCallback.accept(n);
+            }
+
+            return isPredicateTrue;
+        });
+    }
 
     protected <N extends Notification> void addCheckStep(Class<N> notificationType, Predicate<N> predicate) {
         addCheckStep(new CheckStep<>(notificationType, notificationCache, predicate));
