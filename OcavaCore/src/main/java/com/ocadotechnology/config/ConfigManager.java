@@ -386,6 +386,10 @@ public class ConfigManager {
             return checker.getUnrecognisedProperties();
         }
 
+        public ImmutableSet<String> getDeprecatedConfigs() {
+            return checker.getDeprecatedConfigs(this.config.values());
+        }
+
         /**
          * Builds a ConfigManager, optionally checking if all properties pass to builder are recognised.
          * The option to disable this check has been added so a ConfigManager can be built ignoring unrecognised
@@ -397,10 +401,30 @@ public class ConfigManager {
          * @throws ConfigKeysNotRecognisedException
          */
         public ConfigManager build(boolean verifyAllPropertiesRecognised) throws ConfigKeysNotRecognisedException {
+            return build(verifyAllPropertiesRecognised, false);
+        }
+
+        /**
+         * Builds a ConfigManager, optionally checking if all properties pass to builder are recognised.
+         * The option to disable this check has been added so a ConfigManager can be built ignoring unrecognised
+         * properties which can be useful e.g. when using an old config file with unsupported properties.
+         * <p>
+         * Throws {@link ConfigKeyNotFoundException} if verification is enabled and unrecognised properties are found.
+         *
+         * @param verifyAllPropertiesRecognised
+         * @throws ConfigKeysNotRecognisedException
+         */
+        public ConfigManager build(boolean verifyAllPropertiesRecognised, boolean verifyAllPropertiesAreNotDeprecated) throws ConfigKeysNotRecognisedException {
             if (verifyAllPropertiesRecognised) {
                 Set<String> unrecognisedProperties = getUnrecognisedProperties();
                 if (!unrecognisedProperties.isEmpty()) {
                     throw new ConfigKeysNotRecognisedException("The following config keys were not recognised:" + unrecognisedProperties);
+                }
+            }
+            if (verifyAllPropertiesAreNotDeprecated) {
+                ImmutableSet<String> deprecatedConfigs = getDeprecatedConfigs();
+                if (!deprecatedConfigs.isEmpty()) {
+                    throw new ConfigKeysNotRecognisedException("The following config keys are deprecated:" + deprecatedConfigs);
                 }
             }
             return new ConfigManager(

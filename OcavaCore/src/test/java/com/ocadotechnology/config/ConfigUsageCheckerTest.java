@@ -16,12 +16,18 @@
 package com.ocadotechnology.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.ocadotechnology.config.ConfigManager.Builder;
 import com.ocadotechnology.testing.InternalClassTest;
 
 class ConfigUsageCheckerTest implements InternalClassTest {
@@ -29,6 +35,42 @@ class ConfigUsageCheckerTest implements InternalClassTest {
     @Override
     public Class<?> getTestSubject() {
         return ConfigUsageChecker.class;
+    }
+
+    @ParameterizedTest(name = "Test when verifyAllPropertiesAreNotDeprecated={0}")
+    @ValueSource(strings = {"true", "false"})
+    void testThrowsExceptionForDeprecatedConfigOverrides(Boolean verifyAllPropertiesAreNotDeprecated) {
+        Builder configBuilder = new Builder("-OTestConfig.DEPRECATED_KEY=whatever").withConfigFromCommandLine(TestConfig.class);
+        assertIfException(verifyAllPropertiesAreNotDeprecated, configBuilder, "TestConfig.DEPRECATED_KEY");
+    }
+
+    @ParameterizedTest(name = "Test deprecated config: {0}")
+    @ValueSource(strings = {"TestConfig.DEPRECATED_KEY", "TestConfig.FirstSubConfig.DEPRECATED_KEY", "TestConfig.FirstSubConfig.SubSubConfig.DEPRECATED_KEY"})
+    void testThrowsExceptionForDeprecatedConfig(String config) {
+        Builder configBuilder = new Builder()
+                .loadConfigFromMap(
+                        ImmutableMap.of(
+                                "TestConfig.BAR", "3",
+                                config, "watever"),
+                        ImmutableSet.of(TestConfigDummy.class, TestConfig.class));
+
+        assertIfException(true, configBuilder, config);
+        assertIfException(false, configBuilder, config);
+    }
+
+    @Test
+    void whenMultipleDeprecated_thenThrowsExceptionWithAll() {
+        Builder configBuilder = new Builder()
+                .loadConfigFromMap(
+                        ImmutableMap.of(
+                                "TestConfig.BAR", "3",
+                                "TestConfig.DEPRECATED_KEY", "whatever",
+                                "TestConfig.FirstSubConfig.DEPRECATED_KEY", "3",
+                                "TestConfig.FirstSubConfig.SubSubConfig.DEPRECATED_KEY", "3"
+                        ),
+                        ImmutableSet.of(TestConfigDummy.class, TestConfig.class));
+
+        assertIfException(true, configBuilder, "TestConfig.DEPRECATED_KEY", "TestConfig.FirstSubConfig.DEPRECATED_KEY", "TestConfig.FirstSubConfig.SubSubConfig.DEPRECATED_KEY");
     }
 
     @Test
@@ -82,6 +124,19 @@ class ConfigUsageCheckerTest implements InternalClassTest {
         props.setProperty("TestConfig.FOO", "1");
         props.setProperty("Prefix1@TestConfig.FOO", "2");
         return props;
+    }
+
+    private static void assertIfException(Boolean verifyAllPropertiesAreNotDeprecated, Builder configBuilder, String... config) {
+        if (verifyAllPropertiesAreNotDeprecated) {
+            // This will build a regex with each config being checked with an OR group.
+            // Ex: The following config keys are deprecated:[ (FOO.BAR, | FOO.WHY)+ ]
+            String regexpForConfigs = "The following config keys are deprecated:\\[(" + String.join("|, ", config) + ")+\\]";
+            assertThatThrownBy(() -> configBuilder.build(true, true))
+                    .isInstanceOf(ConfigKeysNotRecognisedException.class)
+                    .hasMessageMatching(regexpForConfigs);
+        } else {
+            assertThatNoException().isThrownBy(() -> configBuilder.build(true, false));
+        }
     }
 
 }

@@ -21,17 +21,20 @@ enum TestConfig {
     BAZ,
     EMPTY,
     DUPLICATED_KEY,
+    @Deprecated DEPRECATED_KEY,
     @SecretConfig SECRET_1;
 
     enum FirstSubConfig {
         WOO,
         HOO,
         DUPLICATED_KEY,
+        @Deprecated DEPRECATED_KEY,
         @SecretConfig SECRET_2;
 
         enum SubSubConfig {
             X,
-            Y;
+            Y,
+            @Deprecated DEPRECATED_KEY;
         }
     }
 

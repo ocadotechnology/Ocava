@@ -17,10 +17,12 @@ package com.ocadotechnology.config;
 
 import static com.ocadotechnology.config.ModularConfigUtils.EXTENDS;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -41,6 +43,36 @@ class ConfigUsageChecker {
 
     Set<String> getUnrecognisedProperties() {
         return Sets.union(getUnrecognisedNonPrefixedProperties(), getUnrecognisedPrefixedProperties());
+    }
+
+    ImmutableSet<String> getDeprecatedConfigs(Collection<Config<?>> configList) {
+        return populateAllDeprecatedConfigsRecursively(configList);
+    }
+
+    private ImmutableSet<String> populateAllDeprecatedConfigsRecursively(Collection<Config<?>> configList) {
+        Set<String> deprecatedConfigKeys = new HashSet<>();
+
+        configList.stream()
+                .flatMap(ConfigUsageChecker::streamDeprecatedConfigKeys)
+                .forEach(deprecatedConfigKeys::add);
+
+        configList.stream()
+                .map(config -> populateAllDeprecatedConfigsRecursively(config.getSubConfigValues()))
+                .forEach(deprecatedConfigKeys::addAll);
+
+        return ImmutableSet.copyOf(deprecatedConfigKeys);
+    }
+
+    private static <E extends Enum<E>> Stream<String> streamDeprecatedConfigKeys(Config<E> conf) {
+        return conf.streamConfigKeys()
+                .filter(configKey -> {
+                    try {
+                        return conf.cls.getField(configKey.name()).isAnnotationPresent(Deprecated.class);
+                    } catch (NoSuchFieldException | SecurityException e) {
+                        throw new IllegalArgumentException("Config doesn't exist: " + conf.getQualifiedKeyName(configKey), e);
+                    }
+                })
+                .map(conf::getQualifiedKeyName);
     }
 
     private Set<String> getUnrecognisedNonPrefixedProperties() {

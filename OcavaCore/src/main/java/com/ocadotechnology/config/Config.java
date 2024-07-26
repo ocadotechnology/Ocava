@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -132,6 +133,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
 
     private final ImmutableMap<E, ConfigValue> values;
     private final ImmutableMap<?, Config<?>> subConfig;
+
     private final String qualifier;
 
     private final TimeUnit timeUnit;
@@ -204,6 +206,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         return this.values;
     }
 
+    public Stream<E> streamConfigKeys() {
+        return this.values.keySet().stream();
+    }
+
     public static <T extends Enum<T>> Config<T> empty(Class<T> c) {
         return new Config<>(c, ImmutableMap.of(), ImmutableMap.of(), c.getSimpleName(), null, null);
     }
@@ -218,6 +224,7 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
 
     /**
      * Check if the value of key is not the empty string.
+     *
      * @throws ConfigKeyNotFoundException if the key has not been explicitly defined
      */
     public boolean isValueDefined(Enum<?> key) {
@@ -265,6 +272,10 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     @SuppressWarnings("unchecked")
     public <T extends Enum<T>> Config<T> getSubConfig(Class<T> key) {
         return (Config<T>) subConfig.get(key);
+    }
+
+    ImmutableCollection<Config<?>> getSubConfigValues() {
+        return subConfig.values();
     }
 
     /**
