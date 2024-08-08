@@ -17,14 +17,18 @@ package com.ocadotechnology.scenario;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.simulation.Simulation;
 
 /**
  * A collection of steps used to make assertions about the values of StepFutures
  */
+@ParametersAreNonnullByDefault
 public class AssertionThenSteps<S extends Simulation> extends AbstractThenSteps<S, AssertionThenSteps<S>> {
 
     public AssertionThenSteps(
@@ -57,7 +61,7 @@ public class AssertionThenSteps<S extends Simulation> extends AbstractThenSteps<
 
         addExecuteStep(
                 () -> {
-                    ImmutableList<T> values = futureValuesCollection.getAnyPopulated();
+                    List<T> values = futureValuesCollection.getAnyPopulated();
                     T value = futureValue.get();
 
                     Preconditions.checkState(
@@ -81,7 +85,7 @@ public class AssertionThenSteps<S extends Simulation> extends AbstractThenSteps<
                     T otherValue = secondValue.get();
 
                     Preconditions.checkState(
-                            value.equals(otherValue),
+                            Objects.equals(value, otherValue),
                             "Value: %s is not equal to: %s",
                             value,
                             otherValue
@@ -104,14 +108,15 @@ public class AssertionThenSteps<S extends Simulation> extends AbstractThenSteps<
 
         addExecuteStep(
                 () -> {
-                    ImmutableList<T> expectedDistinctValues = valuesListFuture.get();
+                    List<T> expectedDistinctValues = valuesListFuture.get();
 
                     long actualNumDistinctValues = expectedDistinctValues.stream().distinct().count();
                     long expectedNumDistinctValues = expectedDistinctValues.size();
 
                     Preconditions.checkState(
                             expectedNumDistinctValues == actualNumDistinctValues,
-                            "Not all values are distinct. Values: %s"
+                            "Not all values are distinct. Values: %s",
+                            expectedDistinctValues
                     );
                 }
         );

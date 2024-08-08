@@ -42,6 +42,18 @@ public class AssertionThenStepsSuccessTest extends AbstractFrameworkTestStory {
     }
 
     @Test
+    public void testValueIsInCollectionSucceedsWhenNullValueIsInCollection() {
+        StepFuture<String> expectedFuture = StepFuture.of(null);
+
+        StepFuture<String> future1 = StepFuture.of(null);
+        StepFuture<String> future2 = StepFuture.of("hello");
+        ImmutableList<StepFuture<String>> futureCollection = ImmutableList.of(future1, future2);
+
+        when.simStarts();
+        then.assertThat.valueIsInCollection(expectedFuture, futureCollection);
+    }
+
+    @Test
     public void testValueIsInCollectionSucceedsWhenValueIsInCollectionAndSomeValuesAreUnpopulated() {
         StepFuture<String> expectedFuture = StepFuture.of("hi");
 
@@ -58,6 +70,15 @@ public class AssertionThenStepsSuccessTest extends AbstractFrameworkTestStory {
     public void testValuesAreEqualSucceedsWhenValuesArePopulatedAndEqual() {
         StepFuture<String> future1 = StepFuture.of("hi");
         StepFuture<String> future2 = StepFuture.of("hi");
+
+        when.simStarts();
+        then.assertThat.valuesAreEqual(future1, future2);
+    }
+
+    @Test
+    public void testValuesAreEqualSucceedsWhenBothValuesAreNull() {
+        StepFuture<String> future1 = StepFuture.of(null);
+        StepFuture<String> future2 = StepFuture.of(null);
 
         when.simStarts();
         then.assertThat.valuesAreEqual(future1, future2);
@@ -83,4 +104,13 @@ public class AssertionThenStepsSuccessTest extends AbstractFrameworkTestStory {
         then.assertThat.valuesAreDistinct(future1, future2, future3);
     }
 
+    @Test
+    public void testValuesAreDistinctSucceedsWhenAllOneValueIsNull() {
+        StepFuture<String> future1 = StepFuture.of(null);
+        StepFuture<String> future2 = StepFuture.of("hello");
+        StepFuture<String> future3 = StepFuture.of("salutations");
+
+        when.simStarts();
+        then.assertThat.valuesAreDistinct(future1, future2, future3);
+    }
 }

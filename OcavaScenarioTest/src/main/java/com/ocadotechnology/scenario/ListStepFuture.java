@@ -16,13 +16,15 @@
 package com.ocadotechnology.scenario;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
 /**
  * A class for managing a list of StepFutures
  */
-public class ListStepFuture<T> implements StepFuture<ImmutableList<T>> {
+public class ListStepFuture<T> implements StepFuture<List<T>> {
 
     private final ImmutableList<StepFuture<T>> stepFutures;
 
@@ -50,20 +52,20 @@ public class ListStepFuture<T> implements StepFuture<ImmutableList<T>> {
      * Will throw an IllegalStateException if any of the StepFutures have not been populated
      */
     @Override
-    public ImmutableList<T> get() {
+    public List<T> get() {
         return stepFutures.stream()
                 .map(StepFuture::get)
-                .collect(ImmutableList.toImmutableList());
+                .collect(Collectors.toList());
     }
 
     /**
      * Returns the values of all the StepFutures in the list that have been populated
      */
-    public ImmutableList<T> getAnyPopulated() {
+    public List<T> getAnyPopulated() {
         return stepFutures.stream()
                 .filter(StepFuture::hasBeenPopulated)
                 .map(StepFuture::get)
-                .collect(ImmutableList.toImmutableList());
+                .collect(Collectors.toList());
     }
 
     /**

@@ -405,7 +405,7 @@ public class ConfigManager {
         }
 
         /**
-         * Builds a ConfigManager, optionally checking if all properties pass to builder are recognised.
+         * Builds a ConfigManager, optionally checking if all properties passed to the builder are recognised.
          * The option to disable this check has been added so a ConfigManager can be built ignoring unrecognised
          * properties which can be useful e.g. when using an old config file with unsupported properties.
          * <p>

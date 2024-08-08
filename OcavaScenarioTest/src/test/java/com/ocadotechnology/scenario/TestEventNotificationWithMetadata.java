@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.scenario;
 
+import com.google.common.base.MoreObjects;
+
 public class TestEventNotificationWithMetadata extends TestEventNotification {
 
     public final String metadata;
@@ -22,5 +24,13 @@ public class TestEventNotificationWithMetadata extends TestEventNotification {
     public TestEventNotificationWithMetadata(String name, String metadata) {
         super(name);
         this.metadata = metadata;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("name", name)
+                .add("metadata", metadata)
+                .toString();
     }
 }
