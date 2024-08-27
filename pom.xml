@@ -73,7 +73,7 @@
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
 
         <!-- JavaDoc Plugin Version -->
-        <maven-javadoc-plugin.version>3.8.0</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.10.0</maven-javadoc-plugin.version>
         <reports-plugin.version>3.7.0</reports-plugin.version>
         <maven-site-plugin.version>3.20.0</maven-site-plugin.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>
