@@ -308,7 +308,7 @@
                         <configuration>
                             <rules>
                                 <enforceBytecodeVersion>
-                                    <maxJdkVersion>11</maxJdkVersion>
+                                    <maxJdkVersion>17</maxJdkVersion>
                                 </enforceBytecodeVersion>
                             </rules>
                             <fail>true</fail>
@@ -376,8 +376,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
 
