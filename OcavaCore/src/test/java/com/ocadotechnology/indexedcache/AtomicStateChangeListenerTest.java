@@ -324,9 +324,10 @@ class AtomicStateChangeListenerTest {
             TestState initialState = new TestState(Id.create(1), CoordinateLikeTestObject.create(0, 0));
             TestState updatedState = initialState.withLocation(CoordinateLikeTestObject.create(0, 1));
             addToCache(initialState);
+            updateStatesInCache(updatedState);
             stateChangedListener.clear();
             updateStatesInCache(updatedState, updatedState);
-            assertThat(stateChangedListener.isEmpty());
+            assertThat(stateChangedListener.isEmpty()).isTrue();
         }
 
         @Test
@@ -335,7 +336,7 @@ class AtomicStateChangeListenerTest {
             addToCache(state);
             stateChangedListener.clear();
             updateStatesInCache(state);
-            assertThat(stateChangedListener.isEmpty());
+            assertThat(stateChangedListener.isEmpty()).isTrue();
         }
 
         @Test

@@ -63,6 +63,7 @@ import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 
 class ConfigParsersTest {
@@ -74,37 +75,72 @@ class ConfigParsersTest {
     private static final String LIST_ENUM_VALUES = "RED, RED, BLUE ";
 
     @Nested
-    class ParseProportion {
+    class ParseFraction {
         @Test
         void parseFraction_whenProvidedValidData_thenReturnsIt() {
-            double proportion = 0.1;
-
-            double fractionText = ConfigParsers.parseFraction("0.1");
-            Assertions.assertEquals(proportion, fractionText);
+            double expected = 0.1;
+            double actual = ConfigParsers.parseFraction("0.1");
+            Assertions.assertEquals(expected, actual);
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"-0.1", "1.1"})
-        void parseFraction_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String proportion) {
-
+        void parseFraction_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String fraction) {
             Exception exception = Assertions.assertThrows(
                     IllegalStateException.class,
-                    () -> ConfigParsers.parseFraction(proportion)
+                    () -> ConfigParsers.parseFraction(fraction)
             );
 
             String expectedMessage = "Value must be between 0 and 1";
             String actualMessage = exception.getMessage();
-
             Assertions.assertEquals(expectedMessage, actualMessage);
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"blah", ""})
-        void parseFraction_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String proportion) {
-
+        void parseFraction_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String fraction) {
             Assertions.assertThrows(
                     NumberFormatException.class,
-                    () -> ConfigParsers.parseFraction(proportion)
+                    () -> ConfigParsers.parseFraction(fraction)
+            );
+        }
+    }
+
+    @Nested
+    class ParseProbability {
+        @Test
+        void parseProbability_whenProvidedValidData_asFraction_thenReturnsIt() {
+            Probability expected = new Probability(0.1);
+            Probability actual = ConfigParsers.parseProbability("0.1");
+            Assertions.assertEquals(expected, actual);
+        }
+
+        @Test
+        void parseProbability_whenProvidedValidData_asPercentage_thenReturnsIt() {
+            Probability expected = new Probability(0.1);
+            Probability actual = ConfigParsers.parseProbability("10%");
+            Assertions.assertEquals(expected, actual);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"-0.1", "1.1", "-10.0%", "110.0%"})
+        void parseProbability_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String probability) {
+            Exception exception = Assertions.assertThrows(
+                    IllegalStateException.class,
+                    () -> ConfigParsers.parseProbability(probability)
+            );
+
+            String expectedMessage = "Value must be between";
+            String actualMessage = exception.getMessage();
+            Assertions.assertTrue(actualMessage.startsWith(expectedMessage));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"blah", "", "%", "blah%", "%blah%", "%20", "%20%"})
+        void parseProbability_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String probability) {
+            Assertions.assertThrows(
+                    NumberFormatException.class,
+                    () -> ConfigParsers.parseProbability(probability)
             );
         }
     }

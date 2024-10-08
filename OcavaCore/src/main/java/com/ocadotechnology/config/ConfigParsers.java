@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
@@ -45,8 +46,7 @@ public class ConfigParsers {
 
     /**
      * Parses the input string as a Double, using {@link ConfigParsers#parseDouble(String)}, and validates that it lies between 0 and 1.
-     *
-     * This is useful in code relating to probability - to validate a value is valid for use as a probability.
+     * See {@link #parseProbability(String)} for parsing for Probabilities.
      * @throws IllegalStateException if the input is not between 0 and 1.
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */
@@ -54,6 +54,24 @@ public class ConfigParsers {
         var proportion = parseDouble(s);
         Preconditions.checkState(proportion >= 0 && proportion <= 1, "Value must be between 0 and 1");
         return proportion;
+    }
+
+    /**
+     * Parses the input string as a {@link Probability}.
+     * It may be in the form of a percentage (eg 5.5%) or as a value between 0.0 and 1.0 (eg 0.055).
+     * @throws IllegalStateException if the input is not between 0.0 and 1.0, or 0.0% and 100.0%.
+     * @throws NumberFormatException if the config value cannot be interpreted and parsed to a double.
+     */
+    public static Probability parseProbability(String s) {
+        double probability;
+        if (s.endsWith("%")) {
+            String percent = s.substring(0, s.length() - 1);
+            probability = parseDouble(percent) / 100.0;
+            Preconditions.checkState(probability >= 0 && probability <= 1, "Value must be between 0.0% and 100.0%");
+        } else {
+            probability = parseFraction(s);
+        }
+        return new Probability(probability);
     }
 
     /**

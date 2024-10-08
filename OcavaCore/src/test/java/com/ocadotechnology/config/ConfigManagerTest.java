@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -900,7 +901,8 @@ class ConfigManagerTest {
         assertThat(result.getValue(TestConfig.BAZ).asInt()).isEqualTo(4);//no initial value
     }
 
-    static class PrefixedPropertyTest {
+    @Nested
+    class PrefixedPropertyTest {
 
         private PrefixedProperty prefixedProperty = new PrefixedProperty("", "");
 

@@ -43,6 +43,7 @@ import com.google.common.math.DoubleMath;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
@@ -271,10 +272,46 @@ public class OptionalValueParserTest {
         }
 
         @Test
-        @DisplayName("throws NumberFormatException when not a number")
+        @DisplayName("returns fraction when valid")
         void returnsValueWhenValid() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "0.1");
             assertThat(parser.asFraction()).hasValue(0.1);
+        }
+    }
+
+    @Nested
+    @DisplayName("For probability values")
+    class ProbabilityParserTests {
+        @Test
+        @DisplayName("returns empty for empty value")
+        void returnsEmptyValue() {
+            String testValue = "";
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
+            assertThat(parser.asProbability()).isEmpty();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"2.7182", "271.82%"})
+        @DisplayName("throws IllegalStateException when out of bounds")
+        void throwsIllegalStateException(String testValue) {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
+            assertThatThrownBy(parser::asProbability).hasCauseInstanceOf(IllegalStateException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"abcde", "abcde%"})
+        @DisplayName("throws NumberFormatException when not a number")
+        void throwsNumberFormatException(String testValue) {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
+            assertThatThrownBy(parser::asProbability).hasCauseInstanceOf(NumberFormatException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"0.1", "10.0%"})
+        @DisplayName("returns Probability when valid")
+        void returnsValueWhenValid(String testValue) {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, testValue);
+            assertThat(parser.asProbability()).hasValue(new Probability(0.1));
         }
     }
 
@@ -806,7 +843,7 @@ public class OptionalValueParserTest {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METERS, MILLISECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             OptionalDouble result = parser.asJerk();
             assertThat(result).isPresent();
-            assertThat(DoubleMath.fuzzyEquals(result.getAsDouble(), 2.3e9, 1e-3));
+            assertThat(DoubleMath.fuzzyEquals(result.getAsDouble(), 2.3e9, 1e-3)).isTrue();
         }
 
         @Test
@@ -1043,7 +1080,7 @@ public class OptionalValueParserTest {
         @DisplayName("enum values are parsed")
         void testEnumSets() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "RED,BLUE,BLUE,RED");
-            ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
+            ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE);
             assertThat(parser.asSet().ofEnums(TestConfig.Colours.class)).isEqualTo(Optional.of(expected));
         }
 
@@ -1357,7 +1394,7 @@ public class OptionalValueParserTest {
                 OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "1=4,5;1=8,9;2=6,7");
                 Optional<ImmutableSetMultimap<Object, ImmutableSet<Integer>>> optionalMultimap = parser.asSetMultimap()
                         .withKeyAndValueParsers(Integer::parseInt, ConfigParsers.getSetOfIntegers());
-                assertThat(optionalMultimap.isPresent());
+                assertThat(optionalMultimap).isPresent();
                 ImmutableSetMultimap<Object, ImmutableSet<Integer>> multimap = optionalMultimap.get();
                 assertThat(multimap.asMap()).containsOnlyKeys(1, 2);
                 assertThat(multimap.asMap()).containsEntry(1, ImmutableSet.of(ImmutableSet.of(4, 5), ImmutableSet.of(8, 9)));
@@ -1375,7 +1412,7 @@ public class OptionalValueParserTest {
                 Optional<ImmutableSetMultimap<Integer, String>> optionalMultimap = parser.asSetMultimap()
                         .withKeyAndValueParsers(Integer::valueOf, identityFunctionWithAssertionStringIsEmpty);
 
-                assertThat(optionalMultimap.isPresent());
+                assertThat(optionalMultimap).isPresent();
                 ImmutableSetMultimap<Integer, String> multimap = optionalMultimap.get();
 
                 assertThat(multimap.asMap()).containsOnlyKeys(2);

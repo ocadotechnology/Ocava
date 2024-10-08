@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 
 /**
@@ -97,6 +98,16 @@ public class OptionalValueParser {
      */
     public OptionalDouble asFraction() {
         return parser.map(StrictValueParser::asFraction).map(OptionalDouble::of).orElse(OptionalDouble.empty());
+    }
+
+    /**
+     * @return {@link Optional#empty()}  if the config value is an empty string, otherwise the {@link Optional}
+     *          resulting from parsing the string config value parsed to a {@link Probability} via {@link ConfigParsers#parseProbability(String)}.
+     * @throws NumberFormatException if the config value cannot be parsed to a {@link Probability}.
+     * @throws IllegalStateException if the input is not between 0.0 and 1.0, or 0.0% and 100.0%.
+     */
+    public Optional<Probability> asProbability() {
+        return parser.map(StrictValueParser::asProbability);
     }
 
     /**

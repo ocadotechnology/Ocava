@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 
 /**
@@ -99,8 +100,7 @@ public class StrictValueParser {
 
     /**
      * The string config value is parsed as a Double, and validated that it lies between 0 and 1.
-     *
-     * This is useful in code relating to probability - to validate a value is valid for use as a probability.
+     * See {@link #asProbability()} for parsing for Probabilities.
      *
      * @return the string config value parsed to a fraction via {@link ConfigParsers#parseFraction(String)}.
      * @throws NumberFormatException if the config value cannot be parsed to a double.
@@ -109,6 +109,21 @@ public class StrictValueParser {
     public double asFraction() {
         try {
             return ConfigParsers.parseFraction(value);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
+        }
+    }
+
+    /**
+     * The string config value is parsed as a {@link Probability}, and validated.
+     *
+     * @return the string config value parsed to a {@link Probability} via {@link ConfigParsers#parseProbability(String)}.
+     * @throws NumberFormatException if the config value cannot be parsed to a Probability.
+     * @throws IllegalStateException if the config value does not lie between 0.0 and 1.0, or 0.0% and 100.0%.
+     */
+    public Probability asProbability() {
+        try {
+            return ConfigParsers.parseProbability(value);
         } catch (Throwable t) {
             throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
         }

@@ -40,6 +40,7 @@ import com.google.common.math.DoubleMath;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
+import com.ocadotechnology.maths.stats.Probability;
 import com.ocadotechnology.physics.units.LengthUnit;
 import com.ocadotechnology.validation.Failer;
 
@@ -87,6 +88,34 @@ public class StrictValueParserTest {
         void throwsNumberFormatException() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "abcde");
             assertThatThrownBy(parser::asFraction).hasCauseInstanceOf(NumberFormatException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("For Probability values")
+    class ProbabilityParserTests {
+        @ParameterizedTest
+        @ValueSource(strings = {"0.1", "10.0%"})
+        @DisplayName("returns the expected value when within bounds")
+        void returnsValueWhenValid(String testValue) {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, testValue);
+            assertThat(parser.asProbability()).isEqualTo(new Probability(0.1));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"2.7182", "271.82%"})
+        @DisplayName("throws IllegalStateException when out of bounds")
+        void throwsIllegalStateException(String testValue) {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, testValue);
+            assertThatThrownBy(parser::asProbability).hasCauseInstanceOf(IllegalStateException.class);
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"abcde", "abcde%"})
+        @DisplayName("throws NumberFormatException when not a number")
+        void throwsNumberFormatException(String testValue) {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, testValue);
+            assertThatThrownBy(parser::asProbability).hasCauseInstanceOf(NumberFormatException.class);
         }
     }
 
@@ -957,7 +986,7 @@ public class StrictValueParserTest {
         @DisplayName("enum values are parsed")
         void testEnumSets() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "RED,BLUE,BLUE,RED");
-            ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE, Colours.BLUE, Colours.RED);
+            ImmutableSet<Colours> expected = ImmutableSet.of(Colours.RED, Colours.BLUE);
             assertThat(parser.asSet().ofEnums(TestConfig.Colours.class)).isEqualTo(expected);
         }
 
@@ -1002,7 +1031,7 @@ public class StrictValueParserTest {
     @Nested
     @DisplayName("for Map values")
     class MapConfigTests {
-        abstract class CommonMapTests<K, V> {
+        abstract static class CommonMapTests<K, V> {
 
             static final String SIMPLE_CONFIG_VALUE = "1=True;2=False;3=False;4=False";
 
@@ -1156,7 +1185,7 @@ public class StrictValueParserTest {
     @Nested
     @DisplayName("for Multimap values")
     class MultimapConfigTests {
-        abstract class CommonMultimapTests<K, V> {
+        abstract static class CommonMultimapTests<K, V> {
 
             static final String SIMPLE_CONFIG_VALUE = "1=True;1=False;2=False;3=False;4=False";
 
