@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.scenario.scenarios;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,14 @@ class TimeThenStepsTest extends AbstractFrameworkTestStory {
         then.time.waitUntil(1, TimeUnit.MINUTES);
         then.time.waitForDuration(1, TimeUnit.SECONDS);
         then.testEvent.timeIsExactly(61_000);
+    }
+
+    @Test
+    void waitForDuration_withDurationValue() {
+        when.simStarts();
+        then.time.waitUntil(1, TimeUnit.MINUTES);
+        then.time.waitForDuration(Duration.ofMinutes(1));
+        then.testEvent.timeIsExactly(120_000);
     }
 
     @Test

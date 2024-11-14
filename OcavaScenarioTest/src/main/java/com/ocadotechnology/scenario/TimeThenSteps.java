@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -154,6 +155,13 @@ public final class TimeThenSteps<S extends Simulation> {
                 return scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime() + convertToUnit(duration, unit, stepManager.getTimeUnit());
             }
         }, namedStepExecutionType);
+    }
+
+    /**
+     * Waits for a specified duration after this step is started
+     */
+    public void waitForDuration(Duration duration) {
+        waitForDuration(duration.toNanos(), TimeUnit.NANOSECONDS);
     }
 
     /**
