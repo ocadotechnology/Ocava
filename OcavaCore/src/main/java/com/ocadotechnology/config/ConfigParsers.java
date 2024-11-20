@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
+import javax.annotation.CheckForNull;
+
 import com.google.common.base.Enums;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
@@ -125,12 +127,14 @@ public class ConfigParsers {
 
     /**
      * Parse the given String into a length value in the given {@link LengthUnit}. The String can specify input
-     * length unit. If none are specified the SI Units are used.
+     * length unit. If none are specified the SI Units are used. The parser can cope with case insensitivity, as
+     * well as adding an "S" to pluralise units.
      * <br>
      * <br>
      * Example:
      * <pre>
      *     parseAcceleration("1, CENTIMETERS", METERS) &#61;&#62; 0.01 m
+     *     parseAcceleration("1, CentiMEter", METERS) &#61;&#62; 0.01 m
      *     parseAcceleration("1", METERS) &#61;&#62; 1 m
      * </pre>
      * <br>
@@ -146,7 +150,7 @@ public class ConfigParsers {
         if (parts.length == 1) {
             sourceUnit = LengthUnit.METERS;
         } else if (parts.length == 2) {
-            sourceUnit = LengthUnit.valueOf(parts[1].trim());
+            sourceUnit = parseLengthUnit(parts[1]);
         } else {
             throw Failer.fail("Length values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>' or '<value>:<length unit>'", Arrays.toString(parts));
         }
@@ -155,12 +159,14 @@ public class ConfigParsers {
 
     /**
      * Parse the given String into a fractional time value in the given {@link TimeUnit}. The String can specify input
-     * time unit. If none are specified the SI Units are used.
+     * time unit. If none are specified the SI Units are used. The parser can cope with case insensitivity, as well as
+     * adding an "S" to pluralise units.
      * <br>
      * <br>
      * Example:
      * <pre>
      *     parseAcceleration("1, MINUTES", SECONDS) &#61;&#62; 60 s
+     *     parseAcceleration("1, miNUte", SECONDS) &#61;&#62; 60 s
      *     parseAcceleration("1", SECONDS) &#61;&#62; 1 s
      * </pre>
      * <br>
@@ -176,27 +182,24 @@ public class ConfigParsers {
         if (parts.length == 1) {
             sourceUnit = TimeUnit.SECONDS;
         } else if (parts.length == 2) {
-            sourceUnit = TimeUnit.valueOf(parts[1].trim());
+            sourceUnit = parseTimeUnit(parts[1]);
         } else {
             throw Failer.fail("Time values (%s) need to be specified without units (for SI) or in the following format: '<value>,<time unit>' or '<value>:<time unit>'", Arrays.toString(parts));
         }
         return time * getTimeUnitsInSourceTimeUnit(sourceUnit, returnTimeUnit);
     }
 
-    private static ChronoUnit parseChronoUnit(String value) {
-        return Enums.getIfPresent(TimeUnit.class, value).transform(TimeUnit::toChronoUnit).or(() -> ChronoUnit.valueOf(value));
-    }
-
     /**
-     * Parse the given String into a {@link Duration}. The format of the input String must be a number followed by an
-     * optional time unit separated by a comma (",") or a colon (":")
+     * Parse the given String into a {@link Duration}. The String can specify input {@link TimeUnit} or {@link ChronoUnit}.
+     * If none are specified the SI Units are used. The parser can cope with case insensitivity, as well as adding an
+     * "S" to pluralise units.
      * <br>
      * SI Unit is {@link TimeUnit#SECONDS}
      */
     public static Duration parseDuration(String value) {
         String[] parts = parseParts(value);
         if (parts.length > 0 && parts.length <= 2) {
-            ChronoUnit unit = parts.length == 1 ? ChronoUnit.SECONDS : parseChronoUnit(parts[1].trim());
+            ChronoUnit unit = parts.length == 1 ? ChronoUnit.SECONDS : parseChronoUnit(parts[1]);
             double nanoTime = Double.parseDouble(parts[0].trim()) * unit.getDuration().toNanos();
             return Duration.ofNanos(Math.round(nanoTime));
         } else {
@@ -205,13 +208,15 @@ public class ConfigParsers {
     }
 
     /**
-     * Parse the given String into a speed value in the given {@link LengthUnit} over {@link TimeUnit}. The
-     * String can specify input length and time units. If none are specified the SI Units are used.
+     * Parse the given String into a speed value in the given {@link LengthUnit} over {@link TimeUnit}. The String can
+     * specify input length and time units. If none are specified the SI Units are used. The parser can cope with case
+     * insensitivity, as well as adding an "S" to pluralise units.
      * <br>
      * <br>
      * Example:
      * <pre>
      *     parseSpeed("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
+     *     parseSpeed("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
      *     parseSpeed("10", METERS, SECONDS) &#61;&#62; 10 m/s
      * </pre>
      * <br>
@@ -229,8 +234,8 @@ public class ConfigParsers {
             sourceLengthUnit = LengthUnit.METERS;
             sourceTimeUnit = TimeUnit.SECONDS;
         } else if (parts.length == 3) {
-            sourceLengthUnit = LengthUnit.valueOf(parts[1].trim());
-            sourceTimeUnit = TimeUnit.valueOf(parts[2].trim());
+            sourceLengthUnit = parseLengthUnit(parts[1]);
+            sourceTimeUnit = parseTimeUnit(parts[2]);
         } else {
             throw Failer.fail("Speed values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
@@ -238,13 +243,15 @@ public class ConfigParsers {
     }
 
     /**
-     * Parse the given String into an acceleration value in the given {@link LengthUnit} over {@link TimeUnit} squared. The
-     * String can specify input length and time units. If none are specified the SI Units are used.
+     * Parse the given String into an acceleration value in the given {@link LengthUnit} over {@link TimeUnit} squared.
+     * The* String can specify input length and time units. If none are specified the SI Units are used. The parser can
+     * cope with case insensitivity, as well as adding an "S" to pluralise units.
      * <br>
      * <br>
      * Example:
      * <pre>
      *     parseAcceleration("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
+     *     parseAcceleration("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
      *     parseAcceleration("10", METERS, SECONDS) &#61;&#62; 10 m/s2
      * </pre>
      * <br>
@@ -262,8 +269,8 @@ public class ConfigParsers {
             sourceLengthUnit = LengthUnit.METERS;
             sourceTimeUnit = TimeUnit.SECONDS;
         } else if (parts.length == 3) {
-            sourceLengthUnit = LengthUnit.valueOf(parts[1].trim());
-            sourceTimeUnit = TimeUnit.valueOf(parts[2].trim());
+            sourceLengthUnit = parseLengthUnit(parts[1]);
+            sourceTimeUnit = parseTimeUnit(parts[2]);
         } else {
             throw Failer.fail("Acceleration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
@@ -271,13 +278,15 @@ public class ConfigParsers {
     }
 
     /**
-     * Parse the given String into a jerk value in the given {@link LengthUnit} over {@link TimeUnit} cubed. The
-     * String can specify input length and time units. If none are specified the SI Units are used.
+     * Parse the given String into a jerk value in the given {@link LengthUnit} over {@link TimeUnit} cubed. The String
+     * can specify input length and time units. If none are specified the SI Units are used. The parser can cope with
+     * case insensitivity, as well as adding an "S" to pluralise units.
      * <br>
      * <br>
      * Example:
      * <pre>
      *     parseJerk("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
+     *     parseJerk("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
      *     parseJerk("10", METERS, SECONDS) &#61;&#62; 10 m/s3
      * </pre>
      * <br>
@@ -295,8 +304,8 @@ public class ConfigParsers {
             sourceLengthUnit = LengthUnit.METERS;
             sourceTimeUnit = TimeUnit.SECONDS;
         } else if (parts.length == 3) {
-            sourceLengthUnit = LengthUnit.valueOf(parts[1].trim());
-            sourceTimeUnit = TimeUnit.valueOf(parts[2].trim());
+            sourceLengthUnit = parseLengthUnit(parts[1]);
+            sourceTimeUnit = parseTimeUnit(parts[2]);
         } else {
             throw Failer.fail("Jerk values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
@@ -523,5 +532,46 @@ public class ConfigParsers {
             builder.put(propertyKey, propertyValue);
         }
         return builder.build();
+    }
+
+    private static LengthUnit parseLengthUnit(String value) {
+        String normalizedValue = value.trim().toUpperCase();
+        LengthUnit result = Enums.getIfPresent(LengthUnit.class, normalizedValue)
+                .or(Enums.getIfPresent(LengthUnit.class, normalizedValue + "S"))
+                .orNull();
+        if (result == null) {
+            throw new IllegalArgumentException("Unrecognized LengthUnit value: " + value);
+        }
+        return result;
+    }
+
+    private static TimeUnit parseTimeUnit(String value) {
+        String normalizedValue = value.trim().toUpperCase();
+        TimeUnit result = Enums.getIfPresent(TimeUnit.class, normalizedValue)
+                .or(Enums.getIfPresent(TimeUnit.class, normalizedValue + "S"))
+                .orNull();
+        if (result == null) {
+            throw new IllegalArgumentException("Unrecognized TimeUnit value: " + value);
+        }
+        return result;
+    }
+
+    private static ChronoUnit parseChronoUnit(String value) {
+        String normalizedValue = value.trim().toUpperCase();
+        ChronoUnit result = parseChronoUnitStrict(normalizedValue);
+        if (result != null) {
+            return result;
+        }
+        result = parseChronoUnitStrict(normalizedValue + "S");
+        if (result != null) {
+            return result;
+        }
+        throw new IllegalArgumentException("Unrecognized ChronoUnit or TimeUnit value: " + value);
+    }
+
+    private static @CheckForNull ChronoUnit parseChronoUnitStrict(String normalizedValue) {
+        return Enums.getIfPresent(TimeUnit.class, normalizedValue).transform(TimeUnit::toChronoUnit)
+                .or(Enums.getIfPresent(ChronoUnit.class, normalizedValue))
+                .orNull();
     }
 }

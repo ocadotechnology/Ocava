@@ -38,6 +38,7 @@ import static com.ocadotechnology.config.ConfigParsers.parseDuration;
 import static com.ocadotechnology.config.ConfigParsers.parseEnum;
 import static com.ocadotechnology.config.ConfigParsers.parseFractionalTime;
 import static com.ocadotechnology.config.ConfigParsers.parseInt;
+import static com.ocadotechnology.config.ConfigParsers.parseJerk;
 import static com.ocadotechnology.config.ConfigParsers.parseLength;
 import static com.ocadotechnology.config.ConfigParsers.parseLong;
 import static com.ocadotechnology.config.ConfigParsers.parseMap;
@@ -283,6 +284,16 @@ class ConfigParsersTest {
         }
 
         @Test
+        void testParseWithSingularUnits() {
+            assertThat(parseLength("1, CENTIMETER", LengthUnit.METERS)).isEqualTo(0.01D);
+        }
+
+        @Test
+        void testParseWithLowerCaseUnits() {
+            assertThat(parseLength("1, CENTImeters", LengthUnit.METERS)).isEqualTo(0.01D);
+        }
+
+        @Test
         void testInvalid() {
             assertThatThrownBy(() -> parseLength("not a number", LengthUnit.METERS))
                     .isInstanceOf(NumberFormatException.class);
@@ -304,6 +315,16 @@ class ConfigParsersTest {
         void testParseWithUnits() {
             assertThat(parseFractionalTime("1, MINUTES", TimeUnit.SECONDS)).isEqualTo(60D);
             assertThat(parseFractionalTime("1.5, MINUTES", TimeUnit.SECONDS)).isEqualTo(90D);
+        }
+
+        @Test
+        void testParseWithSingularUnits() {
+            assertThat(parseFractionalTime("1.5, MINUTE", TimeUnit.SECONDS)).isEqualTo(90D);
+        }
+
+        @Test
+        void testParseWithLowerCaseUnits() {
+            assertThat(parseFractionalTime("1.5, Minutes", TimeUnit.SECONDS)).isEqualTo(90D);
         }
 
         @Test
@@ -350,6 +371,19 @@ class ConfigParsersTest {
         }
 
         @Test
+        void testSingularUnits() {
+            assertThat(parseDuration("1, MINUTE")).isEqualTo(Duration.ofMinutes(1));
+            assertThat(parseDuration("1, HALF_DAY")).isEqualTo(Duration.ofHours(12));
+        }
+
+        @Test
+        void testLowerCaseUnits() {
+            assertThat(parseDuration("1, minutes")).isEqualTo(Duration.ofMinutes(1));
+            //Note that the code does still require the underscore
+            assertThat(parseDuration("1, Half_Days")).isEqualTo(Duration.ofHours(12));
+        }
+
+        @Test
         void testInvalid() {
             assertThatThrownBy(() -> parseDuration("not a number"))
                     .isInstanceOf(NumberFormatException.class);
@@ -373,6 +407,20 @@ class ConfigParsersTest {
         }
 
         @Test
+        void testParseWithSingularUnits() {
+            assertThat(parseSpeed("1, METERS, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1, METER, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1, METER, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+        }
+
+        @Test
+        void testParseWithLowerCaseUnits() {
+            assertThat(parseSpeed("1, METERS, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1, meters, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1, meters, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+        }
+
+        @Test
         void testInvalid() {
             assertThatThrownBy(() -> parseSpeed("not a number", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(NumberFormatException.class);
@@ -384,7 +432,6 @@ class ConfigParsersTest {
 
     @Nested
     class ParseAcceleration {
-
         @Test
         void testParseWithNoUnit() {
             assertThat(parseAcceleration("1", LengthUnit.METERS, TimeUnit.SECONDS)).isEqualTo(1D);
@@ -396,10 +443,60 @@ class ConfigParsersTest {
         }
 
         @Test
+        void testParseWithSingularUnits() {
+            assertThat(parseAcceleration("1, METERS, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1, METER, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1, METER, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+        }
+
+        @Test
+        void testParseWithLowerCaseUnits() {
+            assertThat(parseAcceleration("1, METERS, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1, meters, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1, meters, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+        }
+
+        @Test
         void testInvalid() {
             assertThatThrownBy(() -> parseAcceleration("not a number", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(NumberFormatException.class);
             assertThatThrownBy(() -> parseAcceleration("0, a, b, c", LengthUnit.METERS, TimeUnit.MINUTES))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("need to be specified without units");
+        }
+    }
+
+    @Nested
+    class ParseJerk {
+        @Test
+        void testParseWithNoUnit() {
+            assertThat(parseJerk("1", LengthUnit.METERS, TimeUnit.SECONDS)).isEqualTo(1D);
+        }
+
+        @Test
+        void testParseWithUnits() {
+            assertThat(parseJerk("1, METERS, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+        }
+
+        @Test
+        void testParseWithSingularUnits() {
+            assertThat(parseJerk("1, METERS, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1, METER, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1, METER, MINUTE", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+        }
+
+        @Test
+        void testParseWithLowerCaseUnits() {
+            assertThat(parseJerk("1, METERS, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1, meters, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1, meters, minutes", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+        }
+
+        @Test
+        void testInvalid() {
+            assertThatThrownBy(() -> parseJerk("not a number", LengthUnit.METERS, TimeUnit.MINUTES))
+                    .isInstanceOf(NumberFormatException.class);
+            assertThatThrownBy(() -> parseJerk("0, a, b, c", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("need to be specified without units");
         }

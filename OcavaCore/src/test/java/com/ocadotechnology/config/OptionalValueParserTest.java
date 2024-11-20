@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -435,6 +436,18 @@ public class OptionalValueParserTest {
         }
 
         @Test
+        @DisplayName("allows different unit descriptions")
+        void allowsDifferentUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.11, minUTeS", TimeUnit.SECONDS, null);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(127));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(126.6));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.11, MINUTE", TimeUnit.SECONDS, null);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(127));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(126.6));
+        }
+
+        @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "FAIL, SECONDS", TimeUnit.SECONDS, null);
@@ -528,6 +541,26 @@ public class OptionalValueParserTest {
         }
 
         @Test
+        @DisplayName("allows different time unit descriptions")
+        void allowsDifferentTimeUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, MILLISECOND", TimeUnit.SECONDS, null);
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2, MiLLiSeconD", TimeUnit.SECONDS, null);
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+        }
+
+        @Test
+        @DisplayName("allows different chrono unit descriptions")
+        void allowsDifferentChronoUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, MILLI", TimeUnit.SECONDS, null);
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2, MiLLi", TimeUnit.SECONDS, null);
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+        }
+
+        @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "FAIL, SECONDS");
@@ -592,6 +625,16 @@ public class OptionalValueParserTest {
         void allowsNegativeValues() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "-2.3, METERS", null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("allows different unit descriptions")
+        void allowsDifferentUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, KILOMETER", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2300));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3, KIloMeteRS", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
@@ -680,6 +723,16 @@ public class OptionalValueParserTest {
         void allowsNegativeValues() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("allows different unit descriptions")
+        void allowsDifferentUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METER, MILLISECOND", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3, MEteRS, MiLLiSeconDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2300));
         }
 
         @Test
@@ -778,6 +831,16 @@ public class OptionalValueParserTest {
         }
 
         @Test
+        @DisplayName("allows different unit descriptions")
+        void allowsDifferentUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METER, MILLISECOND", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300000));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3, MEteRS, MiLLiSeconDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2300000));
+        }
+
+        @Test
         @DisplayName("throws an exception for non-number")
         void throwsExceptionForNonNumber() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "FAIL, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
@@ -872,6 +935,16 @@ public class OptionalValueParserTest {
         void allowsNegativeValues() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "-2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(-2.3));
+        }
+
+        @Test
+        @DisplayName("allows different unit descriptions")
+        void allowsDifferentUnits() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METER, MILLISECOND", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk().orElseThrow()).isEqualTo(2300000000d, Offset.offset(1e-3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3, MEteRS, MiLLiSeconDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk().orElseThrow()).isEqualTo(2300000000d, Offset.offset(1e-3));
         }
 
         @Test

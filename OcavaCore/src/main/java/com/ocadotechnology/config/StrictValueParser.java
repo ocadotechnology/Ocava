@@ -166,7 +166,7 @@ public class StrictValueParser {
      *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
      *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
      * </ul>
-     * Valid time units are those defined by {@link TimeUnit}
+     * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
@@ -193,7 +193,7 @@ public class StrictValueParser {
      *     <li>in the form "{@code <value>,<time unit>}" or "{@code <value>:<time unit>}". E.g. "5.65,SECONDS" or "1:HOURS"
      *     <li>as a double, in which case it will be assumed that the value is being specified <b>with a time unit of seconds</b>. I.e. this is equivalent to doing "{@code <value>,SECONDS}"
      * </ul>
-     * Valid time units are those defined by {@link TimeUnit}
+     * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
@@ -210,6 +210,9 @@ public class StrictValueParser {
      * Duration config values can be given either:
      * - As a double on its own, in which case it will be assumed that the value is being specified in seconds
      * - In the form {@code <value>,<time unit>} or {@code <value>:<time unit>}.
+     * <br>
+     * Valid time units are those defined by {@link TimeUnit} or {@link java.time.temporal.ChronoUnit} (either are
+     * acceptable), though they can be specified in any case and without the final "s".
      *
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
      * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
@@ -229,6 +232,8 @@ public class StrictValueParser {
      * Length config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters.
      * - in the form {@code <value>,<length unit>} or {@code <value>:<length unit>}.
+     * <br>
+     * Valid length units are those defined by {@link LengthUnit}, though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if the application length unit has not been set.
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
@@ -249,6 +254,9 @@ public class StrictValueParser {
      * Speed config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters per second
      * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     * <br>
+     * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
+     * though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if the application time or length units have not been set
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
@@ -269,6 +277,9 @@ public class StrictValueParser {
      * Acceleration config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters per second squared
      * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     * <br>
+     * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
+     * though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if the application time or length units have not been set
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
@@ -289,6 +300,9 @@ public class StrictValueParser {
      * Jerk config values can be given either
      * - as a double, in which case Config will assume that the value is being specified in meters per second cubed
      * - in the form {@code <value>,<length unit>,<time unit>} or {@code <value>:<length unit>:<time unit>}
+     * <br>
+     * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
+     * though they can be specified in any case and without the final "s".
      *
      * @throws NullPointerException       if the application time or length units have not been set
      * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
