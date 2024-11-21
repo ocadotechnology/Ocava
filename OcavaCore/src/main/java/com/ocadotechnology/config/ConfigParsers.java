@@ -244,7 +244,7 @@ public class ConfigParsers {
 
     /**
      * Parse the given String into an acceleration value in the given {@link LengthUnit} over {@link TimeUnit} squared.
-     * The* String can specify input length and time units. If none are specified the SI Units are used. The parser can
+     * The String can specify input length and time units. If none are specified the SI Units are used. The parser can
      * cope with case insensitivity, as well as adding an "S" to pluralise units.
      * <br>
      * <br>
