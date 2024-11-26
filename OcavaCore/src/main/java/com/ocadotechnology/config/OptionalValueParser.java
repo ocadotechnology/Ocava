@@ -72,7 +72,7 @@ public class OptionalValueParser {
      *          OptionalInt} containing the string config value parsed to an integer. If the value is the String "max"
      *          or "min" (case insensitive) parses the value to {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE}
      *          respectively, otherwise defers to {@link Integer#parseInt(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to an integer.
+     * @throws IllegalStateException if the config value cannot be parsed to an integer.
      */
     public OptionalInt asInt() {
         return parser.map(p -> OptionalInt.of(p.asInt())).orElse(OptionalInt.empty());
@@ -83,7 +83,7 @@ public class OptionalValueParser {
      *          OptionalLong} containing the string config value parsed to a long. If the value is the String "max" or
      *          "min" (case insensitive) parses the value to {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE}
      *          respectively, otherwise defers to {@link Long#parseLong(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a long.
+     * @throws IllegalStateException if the config value cannot be parsed to a long.
      */
     public OptionalLong asLong() {
         return parser.map(p -> OptionalLong.of(p.asLong())).orElse(OptionalLong.empty());
@@ -93,8 +93,9 @@ public class OptionalValueParser {
      * @return {@link OptionalDouble#empty()}  if the config value is an empty string, otherwise the {@link OptionalDouble}
      *          resulting from parsing the string config value parsed to a fraction via {@link ConfigParsers#parseFraction(String)}.
      *          In particular, that will parse it as a Double first, and then validate that it lies between 0 and 1.
-     * @throws NumberFormatException if the config value cannot be parsed to a double.
-     * @throws IllegalStateException if the config value does not lie between 0 and 1.
+     * @throws IllegalStateException if
+     *                                  - the config value cannot be parsed to a double.
+     *                                  - the config value does not lie between 0 and 1.
      */
     public OptionalDouble asFraction() {
         return parser.map(StrictValueParser::asFraction).map(OptionalDouble::of).orElse(OptionalDouble.empty());
@@ -103,8 +104,9 @@ public class OptionalValueParser {
     /**
      * @return {@link Optional#empty()}  if the config value is an empty string, otherwise the {@link Optional}
      *          resulting from parsing the string config value parsed to a {@link Probability} via {@link ConfigParsers#parseProbability(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a {@link Probability}.
-     * @throws IllegalStateException if the input is not between 0.0 and 1.0, or 0.0% and 100.0%.
+     * @throws IllegalStateException if
+     *                                  - the config value cannot be parsed to a {@link Probability}.
+     *                                  - the input is not between 0.0 and 1.0, or 0.0% and 100.0%.
      */
     public Optional<Probability> asProbability() {
         return parser.map(StrictValueParser::asProbability);
@@ -114,7 +116,7 @@ public class OptionalValueParser {
      * @return {@link OptionalDouble#empty()} if the config value is an empty String, otherwise returns an {@link
      *          OptionalDouble} containing the string config value parsed to a double via {@link
      *          Double#parseDouble(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a double.
+     * @throws IllegalStateException if the config value cannot be parsed to a double.
      */
     public OptionalDouble asDouble() {
         return parser.map(p -> OptionalDouble.of(p.asDouble())).orElse(OptionalDouble.empty());
@@ -123,7 +125,7 @@ public class OptionalValueParser {
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
      *          containing the string config value parsed to an enum value via {@link Enum#valueOf(Class, String)}.
-     * @throws IllegalArgumentException if the string config value does not match a defined enum value.
+     * @throws IllegalStateException if the string config value does not match a defined enum value.
      */
     public <T extends Enum<T>> Optional<T> asEnum(Class<T> enumClass) {
         return parser.map(p -> p.asEnum(enumClass));
@@ -145,10 +147,11 @@ public class OptionalValueParser {
      * </ul>
      * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
-     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
+     * @throws IllegalStateException       if
+     *                                      - {@link Config#getTimeUnit()} has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     *                                      - the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public OptionalDouble asFractionalTime() {
         return parser.map(p -> OptionalDouble.of(p.asFractionalTime())).orElse(OptionalDouble.empty());
@@ -169,10 +172,11 @@ public class OptionalValueParser {
      * </ul>
      * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
-     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
+     * @throws IllegalStateException       if
+     *                                      - {@link Config#getTimeUnit()} has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     *                                      - the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public OptionalLong asTime() {
         return parser.map(p -> OptionalLong.of(p.asTime())).orElse(OptionalLong.empty());
@@ -189,9 +193,10 @@ public class OptionalValueParser {
      * Valid time units are those defined by {@link TimeUnit} or {@link java.time.temporal.ChronoUnit} (either are
      * acceptable), though they can be specified in any case and without the final "s".
      *
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalStateException      if
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match an enum value.
+     *                                      - the value given cannot be parsed as a double.
      */
     public Optional<Duration> asDuration() {
         return parser.map(StrictValueParser::asDuration);
@@ -207,10 +212,11 @@ public class OptionalValueParser {
      * <br>
      * Valid length units are those defined by {@link LengthUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application length unit has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the length unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalStateException       if
+     *                                      - the application length unit has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the length unit in the config value does not match an enum value.
+     *                                      - the value given cannot be parsed as a double.
      */
     public OptionalDouble asLength() {
         return parser.map(p -> OptionalDouble.of(p.asLength())).orElse(OptionalDouble.empty());
@@ -228,10 +234,11 @@ public class OptionalValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public OptionalDouble asSpeed() {
         return parser.map(p -> OptionalDouble.of(p.asSpeed())).orElse(OptionalDouble.empty());
@@ -249,10 +256,11 @@ public class OptionalValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public OptionalDouble asAcceleration() {
         return parser.map(p -> OptionalDouble.of(p.asAcceleration())).orElse(OptionalDouble.empty());
@@ -270,10 +278,11 @@ public class OptionalValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public OptionalDouble asJerk() {
         return parser.map(p -> OptionalDouble.of(p.asJerk())).orElse(OptionalDouble.empty());

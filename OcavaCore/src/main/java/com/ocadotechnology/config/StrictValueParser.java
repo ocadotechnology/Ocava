@@ -74,7 +74,7 @@ public class StrictValueParser {
      * @return the string config value parsed to an integer. If the value is the String "max" or "min" (case
      *          insensitive) returns {@link Integer#MAX_VALUE} or {@link Integer#MIN_VALUE} respectively, otherwise
      *          defers to {@link Integer#parseInt(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to an integer.
+     * @throws IllegalStateException if the config value cannot be parsed to an integer.
      */
     public int asInt() {
         try {
@@ -88,7 +88,7 @@ public class StrictValueParser {
      * @return the string config value parsed to a long. If the value is the String "max" or "min" (case insensitive)
      *          returns {@link Long#MAX_VALUE} or {@link Long#MIN_VALUE} respectively, otherwise defers to {@link
      *          Long#parseLong(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a long.
+     * @throws IllegalStateException if the config value cannot be parsed to a long.
      */
     public long asLong() {
         try {
@@ -103,8 +103,9 @@ public class StrictValueParser {
      * See {@link #asProbability()} for parsing for Probabilities.
      *
      * @return the string config value parsed to a fraction via {@link ConfigParsers#parseFraction(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a double.
-     * @throws IllegalStateException if the config value does not lie between 0 and 1.
+     * @throws IllegalStateException if
+     *                                  - the config value cannot be parsed to a double.
+     *                                  -  the config value does not lie between 0 and 1.
      */
     public double asFraction() {
         try {
@@ -118,8 +119,9 @@ public class StrictValueParser {
      * The string config value is parsed as a {@link Probability}, and validated.
      *
      * @return the string config value parsed to a {@link Probability} via {@link ConfigParsers#parseProbability(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a Probability.
-     * @throws IllegalStateException if the config value does not lie between 0.0 and 1.0, or 0.0% and 100.0%.
+     * @throws IllegalStateException if
+     *                                  - the config value cannot be parsed to a Probability.
+     *                                  - the config value does not lie between 0.0 and 1.0, or 0.0% and 100.0%.
      */
     public Probability asProbability() {
         try {
@@ -131,7 +133,7 @@ public class StrictValueParser {
 
     /**
      * @return the string config value parsed to a double via {@link Double#parseDouble(String)}.
-     * @throws NumberFormatException if the config value cannot be parsed to a double.
+     * @throws IllegalStateException if the config value cannot be parsed to a double.
      */
     public double asDouble() {
         try {
@@ -143,7 +145,7 @@ public class StrictValueParser {
 
     /**
      * @return the string config value parsed to an enum value via {@link Enum#valueOf(Class, String)}.
-     * @throws IllegalArgumentException if the string config value does not match a defined enum value.
+     * @throws IllegalStateException if the string config value does not match a defined enum value.
      */
     public <T extends Enum<T>> T asEnum(Class<T> enumClass) {
         try {
@@ -168,10 +170,11 @@ public class StrictValueParser {
      * </ul>
      * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
-     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
+     * @throws IllegalStateException       if
+     *                                      - {@link Config#getTimeUnit()} has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     *                                      - the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public double asFractionalTime() {
         try {
@@ -195,10 +198,11 @@ public class StrictValueParser {
      * </ul>
      * Valid time units are those defined by {@link TimeUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if {@link Config#getTimeUnit()} has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
-     * @throws NumberFormatException      if the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
+     * @throws IllegalStateException       if
+     *                                      - {@link Config#getTimeUnit()} has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match one of the values specified by {@link TimeUnit}.
+     *                                      - the numerical part of the config value given cannot be parsed by {@link Double#parseDouble(String)}.
      */
     public long asTime() {
         return Math.round(asFractionalTime());
@@ -214,9 +218,10 @@ public class StrictValueParser {
      * Valid time units are those defined by {@link TimeUnit} or {@link java.time.temporal.ChronoUnit} (either are
      * acceptable), though they can be specified in any case and without the final "s".
      *
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the time unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalStateException      if
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the time unit in the config value does not match an enum value.
+     *                                      - the value given cannot be parsed as a double.
      */
     public Duration asDuration() {
         try {
@@ -235,10 +240,11 @@ public class StrictValueParser {
      * <br>
      * Valid length units are those defined by {@link LengthUnit}, though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application length unit has not been set.
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above.
-     * @throws IllegalArgumentException   if the length unit in the config value does not match an enum value.
-     * @throws NumberFormatException      if the value given cannot be parsed as a double.
+     * @throws IllegalStateException       if
+     *                                      - the application length unit has not been set.
+     *                                      - the config value does not satisfy one of the formats given above.
+     *                                      - the length unit in the config value does not match an enum value.
+     *                                      - the value given cannot be parsed as a double.
      */
     public double asLength() {
         try {
@@ -258,10 +264,11 @@ public class StrictValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public double asSpeed() {
         try {
@@ -281,10 +288,11 @@ public class StrictValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public double asAcceleration() {
         try {
@@ -304,10 +312,11 @@ public class StrictValueParser {
      * Valid time units are those defined by {@link TimeUnit}, and valid length units are those defined by {@link LengthUnit}
      * though they can be specified in any case and without the final "s".
      *
-     * @throws NullPointerException       if the application time or length units have not been set
-     * @throws IllegalStateException      if the config value does not satisfy one of the formats given above
-     * @throws IllegalArgumentException   if the time or length units in the config value do not match an enum value
-     * @throws NumberFormatException      if the value given cannot be parsed as a double
+     * @throws IllegalStateException       if
+     *                                      - the application time or length units have not been set
+     *                                      - the config value does not satisfy one of the formats given above
+     *                                      - the time or length units in the config value do not match an enum value
+     *                                      - the value given cannot be parsed as a double
      */
     public double asJerk() {
         try {

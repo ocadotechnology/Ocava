@@ -348,6 +348,10 @@ public class StrictValueParserTest {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2.3, SECONDS", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(2);
             assertThat(parser.asFractionalTime()).isEqualTo(2.3);
+
+            parser = new StrictValueParser(TestConfig.FOO, " 2.3 :  SECONDS  ", TimeUnit.SECONDS, null);
+            assertThat(parser.asTime()).isEqualTo(2);
+            assertThat(parser.asFractionalTime()).isEqualTo(2.3);
         }
 
         @Test
@@ -427,6 +431,9 @@ public class StrictValueParserTest {
         @DisplayName("returns a Duration for an integer value")
         void returnDurationForInt() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Duration.ofMillis(2));
+
+            parser = new StrictValueParser(TestConfig.FOO, "2 :  MILLISECONDS");
             assertThat(parser.asDuration()).isEqualTo(Duration.ofMillis(2));
         }
 
@@ -523,6 +530,9 @@ public class StrictValueParserTest {
         void returnValue() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2.3, METERS", null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(2.3);
+
+            parser = new StrictValueParser(TestConfig.FOO, "2.3 :  METERS", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(2.3);
         }
 
         @Test
@@ -587,7 +597,7 @@ public class StrictValueParserTest {
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenUnitNotSet() {
-            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "FAIL, METERS", null, null);
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2, METERS", null, null);
             assertThrowsWithKey(parser::asLength, NullPointerException.class);
         }
     }
@@ -600,6 +610,9 @@ public class StrictValueParserTest {
         @DisplayName("returns the double value when units are specified")
         void returnValue() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(2.3);
+
+            parser = new StrictValueParser(TestConfig.FOO, " 2.3 : METERS: SECONDS  ", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(2.3);
         }
 
@@ -667,6 +680,9 @@ public class StrictValueParserTest {
         void throwsExceptionForInvalidStructure() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asSpeed, IllegalStateException.class);
+
+            parser = new StrictValueParser(TestConfig.FOO, "2, METERS:SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, IllegalStateException.class);
         }
 
         @Test
@@ -699,6 +715,9 @@ public class StrictValueParserTest {
         @DisplayName("returns the double value with units specified")
         void returnValue() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(2.3);
+
+            parser = new StrictValueParser(TestConfig.FOO, "2.3 :  METERS: SECONDS  ", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(2.3);
         }
 
@@ -766,6 +785,9 @@ public class StrictValueParserTest {
         void throwsExceptionForInvalidStructure() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asAcceleration, IllegalStateException.class);
+
+            parser = new StrictValueParser(TestConfig.FOO, "2, METERS : SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, IllegalStateException.class);
         }
 
         @Test
@@ -798,6 +820,9 @@ public class StrictValueParserTest {
         @DisplayName("returns the double value with units specified")
         void returnValue() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(2.3);
+
+            parser = new StrictValueParser(TestConfig.FOO, "2.3 :  METERS: SECONDS  ", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(2.3);
         }
 
@@ -864,6 +889,8 @@ public class StrictValueParserTest {
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, IllegalStateException.class);
+            parser = new StrictValueParser(TestConfig.FOO, "2, METERS:SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asJerk, IllegalStateException.class);
         }
 

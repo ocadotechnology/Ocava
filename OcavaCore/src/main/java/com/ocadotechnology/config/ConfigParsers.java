@@ -133,9 +133,10 @@ public class ConfigParsers {
      * <br>
      * Example:
      * <pre>
-     *     parseAcceleration("1, CENTIMETERS", METERS) &#61;&#62; 0.01 m
-     *     parseAcceleration("1, CentiMEter", METERS) &#61;&#62; 0.01 m
-     *     parseAcceleration("1", METERS) &#61;&#62; 1 m
+     *     parseLength("1,CENTIMETERS", METERS) &#61;&#62; 0.01 m
+     *     parseLength("1, CentiMEter", METERS) &#61;&#62; 0.01 m
+     *     parseLength("1: Centimeters", METERS) &#61;&#62; 0.01 m
+     *     parseLength("1", METERS) &#61;&#62; 1 m
      * </pre>
      * <br>
      * SI Unit is {@link LengthUnit#METERS}
@@ -165,8 +166,9 @@ public class ConfigParsers {
      * <br>
      * Example:
      * <pre>
-     *     parseAcceleration("1, MINUTES", SECONDS) &#61;&#62; 60 s
+     *     parseAcceleration("1,MINUTES", SECONDS) &#61;&#62; 60 s
      *     parseAcceleration("1, miNUte", SECONDS) &#61;&#62; 60 s
+     *     parseAcceleration("1: Minutes", SECONDS) &#61;&#62; 60 s
      *     parseAcceleration("1", SECONDS) &#61;&#62; 1 s
      * </pre>
      * <br>
@@ -195,6 +197,9 @@ public class ConfigParsers {
      * "S" to pluralise units.
      * <br>
      * SI Unit is {@link TimeUnit#SECONDS}
+     *
+     * @param value A String to parse. Must be either a number or a number with a {@link TimeUnit} or {@link ChronoUnit}
+     *             separated by a comma (",") or a colon (":").
      */
     public static Duration parseDuration(String value) {
         String[] parts = parseParts(value);
@@ -215,8 +220,9 @@ public class ConfigParsers {
      * <br>
      * Example:
      * <pre>
-     *     parseSpeed("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
+     *     parseSpeed("10,METERS,HOURS", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
      *     parseSpeed("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
+     *     parseSpeed("10: Meters: Hours", METERS, SECONDS) &#61;&#62; 0.00277778 m/s
      *     parseSpeed("10", METERS, SECONDS) &#61;&#62; 10 m/s
      * </pre>
      * <br>
@@ -227,7 +233,6 @@ public class ConfigParsers {
      */
     public static double parseSpeed(String value, LengthUnit returnLengthUnit, TimeUnit returnTimeUnit) {
         String[] parts = parseParts(value);
-        double speed = Double.parseDouble(parts[0].trim());
         LengthUnit sourceLengthUnit;
         TimeUnit sourceTimeUnit;
         if (parts.length == 1) {
@@ -239,6 +244,7 @@ public class ConfigParsers {
         } else {
             throw Failer.fail("Speed values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
+        double speed = Double.parseDouble(parts[0].trim());
         return speed * returnLengthUnit.getUnitsIn(sourceLengthUnit) / getTimeUnitsInSourceTimeUnit(sourceTimeUnit, returnTimeUnit);
     }
 
@@ -250,8 +256,9 @@ public class ConfigParsers {
      * <br>
      * Example:
      * <pre>
-     *     parseAcceleration("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
+     *     parseAcceleration("10,METERS,HOURS", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
      *     parseAcceleration("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
+     *     parseAcceleration("10: Meters: Hours", METERS, SECONDS) &#61;&#62; 7.716E-7 m/s2
      *     parseAcceleration("10", METERS, SECONDS) &#61;&#62; 10 m/s2
      * </pre>
      * <br>
@@ -262,7 +269,6 @@ public class ConfigParsers {
      */
     public static double parseAcceleration(String value, LengthUnit returnLengthUnit, TimeUnit returnTimeUnit) {
         String[] parts = parseParts(value);
-        double acceleration = Double.parseDouble(parts[0].trim());
         LengthUnit sourceLengthUnit;
         TimeUnit sourceTimeUnit;
         if (parts.length == 1) {
@@ -274,6 +280,7 @@ public class ConfigParsers {
         } else {
             throw Failer.fail("Acceleration values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
+        double acceleration = Double.parseDouble(parts[0].trim());
         return acceleration * returnLengthUnit.getUnitsIn(sourceLengthUnit) / (Math.pow(getTimeUnitsInSourceTimeUnit(sourceTimeUnit, returnTimeUnit), 2));
     }
 
@@ -285,8 +292,9 @@ public class ConfigParsers {
      * <br>
      * Example:
      * <pre>
-     *     parseJerk("10, METERS, HOURS", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
+     *     parseJerk("10,METERS,HOURS", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
      *     parseJerk("10, METER, hoUrs", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
+     *     parseJerk("10: Meters, Hours", METERS, SECONDS) &#61;&#62; 2.143-10 m/s3
      *     parseJerk("10", METERS, SECONDS) &#61;&#62; 10 m/s3
      * </pre>
      * <br>
@@ -297,7 +305,6 @@ public class ConfigParsers {
      */
     public static double parseJerk(String value, LengthUnit returnLengthUnit, TimeUnit returnTimeUnit) {
         String[] parts = parseParts(value);
-        double jerk = Double.parseDouble(parts[0].trim());
         LengthUnit sourceLengthUnit;
         TimeUnit sourceTimeUnit;
         if (parts.length == 1) {
@@ -309,6 +316,7 @@ public class ConfigParsers {
         } else {
             throw Failer.fail("Jerk values (%s) need to be specified without units (for SI) or in the following format: '<value>,<length unit>,<time unit>' or '<value>:<length unit>:<time unit>'", Arrays.toString(parts));
         }
+        double jerk = Double.parseDouble(parts[0].trim());
         return jerk * returnLengthUnit.getUnitsIn(sourceLengthUnit) / (Math.pow(getTimeUnitsInSourceTimeUnit(sourceTimeUnit, returnTimeUnit), 3));
     }
 

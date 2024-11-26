@@ -409,6 +409,10 @@ public class OptionalValueParserTest {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, SECONDS", TimeUnit.SECONDS, null);
             assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
             assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "  2.3 : SECONDS ", TimeUnit.SECONDS, null);
+            assertThat(parser.asTime()).isEqualTo(OptionalLong.of(2));
+            assertThat(parser.asFractionalTime()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
@@ -495,6 +499,9 @@ public class OptionalValueParserTest {
         @DisplayName("returns a Duration for an integer value")
         void returnDurationForInt() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, MILLISECONDS");
+            assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "  2 :  MILLISECONDS ");
             assertThat(parser.asDuration()).isEqualTo(Optional.of(Duration.ofMillis(2)));
         }
 
@@ -597,6 +604,9 @@ public class OptionalValueParserTest {
         void returnValue() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METERS", null, LengthUnit.METERS);
             assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "  2.3 :  METERS ", null, LengthUnit.METERS);
+            assertThat(parser.asLength()).isEqualTo(OptionalDouble.of(2.3));
         }
 
         @Test
@@ -661,7 +671,7 @@ public class OptionalValueParserTest {
         @Test
         @DisplayName("Throws an exception if length unit not set")
         void throwsExceptionWhenUnitNotSet() {
-            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "FAIL, METERS", null, null);
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, METERS", null, null);
             assertThrowsWithKey(parser::asLength, NullPointerException.class);
         }
     }
@@ -680,6 +690,9 @@ public class OptionalValueParserTest {
         @DisplayName("returns the double value when units are specified")
         void returnValue() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3 :  METERS:  SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asSpeed()).isEqualTo(OptionalDouble.of(2.3));
         }
 
@@ -747,6 +760,9 @@ public class OptionalValueParserTest {
         void throwsExceptionForInvalidStructure() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asSpeed, IllegalStateException.class);
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2,METERS:SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asSpeed, IllegalStateException.class);
         }
 
         @Test
@@ -785,6 +801,9 @@ public class OptionalValueParserTest {
         @DisplayName("returns the double value with units specified")
         void returnValue() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3 : METERS  : SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asAcceleration()).isEqualTo(OptionalDouble.of(2.3));
         }
 
@@ -852,6 +871,9 @@ public class OptionalValueParserTest {
         void throwsExceptionForInvalidStructure() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asAcceleration, IllegalStateException.class);
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2, METERS : SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asAcceleration, IllegalStateException.class);
         }
 
         @Test
@@ -890,6 +912,9 @@ public class OptionalValueParserTest {
         @DisplayName("returns the double value with units specified")
         void returnValue() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2.3, METERS, SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2.3));
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2.3 : METERS  : SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThat(parser.asJerk()).isEqualTo(OptionalDouble.of(2.3));
         }
 
@@ -958,6 +983,9 @@ public class OptionalValueParserTest {
         @DisplayName("throws an exception invalid structure")
         void throwsExceptionForInvalidStructure() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "2, METERS", TimeUnit.SECONDS, LengthUnit.METERS);
+            assertThrowsWithKey(parser::asJerk, IllegalStateException.class);
+
+            parser = new OptionalValueParser(TestConfig.FOO, "2, METERS : SECONDS", TimeUnit.SECONDS, LengthUnit.METERS);
             assertThrowsWithKey(parser::asJerk, IllegalStateException.class);
         }
 

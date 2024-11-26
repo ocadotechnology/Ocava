@@ -280,7 +280,10 @@ class ConfigParsersTest {
 
         @Test
         void testParseWithUnits() {
-            assertThat(parseLength("1, CENTIMETERS", LengthUnit.METERS)).isEqualTo(0.01D);
+            assertThat(parseLength("1,CENTIMETERS", LengthUnit.METERS)).isEqualTo(0.01D);
+            assertThat(parseLength("1 ,  CENTIMETERS ", LengthUnit.METERS)).isEqualTo(0.01D);
+            assertThat(parseLength("1:CENTIMETERS", LengthUnit.METERS)).isEqualTo(0.01D);
+            assertThat(parseLength("1 :  CENTIMETERS ", LengthUnit.METERS)).isEqualTo(0.01D);
         }
 
         @Test
@@ -313,8 +316,12 @@ class ConfigParsersTest {
 
         @Test
         void testParseWithUnits() {
-            assertThat(parseFractionalTime("1, MINUTES", TimeUnit.SECONDS)).isEqualTo(60D);
+            assertThat(parseFractionalTime("1,MINUTES", TimeUnit.SECONDS)).isEqualTo(60D);
+            assertThat(parseFractionalTime("1 ,  MINUTES ", TimeUnit.SECONDS)).isEqualTo(60D);
             assertThat(parseFractionalTime("1.5, MINUTES", TimeUnit.SECONDS)).isEqualTo(90D);
+            assertThat(parseFractionalTime("1:MINUTES", TimeUnit.SECONDS)).isEqualTo(60D);
+            assertThat(parseFractionalTime("1 :  MINUTES ", TimeUnit.SECONDS)).isEqualTo(60D);
+            assertThat(parseFractionalTime("1.5: MINUTES", TimeUnit.SECONDS)).isEqualTo(90D);
         }
 
         @Test
@@ -348,6 +355,9 @@ class ConfigParsersTest {
         @Test
         void testParseWithUnits() {
             assertThat(parseDuration("1, MINUTES")).isEqualTo(Duration.ofMinutes(1));
+            assertThat(parseDuration("1 ,  MINUTES ")).isEqualTo(Duration.ofMinutes(1));
+            assertThat(parseDuration("1: MINUTES")).isEqualTo(Duration.ofMinutes(1));
+            assertThat(parseDuration("1 :  MINUTES ")).isEqualTo(Duration.ofMinutes(1));
         }
 
         @Test
@@ -403,7 +413,10 @@ class ConfigParsersTest {
 
         @Test
         void testParseWithUnits() {
-            assertThat(parseSpeed("1, METERS, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1,METERS,MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1 , METERS  , MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1:METERS:MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
+            assertThat(parseSpeed("1 : METERS  : MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(0.0166, Offset.offset(0.001));
         }
 
         @Test
@@ -427,6 +440,9 @@ class ConfigParsersTest {
             assertThatThrownBy(() -> parseSpeed("0, a, b, c", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("need to be specified without units");
+            assertThatThrownBy(() -> parseSpeed("1,METERS:MINUTES", LengthUnit.METERS, TimeUnit.MINUTES))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("need to be specified without units");
         }
     }
 
@@ -439,7 +455,10 @@ class ConfigParsersTest {
 
         @Test
         void testParseWithUnits() {
-            assertThat(parseAcceleration("1, METERS, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1,METERS,MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1 , METERS ,  MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1:METERS:MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
+            assertThat(parseAcceleration("1 : METERS :  MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(2.777E-4, Offset.offset(0.001E-4));
         }
 
         @Test
@@ -463,6 +482,9 @@ class ConfigParsersTest {
             assertThatThrownBy(() -> parseAcceleration("0, a, b, c", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("need to be specified without units");
+            assertThatThrownBy(() -> parseAcceleration("1,METERS:MINUTES", LengthUnit.METERS, TimeUnit.MINUTES))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("need to be specified without units");
         }
     }
 
@@ -475,7 +497,10 @@ class ConfigParsersTest {
 
         @Test
         void testParseWithUnits() {
-            assertThat(parseJerk("1, METERS, MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1,METERS,MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1 , METERS  , MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1:METERS:MINUTES", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
+            assertThat(parseJerk("1 : METERS  : MINUTES ", LengthUnit.METERS, TimeUnit.SECONDS)).isCloseTo(4.6296E-6, Offset.offset(0.0001E-6));
         }
 
         @Test
@@ -497,6 +522,9 @@ class ConfigParsersTest {
             assertThatThrownBy(() -> parseJerk("not a number", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(NumberFormatException.class);
             assertThatThrownBy(() -> parseJerk("0, a, b, c", LengthUnit.METERS, TimeUnit.MINUTES))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("need to be specified without units");
+            assertThatThrownBy(() -> parseJerk("1:METERS,MINUTES", LengthUnit.METERS, TimeUnit.MINUTES))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("need to be specified without units");
         }

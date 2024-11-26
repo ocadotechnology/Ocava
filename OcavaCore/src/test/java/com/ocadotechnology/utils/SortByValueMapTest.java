@@ -293,10 +293,8 @@ class SortByValueMapTest {
     void computeIfAbsent_whenKeyInMap_returnsExistingValue() {
         testMap.put(KEY_1, 1);
 
-        assertThat(testMap.computeIfAbsent(KEY_1, k -> {
-            Assertions.fail();
-            return -1;
-        })).isEqualTo(1);
+        assertThat(testMap.computeIfAbsent(KEY_1, k -> Assertions.fail()))
+                .isEqualTo(1);
         assertThat(testMap.get(KEY_1)).isEqualTo(1);
     }
 
@@ -304,10 +302,8 @@ class SortByValueMapTest {
     void computeIfPresent_whenKeyNotInMap_returnsNull() {
         testMap.put(KEY_1, 1);
 
-        assertThat(testMap.computeIfPresent(KEY_2, (k, v) -> {
-            Assertions.fail();
-            return -1;
-        })).isNull();
+        assertThat(testMap.computeIfPresent(KEY_2, (k, v) -> Assertions.fail()))
+                .isNull();
     }
 
     @Test
