@@ -147,7 +147,7 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
 
         snapshot = null;
         try {
-            validateUpdate(oldObject, oldValue, replacedValue, maybeOldKey, maybeNewKey);
+            validateUpdate(oldObject, oldValue, replacedValue, newObject, maybeOldKey, maybeNewKey);
             afterUpdate();
         } catch (IndexUpdateException e) {
             rollbackAndThrow(maybeOldKey, maybeNewKey, oldValue, replacedValue, e);
@@ -158,6 +158,7 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
             @CheckForNull C oldObject,
             @CheckForNull C oldValue,
             @CheckForNull C replacedValue,
+            @CheckForNull C newObject,
             @CheckForNull Optional<R> maybeOldKey,
             @CheckForNull Optional<R> maybeNewKey) throws IndexUpdateException {
         if (oldValue != oldObject) {
@@ -173,10 +174,11 @@ public class FastOptionalOneToOneIndex<R, C extends Identified<?>> extends Abstr
         if (replacedValue != null) {
             throw new IndexUpdateException(
                     getNameOrDefault(),
-                    "Error updating %s: Unexpected value %s at new index %s.  Old index is %s",
+                    "Error updating %s: Index is supposedly a one-to-one index, but multiple values mapped onto the same key %s. Old value %s, new value %s. (Old key for new value %s).",
                     formattedName,
-                    replacedValue,
                     maybeNewKey,
+                    replacedValue,
+                    newObject,
                     maybeOldKey);
         }
     }

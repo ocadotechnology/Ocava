@@ -31,6 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
@@ -373,6 +374,14 @@ class OptionalOneToOneIndexTest {
         private TestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
             super(id);
             this.location = location;
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this)
+                    .add("id", getId())
+                    .add("location", location)
+                    .toString();
         }
 
         @Override
