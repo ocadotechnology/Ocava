@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
@@ -58,11 +60,16 @@ class NotificationRouterTest {
         }
     }
 
-    @Test
-    void whenMessageBroadcastThatServiceListensTo_thenSupplierIsCalledAndNotificationIsReceivedByService() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void whenMessageBroadcastThatServiceListensTo_thenSupplierIsCalledAndNotificationIsReceivedByService(boolean useStaticBroadcastMethod) {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         Supplier<ConcreteMessageNotification> concreteMessageNotificationSupplier = () -> concreteMessageNotification;
-        NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
+        if (useStaticBroadcastMethod) {
+            NotificationRouter.publish(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
+        } else {
+            NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, ConcreteMessageNotification.class);
+        }
         Assertions.assertEquals(1, notificationRememberingService.getReceivedNotifications().size());
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0) );
     }
@@ -98,21 +105,30 @@ class NotificationRouterTest {
         Assertions.assertEquals(0, notificationRememberingService.getReceivedNotifications().size());
     }
 
-    @Test
-    void whenNotifications_ThenNotificationsBroadcast() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void whenNotifications_ThenNotificationsBroadcast(boolean useStaticBroadcastMethod) {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
         ConcreteMessageNotification concreteMessageNotification2 = new ConcreteMessageNotification("Goodbye!");
-
-        NotificationRouter.get().broadcast(concreteMessageNotification, concreteMessageNotification2);
+        if (useStaticBroadcastMethod) {
+            NotificationRouter.publish(concreteMessageNotification, concreteMessageNotification2);
+        } else {
+            NotificationRouter.get().broadcast(concreteMessageNotification, concreteMessageNotification2);
+        }
         Assertions.assertEquals(2, notificationRememberingService.getReceivedNotifications().size());
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0));
         Assertions.assertEquals(concreteMessageNotification2, notificationRememberingService.getReceivedNotifications().get(1));
     }
 
-    @Test
-    void IfMessageBroadcastViaUnLazyBroadcastMethod_thenSupplierIsCalledAndNotificationIsReceivedByService(){
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void IfMessageBroadcastViaUnLazyBroadcastMethod_thenSupplierIsCalledAndNotificationIsReceivedByService(boolean useStaticBroadcastMethod) {
         ConcreteMessageNotification concreteMessageNotification = new ConcreteMessageNotification("Hello world");
-        NotificationRouter.get().broadcast(concreteMessageNotification);
+        if (useStaticBroadcastMethod) {
+            NotificationRouter.publish(concreteMessageNotification);
+        } else {
+            NotificationRouter.get().broadcast(concreteMessageNotification);
+        }
         Assertions.assertEquals(1, notificationRememberingService.getReceivedNotifications().size());
         Assertions.assertEquals(concreteMessageNotification, notificationRememberingService.getReceivedNotifications().get(0) );
     }

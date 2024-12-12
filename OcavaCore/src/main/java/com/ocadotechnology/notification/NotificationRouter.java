@@ -25,6 +25,42 @@ public interface NotificationRouter {
     }
 
     /**
+     * A static call to broadcast a notification. Equivalent to calling:
+     * <pre>
+     *     NotificationRouter.get().broadcast(notification);
+     * </pre>
+     *
+     * @see #broadcast(Notification)
+     */
+    static <T extends Notification> void publish(T notification) {
+        get().broadcast(notification);
+    }
+
+    /**
+     * A static call to broadcast multiple notifications. Equivalent to calling:
+     * <pre>
+     *     NotificationRouter.get().broadcast(notification1, notification2, ...);
+     * </pre>
+     *
+     * @see #broadcast(Notification...)
+     */
+    static void publish(Notification... notifications) {
+        get().broadcast(notifications);
+    }
+
+    /**
+     * A static call to broadcast a notification created by the provided supplier. Equivalent to calling:
+     * <pre>
+     *     NotificationRouter.get().broadcast(concreteMessageNotificationSupplier, notificationClass);
+     * </pre>
+     *
+     * @see #broadcast(Supplier, Class)
+     */
+    static <T extends Notification> void publish(Supplier<T> concreteMessageNotificationSupplier, Class<T> notificationClass) {
+        get().broadcast(concreteMessageNotificationSupplier, notificationClass);
+    }
+
+    /**
      * Sends the provided notification to all registered handlers.
      *
      * Note: if the Notification is expensive to create, and it may not have any subscribers, consider using the lazy
