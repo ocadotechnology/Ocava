@@ -36,6 +36,8 @@ public class RepeatableRandom {
 
     private static InstancedRepeatableRandom instancedRepeatableRandom;
 
+    private static boolean logAccess = false;
+
     private RepeatableRandom() {}
 
     private static InstancedRepeatableRandom getInstance() {
@@ -43,12 +45,45 @@ public class RepeatableRandom {
         return instancedRepeatableRandom;
     }
 
+    /**
+     * Activates or deactivates logging every access call to the random number generator. Intended for deep debugging of
+     * determinism issues in applications.
+     * <br>
+     * Note: if log level of the class `AccessLoggingInstancedRepeatableRandom` is not set to TRACE, this will have
+     * minimal effect, and will not log anything.
+     * Note: this will generate a very large volume of logs in most applications.
+     * Note: this will probably add noticeable load to the processor for this application.
+     */
+    public static void setLogAccess(boolean logAccess) {
+        if (logAccess == RepeatableRandom.logAccess) {
+            return;
+        }
+
+        RepeatableRandom.logAccess = logAccess;
+        if (logAccess && instancedRepeatableRandom != null) {
+            instancedRepeatableRandom = new AccessLoggingInstancedRepeatableRandom(instancedRepeatableRandom);
+        }
+        if (!logAccess) {
+            while (instancedRepeatableRandom instanceof AccessLoggingInstancedRepeatableRandom accessLoggingInstance) {
+                instancedRepeatableRandom = accessLoggingInstance.getWrapped();
+            }
+        }
+    }
+
     public static void initialiseWithSeed(long masterSeed) {
         instancedRepeatableRandom = InstancedRepeatableRandom.fromSeed(masterSeed);
+        if (logAccess) {
+            AccessLoggingInstancedRepeatableRandom.logAccess();
+            instancedRepeatableRandom = new AccessLoggingInstancedRepeatableRandom(instancedRepeatableRandom);
+        }
     }
 
     public static void initialiseWithFixedValue(double fixedValue) {
         instancedRepeatableRandom = InstancedRepeatableRandom.fromFixedValue(fixedValue);
+        if (logAccess) {
+            AccessLoggingInstancedRepeatableRandom.logAccess();
+            instancedRepeatableRandom = new AccessLoggingInstancedRepeatableRandom(instancedRepeatableRandom);
+        }
     }
 
     public static void clear() {

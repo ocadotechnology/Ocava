@@ -53,7 +53,7 @@ public class InstancedRepeatableRandom implements RandomGenerator {
     private final DoubleSupplier repeatableGaussianSupplier;
     private final ByteArraySupplier repeatableByteArraySupplier;
 
-    private InstancedRepeatableRandom(
+    InstancedRepeatableRandom(
             Random randomInstance,
             DoubleSupplier repeatableDoubleSupplier,
             IntUnaryOperator repeatableIntSupplier,
