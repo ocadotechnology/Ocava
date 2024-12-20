@@ -52,7 +52,7 @@
         <slf4j-api.version>2.0.16</slf4j-api.version>
         <junit-jupiter.version>5.11.4</junit-jupiter.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
-        <assertj.version>3.26.3</assertj.version>
+        <assertj.version>3.27.0</assertj.version>
         <mockito.version>5.14.2</mockito.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
