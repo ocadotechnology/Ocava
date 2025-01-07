@@ -30,6 +30,7 @@ import com.ocadotechnology.event.scheduling.Cancelable;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.trafficlights.TrafficConfig;
 import com.ocadotechnology.trafficlights.TrafficConfig.TrafficLight;
+import com.ocadotechnology.trafficlights.controller.TrafficLightState.LightType;
 import com.ocadotechnology.validation.Failer;
 
 public class TrafficLightController implements RestHandler {
@@ -61,7 +62,7 @@ public class TrafficLightController implements RestHandler {
     private final ImmutableMap<LightColour, Long> lightDurationsForTraffic;
     private TrafficLightState currentState;
     private Mode trafficLightMode;
-    private double timeOfPreviousCycleChange;
+    private double scheduledTimeOfLatestCycleChange;
 
     private Cancelable nextCycleEvent;
     @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
@@ -120,8 +121,8 @@ public class TrafficLightController implements RestHandler {
 
         updateTrafficLightState(builder -> builder.setCrossingRequested(true));
 
-        double currentCycleElapsedTime = scheduler.getTimeProvider().getTime() - timeOfPreviousCycleChange;
-        double minimumCycleDuration = getDurationOfCycle(currentState);
+        double currentCycleElapsedTime = scheduler.getTimeProvider().getTime() - scheduledTimeOfLatestCycleChange;
+        double minimumCycleDuration = Preconditions.checkNotNull(lightDurationsForTraffic.get(LightColour.GREEN), "No duration defined for light colour GREEN");
         double pedestrianLightChangeDelay = Math.max(minimumCycleDuration - currentCycleElapsedTime, pedestrianButtonPressLightChangeDelay);
         scheduleNextCycleIn(pedestrianLightChangeDelay);
     }
@@ -139,9 +140,13 @@ public class TrafficLightController implements RestHandler {
 
         updateTrafficLightState(builder -> builder.setColourForType(nextToTurnRed, LightColour.RED));
 
-        scheduler.doIn(CYCLE_CHANGE_DELAY, (now) -> {
-            updateTrafficLightState(builder -> builder.setColourForType(nextToTurnGreen, LightColour.GREEN).setCrossingRequested(false));
-            timeOfPreviousCycleChange = now;
+        scheduledTimeOfLatestCycleChange = Math.max(scheduler.getTimeProvider().getTime(), scheduledTimeOfLatestCycleChange) + CYCLE_CHANGE_DELAY;
+        scheduler.doAt(scheduledTimeOfLatestCycleChange, () -> {
+            if (nextToTurnGreen.equals(LightType.PEDESTRIAN)) {
+                updateTrafficLightState(builder -> builder.setColourForType(nextToTurnGreen, LightColour.GREEN).setCrossingRequested(false));
+            } else {
+                updateTrafficLightState(builder -> builder.setColourForType(nextToTurnGreen, LightColour.GREEN));
+            }
 
             scheduleNextEventInMode();
         }, "Finish light change event.");

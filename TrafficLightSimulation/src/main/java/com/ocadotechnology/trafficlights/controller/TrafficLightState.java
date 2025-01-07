@@ -16,6 +16,7 @@
 package com.ocadotechnology.trafficlights.controller;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.google.common.base.MoreObjects;
@@ -108,7 +109,7 @@ public class TrafficLightState {
         private boolean pedestrianCrossingRequested;
 
         Builder(TrafficLightState state) {
-            lightTypeLightColourMap = new HashMap<>(state.lightTypeLightColourMap);
+            lightTypeLightColourMap = new LinkedHashMap<>(state.lightTypeLightColourMap);
             pedestrianCrossingRequested = state.pedestrianCrossingRequested;
         }
 
