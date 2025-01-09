@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
@@ -40,6 +41,7 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
     private final Map<R, SortedSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, R> function;
     private final Comparator<? super C> comparator;
+    private ImmutableListMultimap<R, C> snapshot;
 
     /**
      * @param function key extraction function
@@ -124,6 +126,7 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         if (rs.isEmpty()) {
             indexValues.remove(r);
         }
+        snapshot = null;
     }
 
     @Override
@@ -138,6 +141,7 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
                     object
             );
         }
+        snapshot = null;
     }
 
     private SortedSet<C> getMutable(R r) {
@@ -148,4 +152,12 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         return new TreeSet<>(comparator);
     }
 
+    public ImmutableListMultimap<R, C> snapshot() {
+        if (snapshot == null) {
+            ImmutableListMultimap.Builder<R, C> builder = ImmutableListMultimap.builder();
+            indexValues.forEach(builder::putAll);
+            snapshot = builder.build();
+        }
+        return snapshot;
+    }
 }

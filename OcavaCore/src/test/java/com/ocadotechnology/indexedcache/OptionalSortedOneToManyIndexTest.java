@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
@@ -186,8 +187,136 @@ class OptionalSortedOneToManyIndexTest {
             assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
         }
 
-    }
+        @Test
+        void snapshot_whenIndexIsEmpty_returnsEmptySnapshot() {
+            assertThat(index.snapshot()).isEqualTo(ImmutableListMultimap.of());
+        }
 
+        @Test
+        void snapshot_whenOptionalIsPresent_returnsSnapshotWithSingleElement() {
+            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(testState);
+
+            assertThat(index.snapshot().values()).containsOnly(testState);
+        }
+
+        @Test
+        void snapshot_whenOptionalIsNotPresent_returnsSnapshotWithoutElement() {
+            TestState stateOne = new TestState(Id.create(1), 1, Optional.empty());
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+
+            assertThat(index.snapshot().values()).containsOnly(stateTwo);
+        }
+
+        @Test
+        void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, DIFFERENT_INDEXING_VALUE);
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+            index.snapshot();  // So call below is not first call
+
+            cache.delete(stateOne.getId());
+
+            assertThat(index.snapshot().values()).containsOnly(stateTwo);
+        }
+
+        @Test
+        void snapshot_whenNoChangesToEmptyCache_thenSameObjectReturned() {
+            Object firstSnapshot = index.snapshot();
+            Object secondSnapshot = index.snapshot();
+
+            assertThat(firstSnapshot).isSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
+            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(testState);
+
+            Object firstSnapshot = index.snapshot();
+            Object secondSnapshot = index.snapshot();
+
+            assertThat(firstSnapshot).isSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenIndexAddedTo_newObjectReturned() {
+            Object firstSnapshot = index.snapshot();
+
+            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(testState);
+            Object secondSnapshot = index.snapshot();
+
+            assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenIndexRemovedFrom_newObjectReturned() {
+            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(testState);
+
+            Object firstSnapshot = index.snapshot();
+
+            cache.delete(testState.getId());
+
+            Object secondSnapshot = index.snapshot();
+            assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
+            // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
+            TestState testState1 = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 2, Optional.empty());
+            cache.add(testState1);
+
+            Object firstSnapshot = index.snapshot();
+
+            cache.add(testState2);
+
+            Object secondSnapshot = index.snapshot();
+            assertThat(firstSnapshot).isSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
+            // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
+            TestState testState1 = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 2, Optional.empty());
+            cache.add(testState1);
+            cache.add(testState2);
+
+            Object firstSnapshot = index.snapshot();
+
+            cache.delete(testState2.getId());
+
+            Object secondSnapshot = index.snapshot();
+            assertThat(firstSnapshot).isSameAs(secondSnapshot);
+        }
+
+        @Test
+        void snapshot_whenMultipleStatesPerValue_thenStatesAreSorted() {
+            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            cache.add(testState1);
+            cache.add(testState2);
+            cache.add(testState3);
+            cache.add(testState4);
+            cache.add(testState5);
+
+            ImmutableListMultimap<Integer, TestState> snapshot = index.snapshot();
+            assertThat(snapshot.containsKey(1)).isTrue();
+            assertThat(snapshot.containsKey(2)).isTrue();
+
+            assertThat(snapshot.get(1)).isEqualTo(ImmutableList.of(testState2, testState1));
+            assertThat(snapshot.get(2)).isEqualTo(ImmutableList.of(testState4, testState5, testState3));
+        }
+    }
+    
     private interface LocationState {
         Integer getComparatorValue();
         Optional<Integer> getIndexingValue();

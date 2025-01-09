@@ -30,6 +30,7 @@ import javax.annotation.CheckForNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
@@ -39,6 +40,7 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
     private final Map<R, TreeSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, Optional<R>> function;
     private final Comparator<? super C> comparator;
+    private ImmutableListMultimap<R, C> snapshot;
 
     /**
      * @param function key extraction function
@@ -103,6 +105,8 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
             if (cs.isEmpty()) {
                 indexValues.remove(r);
             }
+
+            snapshot = null;
         });
     }
 
@@ -120,6 +124,8 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
                         object
                 );
             }
+
+            snapshot = null;
         }
     }
 
@@ -136,5 +142,14 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
     public Optional<C> getLast(R r) {
         SortedSet<C> mutable = getMutable(r);
         return mutable.isEmpty() ? Optional.empty() : Optional.of(mutable.last());
+    }
+
+    public ImmutableListMultimap<R, C> snapshot() {
+        if (snapshot == null) {
+            ImmutableListMultimap.Builder<R, C> builder = ImmutableListMultimap.builder();
+            indexValues.forEach(builder::putAll);
+            snapshot = builder.build();
+        }
+        return snapshot;
     }
 }
