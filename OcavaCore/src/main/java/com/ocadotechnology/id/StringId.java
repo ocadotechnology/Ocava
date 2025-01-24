@@ -26,7 +26,7 @@ import com.google.common.cache.LoadingCache;
 
 /** Provides a type-safe way of identifying something, backed by a String. */
 @Immutable
-public class StringId<T> implements Serializable, Comparable<StringId<T>>, Identity<T> {
+public class StringId<T> implements Serializable, Comparable<StringId<T>>, Identity<T>, Lookup<StringId<T>> {
     private static final long serialVersionUID = 1L;
 
     public final String id;

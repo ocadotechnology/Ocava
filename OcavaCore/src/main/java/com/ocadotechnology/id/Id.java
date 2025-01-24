@@ -25,7 +25,7 @@ import com.google.common.cache.LoadingCache;
 
 /** Provides a type-safe way of identifying something, backed by a long. */
 @Immutable
-public class Id<T> implements Serializable, Comparable<Id<T>>, Identity<T> {
+public class Id<T> implements Serializable, Comparable<Id<T>>, Identity<T>, Lookup<Id<T>> {
     private static final long serialVersionUID = 1L;
 
     public final long id;
