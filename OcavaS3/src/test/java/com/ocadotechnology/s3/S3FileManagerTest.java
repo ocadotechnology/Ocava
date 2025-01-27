@@ -179,7 +179,6 @@ public class S3FileManagerTest {
 
         //Shouldn't be called
         FileCacheTestUtils.neverExpectCreateWriteableFileHandle(fileCache);
-        Mockito.verify(s3Querier, Mockito.never()).getContentLength(Mockito.any(), Mockito.any());
         Mockito.verify(s3Querier, Mockito.never()).writeObjectToFile(Mockito.any(), Mockito.any(), Mockito.any());
     }
 

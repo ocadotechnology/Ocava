@@ -35,6 +35,22 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.validation.Failer;
 
+/**
+ * Class to handle file retrieval given a bucket or directory for a file and a file key.
+ *
+ * A {@link FileCache} can be passed in to cache any retrieved files. {@link FileManager} will attempt to retrieve files
+ * from the cache before retrieving them from the original source.
+ * Cached file sizes will be verified before retrival. If they fail verification then the cached file will be deleted
+ * and re-acquired.
+ *
+ * A callback can also be defined to be applied once a file is retrieved. For example, a method to decompress compressed
+ * file formats.
+ *
+ * Implementers must define how to retrieve files from their original source and then store the file by overriding
+ * {@link #getFileAndWriteToDestination}
+ * They must also define how to verify the size of a cached file against the original source by overriding {@link #verifyFileSize}
+ * Implementers can also optionally define a callback to be applied to the file once it is retrieved by overriding {@link #applyCallbackAndGetFile}
+ */
 public abstract class FileManager implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(FileManager.class);
     private static final String DIR_SEPARATOR_FORWARD_SLASH = "/";
@@ -48,19 +64,32 @@ public abstract class FileManager implements Serializable {
         this.fileCache = fileCache;
     }
 
+    /**
+     * Retrieves a file from the cache if it exists, otherwise retrieves it from the original source.
+     * If the file is in the cache then the file size will be verified before it is retrieved. If it fails verification
+     * then the cached file will be deleted and re-acquired.
+     * A callback can be applied to the file once it is retrieved.
+     *
+     * File locking will be used to ensure that only one process or thread at a time can retrieve the file.
+     *
+     * @param fullyQualifiedBucket The bucket or directory in which the file is stored.
+     * @param key The name of the file.
+     * @param cacheOnly If true, the file will only be retrieved from the cache and not the original source.
+     * @return The retrieved file after any callback has been applied.
+     */
     protected File getFile(String fullyQualifiedBucket, String key, boolean cacheOnly) {
         Preconditions.checkState(!cacheOnly || fileCache != null,
-                "Attempted to fetch file Bucket=%s Key=%s using only S3 cache, but no cache configured.", fullyQualifiedBucket, key);
+                "Attempted to fetch file Bucket=%s Key=%s using only file cache, but no cache configured.", fullyQualifiedBucket, key);
         if (fileCache == null) {
             return getFileAsLocalTemporaryFile(fullyQualifiedBucket, key);
         }
 
+        // Try to retrieve the file from the cache if nothing is currently retrieving or otherwise handling the file
         File lockFileHandle = fileCache.createLockFileHandle(fullyQualifiedBucket, key);
         if (!lockFileHandle.exists()) {
-            Optional<File> cachedFile = fileCache.get(fullyQualifiedBucket, key);
-            if (cachedFile.isPresent()) {
-                logger.info("{} loaded from FileCache", cachedFile.get().getAbsolutePath());
-                return cachedFile.get();
+            Optional<File> maybeCachedFile = getVerifiedFileFromCacheOrDelete(fullyQualifiedBucket, key, cacheOnly);
+            if (maybeCachedFile.isPresent()) {
+                return maybeCachedFile.get();
             }
         }
 
@@ -69,20 +98,10 @@ public abstract class FileManager implements Serializable {
         FileLock lock = getFileLock(channel);
 
         // double checking to see if something which had the lock first has created the file.
-        Optional<File> optionalCachedFile = fileCache.get(fullyQualifiedBucket, key);
-        if (optionalCachedFile.isPresent()) {
-            File cachedFile = optionalCachedFile.get();
-            if (cacheOnly || verifyFileSize(cachedFile, fullyQualifiedBucket, key)) {
-                logger.info("{} loaded from FileCache", cachedFile.getAbsolutePath());
-                releaseLock(channel, lock, lockFileHandle);
-                return cachedFile;
-            } else {
-                logger.warn("{} failed verification. Deleting.", cachedFile.getAbsolutePath());
-                Preconditions.checkState(
-                        cachedFile.delete(),
-                        "Failed to delete cached file which is of the wrong file size. File: %s",
-                        cachedFile.toString());
-            }
+        Optional<File> maybeCachedFile = getVerifiedFileFromCacheOrDelete(fullyQualifiedBucket, key, cacheOnly);
+        if (maybeCachedFile.isPresent()) {
+            releaseLock(channel, lock, lockFileHandle);
+            return maybeCachedFile.get();
         }
         Preconditions.checkState(!cacheOnly, "File Bucket=%s Key=%s not found in cache.", fullyQualifiedBucket, key);
 
@@ -132,6 +151,33 @@ public abstract class FileManager implements Serializable {
         }
     }
 
+    // Attempts to retrieve a file from the cache. If a file is found it is verified before being returned. If
+    // verification fails then the file is deleted so it can separately be re-acquired
+    private Optional<File> getVerifiedFileFromCacheOrDelete(String fullyQualifiedBucket, String key, boolean getWithoutVerification) {
+        Preconditions.checkState(fileCache != null,
+                "Attempted to fetch file Bucket=%s Key=%s using only file cache, but no cache configured.", fullyQualifiedBucket, key);
+
+        Optional<File> maybeCachedFile = fileCache.get(fullyQualifiedBucket, key);
+
+        if (maybeCachedFile.isPresent()) {
+            File cachedFile = maybeCachedFile.get();
+
+            if (getWithoutVerification || verifyFileSize(cachedFile, fullyQualifiedBucket, key)) {
+                logger.info("{} loaded from FileCache", cachedFile.getAbsolutePath());
+                File cachedFileAfterCallback = applyCallbackAndGetFile(cachedFile);
+                return Optional.of(cachedFileAfterCallback);
+            }
+
+            logger.warn("{} failed verification. Deleting.", cachedFile.getAbsolutePath());
+            Preconditions.checkState(
+                    cachedFile.delete(),
+                    "Failed to delete cached file which is of the wrong file size. File: %s",
+                    cachedFile.toString());
+        }
+
+        return Optional.empty();
+    }
+
     private FileLock getFileLock(AsynchronousFileChannel channel) {
         try {
             return channel.lock().get();
@@ -157,6 +203,9 @@ public abstract class FileManager implements Serializable {
 
     protected abstract void getFileAndWriteToDestination(String bucket, String key, File writeableFileHandle);
 
-    protected abstract File applyCallbackAndGetFile(File file);
+    protected File applyCallbackAndGetFile(File file) {
+        // Default implementation if no callback is required. This method should be overridden if a callback is required.
+        return file;
+    }
 
 }

@@ -29,6 +29,9 @@ import com.ocadotechnology.fileaccess.FileCache;
 import com.ocadotechnology.fileaccess.FileManager;
 import com.ocadotechnology.validation.Failer;
 
+/**
+ * An implementation of {@link FileManager} to retrieve files from an S3 bucket.
+ */
 public class S3FileManager extends FileManager {
     @VisibleForTesting
     protected static final int MAX_RETRY_ATTEMPTS = 5;
@@ -137,16 +140,6 @@ public class S3FileManager extends FileManager {
             }
         }
         throw Failer.fail("Failed to download %s:%s from S3 after %s attempts", fullyQualifiedBucket, key, MAX_RETRY_ATTEMPTS);
-    }
-
-    /**
-     * Not interested in doing any post-processing on the file so do nothing
-     * @param file the file to apply the callback to
-     * @return file with the callback applied
-     */
-    @Override
-    protected File applyCallbackAndGetFile(File file) {
-        return file;
     }
 
     @Override
