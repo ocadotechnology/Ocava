@@ -122,7 +122,15 @@ public class ConstantJerkTraversalSection implements TraversalSection {
 
         //s = u*t + 1/2*a.*t^2 + 1/6*j*t^3
         ImmutableList<Complex> roots = CubicRootFinder.find((1/6d)*jerk, (1/2d)*initialAcceleration, initialSpeed, -distance);
-        return PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
+        double minimumPositiveTime = PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
+        if (minimumPositiveTime <= duration) {
+            return minimumPositiveTime;
+        }
+        //rounding error detection
+        if (roots.contains(Complex.ZERO)) {
+            return 0;
+        }
+        throw new TraversalCalculationException("No solution found for time to reach distance " + distance + " in " + this);
     }
 
     /**

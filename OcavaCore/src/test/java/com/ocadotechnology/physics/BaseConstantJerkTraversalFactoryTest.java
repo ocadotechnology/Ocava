@@ -87,4 +87,26 @@ class BaseConstantJerkTraversalFactoryTest {
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
         ConstantJerkTraversalSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
     }
+
+    /**
+     * Regression test for #454
+     * We found a rounding error in the calculation of the speed at a distance in the constant jerk case.
+     */
+    @Test
+    void whenDistanceIsNearlyAtTheCentre_thenReturnsAnExpectedValue() {
+        VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
+                4.04,
+                2.02,
+                -2.02,
+                0,
+                20,
+                -20,
+                -20,
+                20
+        );
+        double totalDistance = 1.5219999999999998;
+        double halfWay = 0.761; //rounding error above the mid-point
+        Traversal traversal = factory.create(totalDistance, 0, 0, scratchVehicle);
+        assertThat(traversal.getSpeedAtDistance(halfWay)).isStrictlyBetween(1.6, 1.7); //This used to throw an exception
+    }
 }
