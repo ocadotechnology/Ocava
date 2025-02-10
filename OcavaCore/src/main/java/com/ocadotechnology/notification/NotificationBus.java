@@ -178,7 +178,15 @@ public abstract class NotificationBus<N> {
             return;
         }
 
-        throw Failer.fail("first Thread: %s [%s] current Thread: %s [%s] %s", permitted, permitted.getId(), current, current.getId(), notification);
+        throw Failer.fail(
+                "A thread is trying to broadcast through a NotificationBus which is already in use by another thread."
+                        + " NotificationBus: %s. First Thread: %s, ID=%s. Current Thread: %s, ID=%s. Notification: %s",
+                getClass().getSimpleName(),
+                permitted,
+                permitted.getId(),
+                current,
+                current.getId(),
+                notification);
     }
 
     protected boolean isNotificationRegistered(Class<?> notification) {
