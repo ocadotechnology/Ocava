@@ -30,10 +30,11 @@ public final class TimeUnitConverter {
     }
 
     /**
-     * Converts the given event time from simulation time units to the given time units as a long.
+     * Converts the given event time from one time unit to another as a {@code long}.
      *
-     * @param eventTime The time in simulation time units to convert.
-     * @param targetUnit The unit of time the eventTime is to be converted into.
+     * @param eventTime The time in {@code currentUnit} units to convert.
+     * @param currentUnit The unit of time {@code eventTime} is currently in.
+     * @param targetUnit The unit of time {@code eventTime} is to be converted into.
      */
     public static long toTimeUnitLong(double eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
         long time;
@@ -46,10 +47,11 @@ public final class TimeUnitConverter {
     }
 
     /**
-     * Converts the given event time from simulation time units to the given time units as a long.
+     * Converts the given event time from one time unit to another as a {@code long}.
      *
-     * @param eventTime The time in simulation time units to convert.
-     * @param targetUnit The unit of time the eventTime is to be converted into.
+     * @param eventTime The time in {@code currentUnit} units to convert.
+     * @param currentUnit The unit of time {@code eventTime} is currently in.
+     * @param targetUnit The unit of time {@code eventTime} is to be converted into.
      */
     public static long toTimeUnitLong(long eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
         long time;
@@ -72,10 +74,11 @@ public final class TimeUnitConverter {
     }
 
     /**
-     * Converts the given event time from simulation time units to the given time units as a double.
+     * Converts the given event time from one time unit to another as a {@code double}.
      *
-     * @param eventTime The time in simulation time units to convert.
-     * @param targetUnit The unit of time the eventTime is to be converted into.
+     * @param eventTime The time in {@code currentUnit} units to convert.
+     * @param currentUnit The unit of time {@code eventTime} is currently in.
+     * @param targetUnit The unit of time {@code eventTime} is to be converted into.
      */
     public static double toTimeUnitDouble(double eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
         return eventTime * getTimeUnitsInSourceTimeUnit(currentUnit, targetUnit);
@@ -86,9 +89,11 @@ public final class TimeUnitConverter {
      *
      * @param eventTime The time value to be converted into simulation time units.
      * @param currentUnit The unit of time the eventTime is to be converted from.
+     * @deprecated duplicate method - use {@link #toTimeUnitDouble} instead.
      */
+    @Deprecated
     public static double fromTimeUnit(double eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
-        return eventTime * getTimeUnitsInSourceTimeUnit(currentUnit, targetUnit);
+        return toTimeUnitDouble(eventTime, currentUnit, targetUnit);
     }
 
     /**
