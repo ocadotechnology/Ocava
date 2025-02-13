@@ -101,6 +101,24 @@ class ManyToOneIndexTest {
         }
 
         @Test
+        void putOrUpdate_whenManyKeysAreUsedWithClashingCoordinates_thenExceptionThrownOnAdd() {
+            CoordinateLikeTestObject clashingCoordinate = CoordinateLikeTestObject.create(0, 0);
+
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1), CoordinateLikeTestObject.create(0, 2), clashingCoordinate));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(1, 0), CoordinateLikeTestObject.create(2, 0), clashingCoordinate));
+
+            assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
+            assertThatThrownBy(() -> cache.add(stateTwo))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.stream()).containsExactly(stateOne);
+            assertThat(index.keySet()).containsExactly(stateOne.locations.toArray(new CoordinateLikeTestObject[0]));
+            assertThat(index.getOptionally(clashingCoordinate)).contains(stateOne);
+        }
+
+        @Test
         void putOrUpdateAll_whenMultipleTestStatesMapToTheSameCoordinate_thenExceptionThrownOnAdd() {
             TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
             TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(0, 0)));
@@ -130,6 +148,22 @@ class ManyToOneIndexTest {
             assertThat(cache.stream()).containsExactly(stateOne);
             assertThat(index.keySet()).containsExactly(clashingCoordinate);
             assertThat(index.getOptionally(clashingCoordinate)).contains(stateOne);
+        }
+
+        @Test
+        void putOrUpdateAll_whenManyKeysAreUsedWithClashingCoordinates_thenExceptionThrownOnAdd() {
+            CoordinateLikeTestObject clashingCoordinate = CoordinateLikeTestObject.create(0, 0);
+
+            TestState stateOne = new TestState(Id.create(1), ImmutableSet.of(CoordinateLikeTestObject.create(0, 1), CoordinateLikeTestObject.create(0, 2), clashingCoordinate));
+            TestState stateTwo = new TestState(Id.create(2), ImmutableSet.of(CoordinateLikeTestObject.create(1, 0), CoordinateLikeTestObject.create(2, 0), clashingCoordinate));
+
+            assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .has(CacheExceptionUtils.validateCacheUpdateException(INDEX_NAME));
+
+            //rollback
+            assertThat(cache.isEmpty()).isTrue();
+            assertThat(index.isEmpty()).isTrue();
         }
 
         @Test

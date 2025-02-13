@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -69,15 +70,15 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
                     newObject
             );
         }
-        int added = 0;
+        Collection<R> added = new ArrayList<>();
         for (R r : objectIndexValues) {
             C oldObject = this.indexValues.put(r, newObject);
             if (oldObject == null) {
-                ++added;
+                added.add(r);
                 continue;
             }
             this.indexValues.put(r, oldObject);
-            rollback(objectIndexValues, added);
+            rollback(added);
             throw new IndexUpdateException(
                     getNameOrDefault(),
                     "Error updating %s: New object %s blocked by old object %s for index value %s",
@@ -89,14 +90,8 @@ public class ManyToOneIndex<R, C extends Identified<?>> extends AbstractIndex<C>
         }
     }
 
-    private void rollback(Collection<R> indexValues, int added) {
-        for (R r : indexValues) {
-            if (added <= 0) {
-                return;
-            }
-            indexValues.remove(r);
-            --added;
-        }
+    private void rollback(Collection<R> added) {
+        added.forEach(this.indexValues::remove);
     }
 
     private String getNameOrDefault() {
