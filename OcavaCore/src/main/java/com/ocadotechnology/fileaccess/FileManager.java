@@ -30,8 +30,6 @@ import javax.annotation.CheckForNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.validation.Failer;
 
@@ -134,17 +132,14 @@ public abstract class FileManager implements Serializable {
         }
     }
 
-    @SuppressFBWarnings(
-            value = "RV_RETURN_VALUE_IGNORED_BAD_PRACTICE",
-            justification = "Don't care if the lockFileHandle exists, we just want to make sure there is one")
     private AsynchronousFileChannel getFileChannel(File lockFileHandle) {
         try {
             AsynchronousFileChannel channel;
-            lockFileHandle.createNewFile();
             channel = AsynchronousFileChannel.open(
                     Paths.get(lockFileHandle.getAbsolutePath()),
                     StandardOpenOption.READ,
-                    StandardOpenOption.WRITE);
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE);
             return channel;
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
