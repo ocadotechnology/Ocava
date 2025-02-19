@@ -63,7 +63,7 @@
         <disruptor.version>4.0.0</disruptor.version>
         <logback-classic.version>1.5.16</logback-classic.version>
         <jmh.version>1.37</jmh.version>
-        <sqlite-jdbc.version>3.49.0.0</sqlite-jdbc.version>
+        <sqlite-jdbc.version>3.49.1.0</sqlite-jdbc.version>
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <!-- EE dependency required for s3 to work -->
         <jaxb.version>2.3.1</jaxb.version>
