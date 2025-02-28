@@ -81,7 +81,7 @@
         <!-- Spotbugs versions -->
         <spotbugs.version>4.9.1</spotbugs.version>
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
-        <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
+        <spotbugs-annotations.version>4.9.1</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -105,9 +105,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>annotations</artifactId>
-            <version>${findbugs-annotations.version}</version>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${spotbugs-annotations.version}</version>
         </dependency>
     </dependencies>
 
