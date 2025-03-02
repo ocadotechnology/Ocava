@@ -59,7 +59,7 @@
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.782</aws-java-sdk-s3.version>
         <jackson-databind.version>2.18.3</jackson-databind.version>
-        <jackson-dataformat-cbor.version>2.18.2</jackson-dataformat-cbor.version>
+        <jackson-dataformat-cbor.version>2.18.3</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
         <logback-classic.version>1.5.17</logback-classic.version>
         <jmh.version>1.37</jmh.version>
