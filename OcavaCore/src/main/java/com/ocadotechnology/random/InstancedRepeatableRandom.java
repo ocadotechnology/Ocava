@@ -29,8 +29,6 @@ import java.util.function.LongSupplier;
 
 import org.apache.commons.math3.random.RandomGenerator;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 
 /**
@@ -40,7 +38,6 @@ import com.google.common.base.Preconditions;
  * applications which use concepts such as Stream.parallelStream to retain deterministic behaviour, but each thread must
  * be passed an independent instance, created from a deterministic seed.
  */
-@SuppressFBWarnings(value = "DMI_RANDOM_USED_ONLY_ONCE", justification = "Random object is stored in the instantiated class")
 public class InstancedRepeatableRandom implements RandomGenerator {
     private static final String CANNOT_SET_SEED = "It is not possible to call this method, because the seed used for random is controlled by Ocava and cannot be set outside of it";
 

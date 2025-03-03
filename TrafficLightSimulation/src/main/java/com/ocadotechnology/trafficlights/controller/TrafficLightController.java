@@ -65,7 +65,7 @@ public class TrafficLightController implements RestHandler {
     private double scheduledTimeOfLatestCycleChange;
 
     private Cancelable nextCycleEvent;
-    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
+
     public TrafficLightController(
             RestSender restSender,
             EventScheduler scheduler,

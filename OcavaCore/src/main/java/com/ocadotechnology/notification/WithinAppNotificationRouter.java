@@ -22,8 +22,6 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.event.scheduling.EventScheduler;
@@ -60,7 +58,6 @@ class WithinAppNotificationRouter implements NotificationRouter {
         private static final WithinAppNotificationRouter instance = new WithinAppNotificationRouter();
     }
 
-    @SuppressFBWarnings(value = "SING_SINGLETON_GETTER_NOT_SYNCHRONIZED", justification = "Bug in spotbugs, see RBOWIMP-1145")
     static WithinAppNotificationRouter get() {
         return SingletonHolder.instance;
     }

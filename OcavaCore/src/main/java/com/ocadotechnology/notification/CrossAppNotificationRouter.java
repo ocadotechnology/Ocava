@@ -19,8 +19,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.utils.RememberingSupplier;
@@ -30,7 +28,6 @@ public class CrossAppNotificationRouter implements NotificationRouter {
         private static final CrossAppNotificationRouter instance = new CrossAppNotificationRouter();
     }
 
-    @SuppressFBWarnings(value = "SING_SINGLETON_GETTER_NOT_SYNCHRONIZED", justification = "Bug in spotbugs, see RBOWIMP-1145")
     public static CrossAppNotificationRouter get() {
         return SingletonHolder.instance;
     }
