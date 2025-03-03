@@ -54,7 +54,7 @@
         <junit-platform-engine.version>1.11.4</junit-platform-engine.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <assertj.version>3.27.3</assertj.version>
-        <mockito.version>5.15.2</mockito.version>
+        <mockito.version>5.16.0</mockito.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.782</aws-java-sdk-s3.version>
