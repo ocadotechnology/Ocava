@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.ocadotechnology</groupId>
+    <artifactId>ocava-open-source-bom</artifactId>
+    <version>0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Ocava Open-Source (Bill of Materials)</name>
+    <description>Bill of Materials for Ocava Open-Source projects, can be used to facilitate dependency management</description>
+    <url>https://github.com/ocadotechnology/Ocava</url>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Bill of Materials: for Ocava Open-Source: only specify the modules produced by Ocava -->
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>OcavaCore</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>OcavaCore</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>OcavaScenarioTest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>OcavaS3</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>SuiteTestEngine</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.21.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.wagon</groupId>
+                        <artifactId>wagon-webdav-jackrabbit</artifactId>
+                        <version>3.5.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.9.1.0</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>4.9.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>Ocada Cross Stream Releases</name>
+            <url>https://nexus.ocado.tech/repository/shared-maven-releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <name>Ocada Cross Stream Snapshots</name>
+            <url>https://nexus.ocado.tech/repository/shared-maven-snapshots</url>
+            <uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+        <site>
+            <id>ocado-maven-nexus</id>
+            <!-- The site is not deployed using maven, but site:stage requires the distribution information -->
+            <url>
+                http://fake/site
+            </url>
+        </site>
+    </distributionManagement>
+</project>
