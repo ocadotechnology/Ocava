@@ -383,13 +383,13 @@ class ConstantJerkSectionsFactory {
 
         ConstantJerkTraversalSection jerkDecelerationDown = ConstantJerkSectionFactory.jerkDecelerationDown(acceleration, vehicleProperties.jerkDecelerationDown);
 
-        if (jerkDecelerationDown.initialSpeed > initialSpeed) {
+        if (jerkDecelerationDown.initialSpeed > initialSpeed + EPSILON) {
             return ImmutableList.of(ConstantJerkSectionFactory.jerkDecelerationDownToZeroV(initialSpeed, initialAcceleration, vehicleProperties.jerkDecelerationDown));
         }
 
-        ConstantJerkTraversalSection constantJerkTraversalSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, acceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
-        if (constantJerkTraversalSection.duration > 0 + EPSILON) {
-            return ImmutableList.of(constantJerkTraversalSection, jerkDecelerationDown);
+        ConstantJerkTraversalSection jerkDecelerationUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, acceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
+        if (jerkDecelerationUpSection.duration > 0 + EPSILON) {
+            return ImmutableList.of(jerkDecelerationUpSection, jerkDecelerationDown);
         }
 
         return ImmutableList.of(jerkDecelerationDown);
