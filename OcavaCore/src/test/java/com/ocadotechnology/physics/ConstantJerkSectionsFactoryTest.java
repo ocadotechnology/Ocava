@@ -37,7 +37,7 @@ import com.ocadotechnology.physics.units.ValuesInSIUnits;
 import com.ocadotechnology.validation.Failer;
 
 @DisplayName("ConstantJerkSectionsFactory test")
-class ConstantJerkTraversalSectionsFactoryTest {
+class ConstantJerkSectionsFactoryTest {
     private static final double EPSILON = 0.01;
 
     private final double acceleration = 2.5E-6;
@@ -52,7 +52,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     private final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(maxSpeed, acceleration, deceleration, 0, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
 
     @Test
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenMaxSpeedExceeded_thenReturnAbsent() {
+    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenMaxSpeedExceeded_thenReturnEmptyOptional() {
         double jerk = 1;
         double acc = 1E9;
         double velocity = 2;
@@ -71,13 +71,13 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceTooLongForThisCase_thenReturnAbsent() {
+    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceTooLongForThisCase_thenReturnEmptyOptional() {
         Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(16.1d, vehicleMotionProperties);
         assertThat(sections).isEmpty();
     }
 
     @Test
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase_thenReturnFourSections() {
+    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase_thenReturnFourSections() {
         Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(1d, vehicleMotionProperties);
         assertThat(result).hasValueSatisfying(sections -> assertThat(sections).hasSize(4));
     }
@@ -85,7 +85,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     @DisplayName("when neither max acceleration or deceleration is reached")
     @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
     @MethodSource("traversalSectionsForNotTooLongCase")
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
+    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
         Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(1d, vehicleMotionProperties);
         assertThat(result).hasValueSatisfying(sections -> {
             TraversalSection section = sections.get(index);
@@ -104,7 +104,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReachedButMaxSpeedReached_whenMaxSpeedNotReached_thenReturnAbsent() {
+    void testMaxSpeedReached_whenMaxSpeedNotReached_thenReturnEmptyOptional() {
         double jerk = 1;
         double acc = 2;
         double velocity = 10;
@@ -123,7 +123,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReachedButMaxSpeedReached_whenMaxSpeedReached_thenReturnSections() {
+    void testMaxSpeedReached_whenMaxSpeedReached_thenReturnSections() {
         double jerk = 1;
         double acc = 2;
         double velocity = 2;
@@ -157,19 +157,19 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void maxAccelerationDecelerationAndSpeedReached_whenDistanceTooShortForCase_thenReturnAbsent() {
+    void testMaxSpeedReached_whenDistanceTooShortForCase_thenReturnEmptyOptional() {
         Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(25d, vehicleMotionProperties);
         assertThat(result).isEmpty();
     }
 
     @Test
-    void maxAccelerationDecelerationAndSpeedReached_whenDistanceNotTooShortForCase_thenReturnSevenSections() {
+    void testMaxSpeedReached_whenDistanceNotTooShortForCase_thenReturnSevenSections() {
         Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(100d, vehicleMotionProperties);
         assertThat(result).hasValueSatisfying(sections -> assertThat(sections).hasSize(7));
     }
 
     @Test
-    void maxAccelerationDecelerationAndSpeedReached_whenDistanceNotTooShortForCase_thenFirstSectionHasCorrectValues() {
+    void testMaxSpeedReached_whenDistanceNotTooShortForCase_thenFirstSectionHasCorrectValues() {
         Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(100d, vehicleMotionProperties);
         assertThat(result).hasValueSatisfying(sections -> {
             TraversalSection firstSection = sections.get(0);
@@ -180,13 +180,13 @@ class ConstantJerkTraversalSectionsFactoryTest {
 
     // TODO: more sections for maxAccelerationDecelerationAndSpeedReached
     @Test
-    void maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed_whenDistanceTooLongForCase_thenReturnAbsent() {
+    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenDistanceTooLongForCase_thenReturnEmptyOptional() {
         Assertions.assertThrows(TraversalCalculationException.class,
                 () -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(100d, vehicleMotionProperties));
     }
 
     @Test
-    void maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed_whenDistanceTooShortForCase_thenReturnAbsent() {
+    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenDistanceTooShortForCase_thenReturnEmptyOptional() {
         Assertions.assertThrows(TraversalCalculationException.class,
                 () -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(20d, vehicleMotionProperties));
 
@@ -195,7 +195,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     @DisplayName("when max acceleration and deceleration is reached but not max speed")
     @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
     @MethodSource("traversalSectionsWhenMaxAccelerationReachedButNotMaxSpeed")
-    void maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed_whenDistanceInCase(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
+    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenCalledValidly_thenReturnsCorrectTraversals(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
         ImmutableList<TraversalSection> result = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(37.8, vehicleMotionProperties);
         verifyTraversalSection(result.get(index),  totalDistance, duration, initialSpeed, finalSpeed, initialAcceleration, finalAcceleration, jerk);
     }
@@ -215,7 +215,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     @DisplayName("when one max acceleration is reached but not the other")
     @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
     @MethodSource("traversalSectionsWhenOneMaxAccelerationReached")
-    void oneMaxAccelerationReachedButNotOther_whenDistanceInCase(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
+    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenCalledValidly_thenReturnsCorrectTraversals(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
         ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, vehicleMotionProperties).get();
         TraversalSection section = sections.get(index);
 
@@ -234,15 +234,15 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenMaxSpeedExceeded_thenReturnAbsent() {
+    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenMaxSpeedExceeded_thenReturnEmptyOptional() {
         double jerk = 1E-9;
-        double acc = 2.5E-6;
-        double dec = -2E-6;
-        double velocity = 4E-3;
+        double acceleration = 2.5E-6;
+        double deceleration = -2E-6;
+        double speed = 4E-3;
         VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
-                velocity, //speed
-                acc, //accn
-                dec, //deceleration
+                speed,
+                acceleration,
+                deceleration,
                 0, // tolerance
                 jerk, //jerk accel up
                 -jerk, //jerk accel down
@@ -254,7 +254,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenSymmetricallyEqualForSymmetricallyEqualVehicleProperties_thenTraversalFlipped() {
+    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenSymmetricallyEqualForSymmetricallyEqualVehicleProperties_thenTraversalFlipped() {
         ImmutableList<TraversalSection> sections1 = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, vehicleMotionProperties).get();
         int numSections = sections1.size();
         Traversal traversal1 = new Traversal(sections1);
@@ -282,7 +282,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed_whenCalled_thenReturnSectionWithTheCorrectValues() {
+    void testCalculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed_whenCalled_thenReturnSectionWithTheCorrectValues() {
         ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(10d, vehicleMotionProperties).orElseThrow(Failer::valueExpected);
 
         ImmutableList<TraversalSection> sectionsStartingFromMoving =
@@ -299,7 +299,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void calculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtLessThanMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
+    void testCalculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtLessThanMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
         ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(39d, vehicleMotionProperties);
         ImmutableList<TraversalSection> sectionsStartingFromMoving = ConstantJerkSectionsFactory.calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(
                 0.35573166424566766E3,
@@ -317,7 +317,7 @@ class ConstantJerkTraversalSectionsFactoryTest {
     }
 
     @Test
-    void calculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
+    void testCalculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
         ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(39d, vehicleMotionProperties);
         ImmutableList<TraversalSection> sectionsStartingFromMoving = ConstantJerkSectionsFactory.
                 calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(0.234904663247122E3, 3.427067502496364E-3, 2.5E-6, vehicleMotionProperties);

@@ -130,7 +130,7 @@ class ConstantJerkSectionsFactory {
         if (distanceToTravelAtMaxSpeed <= -EPSILON) {
             return Optional.empty();
         }
-        // in the edge case where the constant speed section would be infinitesmally small, we don't add it.
+        // in the edge case where the constant speed section would be infinitesimally small, we don't add it.
         if (distanceToTravelAtMaxSpeed >= EPSILON) {
             traversalSectionBuilder.add(ConstantJerkSectionFactory.constantSpeed(distanceToTravelAtMaxSpeed, maxSpeed));
         }
@@ -187,7 +187,6 @@ class ConstantJerkSectionsFactory {
         if (Math.abs(v2 - accUpSection.finalSpeed) > EPSILON) {
             TraversalSection constAccSection = ConstantJerkSectionFactory.constantAcceleration(accUpSection.finalSpeed, v2, vehicleProperties.acceleration);
             listBuilder.add(constAccSection);
-
         }
         ConstantJerkTraversalSection accDownSection = ConstantJerkSectionFactory.jerkAccelerationDownToV(vehicleProperties.acceleration, v3, vehicleProperties.jerkAccelerationDown);
         ConstantJerkTraversalSection decUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(0, v3, vehicleProperties.deceleration, vehicleProperties.jerkDecelerationUp).get();

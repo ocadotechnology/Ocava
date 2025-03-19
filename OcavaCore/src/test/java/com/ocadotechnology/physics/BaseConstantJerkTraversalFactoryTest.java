@@ -252,7 +252,7 @@ class BaseConstantJerkTraversalFactoryTest {
                 for (double u = 0.00; u < 10d; u += 0.4) {
                     String message = "distance=" + d + ", initial-acceleration=" + a + ", initial-speed=" + u;
                     Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
-                    ConstantJerkTraversalSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
+                    ConstantJerkSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
                 }
             }
         }
@@ -263,7 +263,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double d = 0d, a = 0d, u = 2d;
         String message = "distance=" + d + ", initial-acceleration=" + a + ", initial-speed=" + u;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
-        ConstantJerkTraversalSectionsFactoryTest.checkJoinedUp(message, traversal.getSections());
+        ConstantJerkSectionsFactoryTest.checkJoinedUp(message, traversal.getSections());
     }
 
     @Test
@@ -271,7 +271,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double d = 100d, a = -2d, u = 6d;
         String message = "distance=" + d + ", initial-acceleration=" + a + ", initial-speed=" + u;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
-        ConstantJerkTraversalSectionsFactoryTest.checkJoinedUp(message, traversal.getSections());
+        ConstantJerkSectionsFactoryTest.checkJoinedUp(message, traversal.getSections());
     }
 
     @Test
@@ -279,7 +279,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double d = 0.5d, a = -3d, u = 0.5;
         String message = "distance=" + d + ", initial-acceleration=" + a + ", initial-speed=" + u;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
-        ConstantJerkTraversalSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
+        ConstantJerkSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
     }
 
     @Test
@@ -287,7 +287,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double d = 26d, a = 0.5d, u = 8.5d;
         String message = "distance=" + d + ", initial-acceleration=" + a + ", initial-speed=" + u;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
-        ConstantJerkTraversalSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
+        ConstantJerkSectionsFactoryTest.checkJoinedUpVelocities(message, traversal.getSections());
     }
 
     /**
@@ -306,7 +306,7 @@ class BaseConstantJerkTraversalFactoryTest {
     private void verifyTraversalSections(ImmutableList<TraversalSection> createdTraversalSections, ImmutableList<TraversalSection> expectedSections) {
         assertThat(createdTraversalSections.size()).isEqualTo(expectedSections.size());
         for (int i = 0; i < expectedSections.size(); i++) {
-            verifyTraversalSection(createdTraversalSections.get(i), expectedSections.get(i));
+            verifyTraversalSection(expectedSections.get(i), createdTraversalSections.get(i));
         }
     }
 
@@ -334,11 +334,11 @@ class BaseConstantJerkTraversalFactoryTest {
         assertThat(section.getAccelerationAtTime(section.getDuration())).isBetween(properties.deceleration  -EPSILON, properties.acceleration + EPSILON);
     }
 
-    private static VehicleMotionProperties createVehicleProperties(double speed, double acc, double dec, double jerk) {
+    private static VehicleMotionProperties createVehicleProperties(double speed, double acceleration, double deceleration, double jerk) {
         return new VehicleMotionProperties(
-                speed, //speed
-                acc, //accn
-                dec, //deceleration
+                speed,
+                acceleration,
+                deceleration,
                 0, // tolerance
                 jerk, //jerk accel up
                 -jerk, //jerk accel down

@@ -1,6 +1,6 @@
-This doc outlines the calculations for creating constant jerk traversals that via the `ConstantJerkSectionsFactory`.
+This doc outlines the calculations for creating constant jerk traversals via the ConstantJerkSectionsFactory
 
-When we assume the bot can maintain constant jerk with limits for acceleration, deceleration and speed, there are 8 possible motion profiles that the bot can attain depending on the values for these limits and the distance to travel. This is because for acceleration, deceleation and speed we can either reach the limit, or not, hence there are $2^3=8$ possible situations.
+When we assume a vehicle can maintain constant jerk with limits for acceleration, deceleration and speed, there are 8 possible motion profiles that the vehicle can attain depending on the values for these limits and the distance to travel. This is because for acceleration, deceleration and speed we can either reach the limit, or not, hence there are $2^3=8$ possible situations.
 
 ## Case 1 - Doesn't reach max acceleration, deceleration or speed
 
