@@ -27,7 +27,7 @@ import com.ocadotechnology.event.scheduling.EventSchedulerType;
 import com.ocadotechnology.event.scheduling.SimpleDiscreteEventScheduler;
 import com.ocadotechnology.event.scheduling.SourceSchedulerTracker;
 import com.ocadotechnology.event.scheduling.SourceTrackingEventScheduler;
-import com.ocadotechnology.notification.WithinAppNotificationRouter.BroadcastPriority;
+import com.ocadotechnology.notification.NotificationRouter.BroadcastPriority;
 import com.ocadotechnology.time.AdjustableTimeProvider;
 
 class InThreadNotificationOrderTest {
@@ -47,14 +47,14 @@ class InThreadNotificationOrderTest {
     @BeforeEach
     void setUp() {
         NotificationRouter.get().clearAllHandlers();
-        WithinAppNotificationRouter.setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
+        NotificationRouter.get().setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
         setupSubscribers();
     }
 
     @AfterEach
     void tearDown() {
         NotificationRouter.get().clearAllHandlers();
-        WithinAppNotificationRouter.setBroadcastPriority(BroadcastPriority.BROADCASTER_REGISTRATION_ORDER);
+        NotificationRouter.get().setBroadcastPriority(BroadcastPriority.BROADCASTER_REGISTRATION_ORDER);
     }
 
     private void setupSubscribers() {
@@ -87,7 +87,7 @@ class InThreadNotificationOrderTest {
         ImmutableList<ConcreteMessageNotification> reverseOrder = ImmutableList.of(notification2, notification1);
 
         //Test priority 1
-        WithinAppNotificationRouter.setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
+        NotificationRouter.get().setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
         notificationRememberingServiceOnT1.onReceiptDo(notification1, () -> NotificationRouter.get().broadcast(notification2));
         t1Scheduler.doNow(() -> NotificationRouter.get().broadcast(notification1));
         Assertions.assertEquals(creationOrder, notificationRememberingServiceOnT1.getReceivedNotifications());
@@ -96,7 +96,7 @@ class InThreadNotificationOrderTest {
         notificationRememberingServiceOnT2.clear();
 
         //Test the other priority
-        WithinAppNotificationRouter.setBroadcastPriority(BroadcastPriority.BROADCASTER_REGISTRATION_ORDER);
+        NotificationRouter.get().setBroadcastPriority(BroadcastPriority.BROADCASTER_REGISTRATION_ORDER);
         notificationRememberingServiceOnT1.onReceiptDo(notification1, () -> NotificationRouter.get().broadcast(notification2));
         t1Scheduler.doNow(() -> NotificationRouter.get().broadcast(notification1));
         Assertions.assertEquals(creationOrder, notificationRememberingServiceOnT1.getReceivedNotifications());
@@ -105,7 +105,7 @@ class InThreadNotificationOrderTest {
         notificationRememberingServiceOnT2.clear();
 
         //Swap back to the other priority
-        WithinAppNotificationRouter.setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
+        NotificationRouter.get().setBroadcastPriority(BroadcastPriority.CROSS_THREAD_FIRST);
         notificationRememberingServiceOnT1.onReceiptDo(notification1, () -> NotificationRouter.get().broadcast(notification2));
         t1Scheduler.doNow(() -> NotificationRouter.get().broadcast(notification1));
         Assertions.assertEquals(creationOrder, notificationRememberingServiceOnT1.getReceivedNotifications());

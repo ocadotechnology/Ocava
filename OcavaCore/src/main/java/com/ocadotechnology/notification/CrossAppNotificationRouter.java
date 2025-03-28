@@ -40,6 +40,11 @@ public class CrossAppNotificationRouter implements NotificationRouter {
 
     private volatile boolean disableBroadcast = false;
 
+    @Override
+    public void setBroadcastPriority(BroadcastPriority broadcastPriority) {
+        WithinAppNotificationRouter.get().setBroadcastPriority(broadcastPriority); //The CrossAppNotificationRouter calls into the WithinAppNotificationRouter in broadcastImplementation
+    }
+
     public void setEavesDropper(Consumer<Notification> eavesDropper) {
         Preconditions.checkState(this.eavesDropper == null || eavesDropper == null, "Attempting to override eavesdropper: old %s new %s", this.eavesDropper, eavesDropper);
         this.eavesDropper = eavesDropper;
