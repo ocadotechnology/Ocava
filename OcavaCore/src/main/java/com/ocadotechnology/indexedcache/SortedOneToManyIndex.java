@@ -18,6 +18,7 @@ package com.ocadotechnology.indexedcache;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -36,9 +37,9 @@ import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
-    private final SortedSet<C> EMPTY_TREE_SET = ImmutableSortedSet.of();
+    private final NavigableSet<C> EMPTY_TREE_SET = ImmutableSortedSet.of();
 
-    private final Map<R, SortedSet<C>> indexValues = new LinkedHashMap<>();
+    private final Map<R, NavigableSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, R> function;
     private final Comparator<? super C> comparator;
     private ImmutableListMultimap<R, C> snapshot;
@@ -114,6 +115,16 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         return tmp.isEmpty() ? Optional.empty() : Optional.of(tmp.last());
     }
 
+    /**
+     *  For a given key 'r', return the least element from the sorted values greater than 'previous'
+     *  (same as iteration order).<br>
+     *  Note: previous does not have to exist in the set (the next element will still be returned).
+     */
+    public Optional<C> after(R r, C previous) {
+        NavigableSet<C> cs = getMutable(r).tailSet(previous, false);
+        return cs.isEmpty() ? Optional.empty() : Optional.of(cs.first());
+    }
+
     public UnmodifiableIterator<C> iterator(R r) {
         return Iterators.unmodifiableIterator(getMutable(r).iterator());
     }
@@ -144,7 +155,7 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
         snapshot = null;
     }
 
-    private SortedSet<C> getMutable(R r) {
+    private NavigableSet<C> getMutable(R r) {
         return indexValues.getOrDefault(r, EMPTY_TREE_SET);
     }
 

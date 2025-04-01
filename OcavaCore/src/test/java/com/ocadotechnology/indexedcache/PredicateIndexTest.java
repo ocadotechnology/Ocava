@@ -19,50 +19,56 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.function.Predicate;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
+import com.ocadotechnology.indexedcache.IndexedImmutableObjectCache.Hints;
 
 class PredicateIndexTest {
 
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
-        PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
-            return cache.addPredicateIndex(TestState::isSomething);
+        PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache, Hints hint) {
+            return cache.addPredicateIndex(TestState::isSomething, hint);
         }
     }
 
     @Nested
     class CacheSubTypeTests extends IndexTests {
         @Override
-        PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+        PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache, Hints hint) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addPredicateIndex() require a type of
             // Predicate<TestState> instead of Predicate<? super TestState>, due to automatic type coercion of the lambda
             Predicate<TestThing> indexFunction = TestThing::isSomething;
-            return cache.addPredicateIndex(indexFunction);
+            return cache.addPredicateIndex(indexFunction, hint);
         }
     }
 
-    private abstract static class IndexTests {
+    abstract static class IndexTests {
 
-        private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private PredicateIndex<TestState> index;
+        protected IndexedImmutableObjectCache<TestState, TestState> cache;
+        protected PredicateIndex<TestState> index;
 
-        abstract PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
-
-        @BeforeEach
-        void init() {
-            cache = IndexedImmutableObjectCache.createHashMapBackedCache();
-            index = addIndexToCache(cache);
+        abstract PredicateIndex<TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache, Hints hint);
+        protected PredicateIndex<TestState> getIndex() {
+            return index;
         }
 
-        @Test
-        void putOrUpdate_whenIsSomethingChanges_thenStateIsMovedAcrossIndex() {
+        protected void initialise(Hints hint) {
+            cache = IndexedImmutableObjectCache.createHashMapBackedCache();
+            index = addIndexToCache(cache, hint);
+        }
+
+        @ParameterizedTest
+        @EnumSource(Hints.class)
+        void putOrUpdate_whenIsSomethingChanges_thenStateIsMovedAcrossIndex(Hints hint) {
+            initialise(hint);
+
             TestState firstState = new TestState(Id.create(1), true, 0);
             cache.add(firstState);
             assertThat(index.stream()).first().isEqualTo(firstState);
@@ -73,11 +79,14 @@ class PredicateIndexTest {
             assertThat(index.streamWhereNot()).first().isEqualTo(firstState);
         }
 
-        @Test
-        void count_givesTheNumberOfStatesInTheIndex() {
+        @ParameterizedTest
+        @EnumSource(Hints.class)
+        void count_givesTheNumberOfStatesInTheIndex(Hints hint) {
+            initialise(hint);
+
             TestState stateOne = new TestState(Id.create(1), true, 0);
-            TestState stateTwo = new TestState(Id.create(2), true, 0);
-            TestState stateThree = new TestState(Id.create(3), true, 0);
+            TestState stateTwo = new TestState(Id.create(2), true, 1);
+            TestState stateThree = new TestState(Id.create(3), true, 2);
 
             cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
             assertThat(index.count()).isEqualTo(3);
