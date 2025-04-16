@@ -73,7 +73,6 @@
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <license-maven-plugin.version>2.5.0</license-maven-plugin.version>
         <mycila-license-maven-plugin.version>4.6</mycila-license-maven-plugin.version>
-        <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
 
         <!-- JavaDoc Plugin Version -->
         <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
@@ -85,7 +84,7 @@
         <!-- Spotbugs versions -->
         <spotbugs.version>4.9.3</spotbugs.version>
         <spotbugs-maven-plugin.version>4.9.3.0</spotbugs-maven-plugin.version>
-        <findbugs-annotations.version>3.0.1u2</findbugs-annotations.version>
+        <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -110,9 +109,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>annotations</artifactId>
-            <version>${findbugs-annotations.version}</version>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${spotbugs-annotations.version}</version>
         </dependency>
     </dependencies>
 
@@ -504,15 +503,6 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>${findbugs-maven-plugin.version}</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Medium</threshold>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
