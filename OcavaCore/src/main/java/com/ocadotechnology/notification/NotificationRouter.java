@@ -20,9 +20,27 @@ import java.util.function.Supplier;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 
 public interface NotificationRouter {
+    enum BroadcastPriority {
+        /**
+         * Schedules cross-thread notifications first, then executes in-thread subscribers.
+         */
+        CROSS_THREAD_FIRST,
+        /**
+         * Processes broadcasters in registration order, with no regard to handling cross-thread notifications earlier
+         * or later.
+         */
+        BROADCASTER_REGISTRATION_ORDER
+    }
+
     static NotificationRouter get() {
         return CrossAppNotificationRouter.get();
     }
+
+    /**
+     * A configuration method to set the broadcast priority of the NotificationRouter. This will affect the order in
+     * which notifications are broadcast to cross-thread subscribers.
+     */
+    void setBroadcastPriority(BroadcastPriority broadcastPriority);
 
     /**
      * A static call to broadcast a notification. Equivalent to calling:

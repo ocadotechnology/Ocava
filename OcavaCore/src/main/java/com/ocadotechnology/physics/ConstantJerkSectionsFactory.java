@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.physics;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.math3.complex.Complex;
@@ -26,6 +28,10 @@ import com.ocadotechnology.maths.QuadraticRootFinder;
 import com.ocadotechnology.maths.QuarticRootFinder;
 import com.ocadotechnology.validation.Failer;
 
+/**
+ * See the README.md for derivations
+ * for the equations used by this class
+ */
 class ConstantJerkSectionsFactory {
     private static final double EPSILON = Math.pow(10, -9);
 
@@ -35,7 +41,7 @@ class ConstantJerkSectionsFactory {
     private ConstantJerkSectionsFactory() {
     }
 
-    static Optional<ImmutableList<TraversalSection>> neitherMaxAccelerationNorMaxDecelerationReached(double totalDistance, VehicleMotionProperties vehicleProperties) {
+    static Optional<ImmutableList<TraversalSection>> neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(double totalDistance, VehicleMotionProperties vehicleProperties) {
 
         double j1 = vehicleProperties.jerkAccelerationUp;
         double j2 = vehicleProperties.jerkAccelerationDown;
@@ -47,10 +53,10 @@ class ConstantJerkSectionsFactory {
         double c = 1 / (6 * Math.pow(j1, 2)) - 1 / (2 * j1 * j2) + 1 / (3 * Math.pow(j2, 2));
         double d = -1 / (6 * Math.pow(j4, 2)) + 1 / (2 * j3 * j4) - 1 / (3 * Math.pow(j3, 2));
 
-        double acceleration = Math.cbrt(totalDistance / (c + d  * Math.pow(-Math.sqrt(a / b), 3)));
-        double deceleration = Math.cbrt(totalDistance / (d + c  * Math.pow(-Math.sqrt(b / a), 3)));
-
-        if (acceleration > vehicleProperties.acceleration || deceleration < vehicleProperties.deceleration) {
+        double acceleration = Math.cbrt(totalDistance / (c + d * Math.pow(-Math.sqrt(a / b), 3)));
+        double deceleration = Math.cbrt(totalDistance / (d + c * Math.pow(-Math.sqrt(b / a), 3)));
+        double maxSpeedReached = Math.pow(acceleration, 2) * a / 2;
+        if (acceleration > vehicleProperties.acceleration || deceleration < vehicleProperties.deceleration || maxSpeedReached >= vehicleProperties.maxSpeed) {
             return Optional.empty();
         }
 
@@ -62,94 +68,164 @@ class ConstantJerkSectionsFactory {
         return Optional.of(ImmutableList.of(section1, section2, section3, section4));
     }
 
-    static Optional<ImmutableList<TraversalSection>> maxAccelerationDecelerationAndSpeedReached(double targetDistance, VehicleMotionProperties vehicleProperties) {
+    /**
+     * Handles 4 different acceleration profiles, where we hit the max acceleration or not, and where we hit max
+     * deceleration or not. Usually returns 5, 6 or 7 sections but can return 4 sections in the edge case where we
+     * reach max speed but need to start decelerating immediately and thus have no constant speed section.
+     */
+    static Optional<ImmutableList<TraversalSection>> maxSpeedReached(double distance, VehicleMotionProperties vehicleProperties) {
+        double j1 = vehicleProperties.jerkAccelerationUp;
+        double j2 = vehicleProperties.jerkAccelerationDown;
+        double j3 = vehicleProperties.jerkDecelerationUp;
+        double j4 = vehicleProperties.jerkDecelerationDown;
+        double maxSpeed = vehicleProperties.maxSpeed;
+        double maxAcc = vehicleProperties.acceleration;
+        double maxDec = vehicleProperties.deceleration;
+        List<TraversalSection> acceleratingSections = new ArrayList<>();
+        List<TraversalSection> deceleratingSections = new ArrayList<>();
 
-        // jerk parts
-        ConstantJerkTraversalSection section1 = ConstantJerkSectionFactory.jerkAccelerationUp(vehicleProperties.acceleration, vehicleProperties.jerkAccelerationUp);
-        ConstantJerkTraversalSection section3 = ConstantJerkSectionFactory.jerkAccelerationDownToV(vehicleProperties.acceleration, vehicleProperties.maxSpeed, vehicleProperties.jerkAccelerationDown);
-        ConstantJerkTraversalSection section5 = ConstantJerkSectionFactory.jerkDecelerationUp(0, vehicleProperties.maxSpeed, vehicleProperties.deceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
-        ConstantJerkTraversalSection section7 = ConstantJerkSectionFactory.jerkDecelerationDown(vehicleProperties.deceleration, vehicleProperties.jerkDecelerationDown);
-
-        // constant acceleration parts
-        TraversalSection section2 = ConstantJerkSectionFactory.constantAcceleration(section1.finalSpeed, section3.initialSpeed, vehicleProperties.acceleration);
-        TraversalSection section6 = ConstantJerkSectionFactory.constantAcceleration(section5.finalSpeed, section7.initialSpeed, vehicleProperties.deceleration);
-
-        double distanceCovered = section1.distance + section2.getTotalDistance() + section3.distance + section5.distance + section6.getTotalDistance() + section7.distance;
-
-        if (distanceCovered > targetDistance) {
-            return Optional.empty();
+        // Start with accelerating part.
+        // Check if accelerating like /\ is possible, i.e. we don't reach max acc
+        double denom = 1 / j1 - 1 / j2;
+        double a = Math.sqrt(2 * maxSpeed / denom);
+        if (a <= maxAcc) {
+            // Success, we can have a /\
+            acceleratingSections.add(ConstantJerkSectionFactory.jerkAccelerationUp(a, j1));
+            acceleratingSections.add(ConstantJerkSectionFactory.jerkAccelerationDownToV(a, maxSpeed, j2));
+        } else {
+            // We will exceed the max acc so we need to accelerate like /-\ instead
+            ConstantJerkTraversalSection jerkAccUpSection = ConstantJerkSectionFactory.jerkAccelerationUp(maxAcc, j1);
+            double speedReachedByMaxAccSection = maxSpeed + (1/2d * Math.pow(maxAcc, 2) / j2);
+            ConstantAccelerationTraversalSection maxAccSection = ConstantJerkSectionFactory.constantAcceleration(jerkAccUpSection.finalSpeed, speedReachedByMaxAccSection, maxAcc);
+            ConstantJerkTraversalSection jerkAccDownSection = ConstantJerkSectionFactory.jerkAccelerationDownToV(maxAcc, maxSpeed, j2);
+            acceleratingSections.addAll(List.of(jerkAccUpSection, maxAccSection, jerkAccDownSection));
         }
 
-        TraversalSection section4 = ConstantJerkSectionFactory.constantSpeed(targetDistance - distanceCovered, vehicleProperties.maxSpeed);
+        denom = 1 / j4 - 1 / j3;
+        double d = -Math.sqrt(2 * maxSpeed / denom);
+        if (d >= maxDec) {
+            // We can have a \/
+            deceleratingSections.add(ConstantJerkSectionFactory.jerkDecelerationUp(0, maxSpeed, d, j3).get());
+            deceleratingSections.add(ConstantJerkSectionFactory.jerkDecelerationDown(d, j4));
+        } else {
+            // We need \_/
+            ConstantJerkTraversalSection jerkDecUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(0, maxSpeed, maxDec, j3).get();
+            double speedReachedByMaxDecSection = 1/2d * Math.pow(maxDec, 2) / j4;
+            ConstantAccelerationTraversalSection maxDecSection = ConstantJerkSectionFactory.constantAcceleration(jerkDecUpSection.finalSpeed, speedReachedByMaxDecSection, maxDec);
+            ConstantJerkTraversalSection jerkDecDownSection = ConstantJerkSectionFactory.jerkDecelerationDown(maxDec, j4);
+            deceleratingSections.addAll(List.of(jerkDecUpSection, maxDecSection, jerkDecDownSection));
+        }
 
-        return Optional.of(ImmutableList.of(section1, section2, section3, section4, section5, section6, section7));
+        double distanceTraveledDuringAcceleratingSections = acceleratingSections.stream()
+                .map(TraversalSection::getTotalDistance)
+                .reduce(0d, Double::sum);
+        double distanceTraveledDuringDeceleratingSections = deceleratingSections.stream()
+                .map(TraversalSection::getTotalDistance)
+                .reduce(0d, Double::sum);
+        double distanceToTravelAtMaxSpeed = distance - distanceTraveledDuringAcceleratingSections - distanceTraveledDuringDeceleratingSections;
+
+        Builder<TraversalSection> traversalSectionBuilder = new Builder<TraversalSection>()
+                .addAll(acceleratingSections);
+
+        if (distanceToTravelAtMaxSpeed <= -EPSILON) {
+            return Optional.empty();
+        }
+        // in the edge case where the constant speed section would be infinitesimally small, we don't add it.
+        if (distanceToTravelAtMaxSpeed >= EPSILON) {
+            traversalSectionBuilder.add(ConstantJerkSectionFactory.constantSpeed(distanceToTravelAtMaxSpeed, maxSpeed));
+        }
+
+        return Optional.of(traversalSectionBuilder
+                .addAll(deceleratingSections)
+                .build());
     }
 
-    static Optional<ImmutableList<TraversalSection>> maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed(double targetDistance, VehicleMotionProperties vehicleProperties) {
+    static ImmutableList<TraversalSection> maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(double targetDistance, VehicleMotionProperties vehicleProperties) {
 
         double j1 = vehicleProperties.jerkAccelerationUp;
         double j2 = vehicleProperties.jerkAccelerationDown;
         double j3 = vehicleProperties.jerkDecelerationUp;
         double j4 = vehicleProperties.jerkDecelerationDown;
 
-        double a =  (1/2d) * (1 / vehicleProperties.acceleration - 1 / vehicleProperties.deceleration);
+        double a = (1 / 2d) * (1 / vehicleProperties.acceleration - 1 / vehicleProperties.deceleration);
         double b = (1 / 2d) * (vehicleProperties.deceleration / j3 - vehicleProperties.acceleration / j2);
 
-        double v1 = (1/2d) * Math.pow(vehicleProperties.acceleration, 2) / j1;
-        double v5 = (1/2d) * Math.pow(vehicleProperties.deceleration, 2) / j4;
+        double v1 = (1 / 2d) * Math.pow(vehicleProperties.acceleration, 2) / j1;
+        double v5 = (1 / 2d) * Math.pow(vehicleProperties.deceleration, 2) / j4;
 
         double c1 = Math.pow(vehicleProperties.acceleration, 3) / (6 * Math.pow(j1, 2)) - Math.pow(v1, 2) / (2 * vehicleProperties.acceleration)
-                + Math.pow(vehicleProperties.acceleration, 3) / (3 * Math.pow(j2, 2)) ;
+                + Math.pow(vehicleProperties.acceleration, 3) / (3 * Math.pow(j2, 2));
 
-        double c2 =  - Math.pow(vehicleProperties.deceleration, 3) / (6 * Math.pow(j4, 2)) + Math.pow(v5, 2) / (2 * vehicleProperties.deceleration)
+        double c2 = -Math.pow(vehicleProperties.deceleration, 3) / (6 * Math.pow(j4, 2)) + Math.pow(v5, 2) / (2 * vehicleProperties.deceleration)
                 - Math.pow(vehicleProperties.deceleration, 3) / (3 * Math.pow(j3, 2));
 
         double cprime = c1 + c2;
 
-        double c3 = Math.pow(vehicleProperties.acceleration, 3) / (8 * Math.pow(j2, 2)) - Math.pow( vehicleProperties.deceleration, 3) / (8 * Math.pow(j3, 2)) -
-                (1/2d) * Math.pow(vehicleProperties.acceleration, 3) / Math.pow(j2, 2) + (1/2d) * Math.pow(vehicleProperties.deceleration, 3) / Math.pow(j3, 2);
+        double c3 = Math.pow(vehicleProperties.acceleration, 3) / (8 * Math.pow(j2, 2)) - Math.pow(vehicleProperties.deceleration, 3) / (8 * Math.pow(j3, 2)) -
+                (1 / 2d) * Math.pow(vehicleProperties.acceleration, 3) / Math.pow(j2, 2) + (1 / 2d) * Math.pow(vehicleProperties.deceleration, 3) / Math.pow(j3, 2);
 
         double c = cprime + c3 - targetDistance;
 
         ImmutableList<Complex> roots = QuadraticRootFinder.find(a, b, c);
 
         double v3 = PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
-        double v2 = v3 + ((1/2d) * Math.pow(vehicleProperties.acceleration, 2)) / j2;
-        double v4 = v3 + ((1/2d) * Math.pow(vehicleProperties.deceleration, 2)) / j3;
+        double v2 = v3 + ((1 / 2d) * Math.pow(vehicleProperties.acceleration, 2)) / j2;
+        double v4 = v3 + ((1 / 2d) * Math.pow(vehicleProperties.deceleration, 2)) / j3;
 
-        if (v3 > vehicleProperties.maxSpeed + EPSILON || v1 >= v2 || v5 >= v4) {
-            return Optional.empty();
+        if (v3 > vehicleProperties.maxSpeed + EPSILON ||
+                v1 >= v2 + EPSILON ||
+                v5 >= v4 + EPSILON) {
+            throw new TraversalCalculationException("Should never reach this point.");
         }
 
-        ConstantJerkTraversalSection section1 = ConstantJerkSectionFactory.jerkAccelerationUp(vehicleProperties.acceleration, vehicleProperties.jerkAccelerationUp);
-        TraversalSection section2 = ConstantJerkSectionFactory.constantAcceleration(section1.finalSpeed, v2, vehicleProperties.acceleration);
-        ConstantJerkTraversalSection section3 = ConstantJerkSectionFactory.jerkAccelerationDownToV(vehicleProperties.acceleration, v3, vehicleProperties.jerkAccelerationDown);
-        ConstantJerkTraversalSection section4 = ConstantJerkSectionFactory.jerkDecelerationUp(0, v3, vehicleProperties.deceleration, vehicleProperties.jerkDecelerationUp).get();
-        TraversalSection section5 = ConstantJerkSectionFactory.constantAcceleration(v4, v5, vehicleProperties.deceleration);
-        ConstantJerkTraversalSection section6 = ConstantJerkSectionFactory.jerkDecelerationDown(vehicleProperties.deceleration, vehicleProperties.jerkDecelerationDown);
+        Builder<TraversalSection> listBuilder = ImmutableList.builder();
 
-        return Optional.of(ImmutableList.of(section1, section2, section3, section4, section5, section6));
+        ConstantJerkTraversalSection accUpSection = ConstantJerkSectionFactory.jerkAccelerationUp(vehicleProperties.acceleration, vehicleProperties.jerkAccelerationUp);
+        listBuilder.add(accUpSection);
+
+        // No need to add the const acc section if it would be infinitesmally small.
+        if (Math.abs(v2 - accUpSection.finalSpeed) > EPSILON) {
+            TraversalSection constAccSection = ConstantJerkSectionFactory.constantAcceleration(accUpSection.finalSpeed, v2, vehicleProperties.acceleration);
+            listBuilder.add(constAccSection);
+        }
+        ConstantJerkTraversalSection accDownSection = ConstantJerkSectionFactory.jerkAccelerationDownToV(vehicleProperties.acceleration, v3, vehicleProperties.jerkAccelerationDown);
+        ConstantJerkTraversalSection decUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(0, v3, vehicleProperties.deceleration, vehicleProperties.jerkDecelerationUp).get();
+        listBuilder.add(accDownSection, decUpSection);
+
+        // No need to add the const acc section if it would be infinitesmally small.
+        if (Math.abs(decUpSection.finalSpeed - v5) > EPSILON) {
+            TraversalSection constDecSection = ConstantJerkSectionFactory.constantAcceleration(v4, v5, vehicleProperties.deceleration);
+            listBuilder.add(constDecSection);
+        }
+
+        ConstantJerkTraversalSection decDownSection = ConstantJerkSectionFactory.jerkDecelerationDown(vehicleProperties.deceleration, vehicleProperties.jerkDecelerationDown);
+        listBuilder.add(decDownSection);
+
+        return listBuilder.build();
     }
 
-    static ImmutableList<TraversalSection> oneMaxAccelReachedButNotOther(double totalDistance, VehicleMotionProperties vehicleProperties) {
+    static Optional<ImmutableList<TraversalSection>> oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(double totalDistance, VehicleMotionProperties vehicleProperties) {
         double j1 = vehicleProperties.jerkAccelerationUp;
         double j2 = vehicleProperties.jerkAccelerationDown;
         double j3 = vehicleProperties.jerkDecelerationUp;
         double j4 = vehicleProperties.jerkDecelerationDown;
 
         if (willHitMaxAccelFirst(vehicleProperties)) {
+            if (willExceedMaxSpeedTryingToReachMaxAccel(vehicleProperties)) {
+                return Optional.empty();
+            }
             double a = vehicleProperties.acceleration;
 
             //TODO: strip out commonality between this ABCDE and the below
-            double A = (1 / (4 * (-a))) * (1 / (j4 * j3) - 1 / (2 * Math.pow(j4, 2)) - 1 / ( 2 * Math.pow(j3, 2)));
+            double A = (1 / (4 * (-a))) * (1 / (j4 * j3) - 1 / (2 * Math.pow(j4, 2)) - 1 / (2 * Math.pow(j3, 2)));
 
             double B = -(1 / (3 * Math.pow(j3, 2)) - 1 / (2 * j4 * j3) + 1 / (6 * Math.pow(j4, 2)));
 
-            double C = ((-a) / 4d) * (1 / (j3 * j2) - 1 / (j4 * j2)) + (-a) / (2 * j2) * ( 1 / j4 - 1 / j3);
+            double C = ((-a) / 4d) * (1 / (j3 * j2) - 1 / (j4 * j2)) + (-a) / (2 * j2) * (1 / j4 - 1 / j3);
 
             double D = 0;
 
-            double E = (Math.pow((-a), 3) / 8d) * ( 1 / Math.pow(j1, 2) - 1 / Math.pow(j2, 2)) - Math.pow((-a), 3) / (6d * Math.pow(j1, 2)) + Math.pow((-a), 3) / (6 * Math.pow(j2, 2)) - totalDistance;
+            double E = (Math.pow((-a), 3) / 8d) * (1 / Math.pow(j1, 2) - 1 / Math.pow(j2, 2)) - Math.pow((-a), 3) / (6d * Math.pow(j1, 2)) + Math.pow((-a), 3) / (6 * Math.pow(j2, 2)) - totalDistance;
 
             ImmutableList<Complex> roots = QuarticRootFinder.find(A, B, C, D, E);
 
@@ -157,36 +233,68 @@ class ConstantJerkSectionsFactory {
 
             ConstantJerkTraversalSection jerkAccelUp = ConstantJerkSectionFactory.jerkAccelerationUp(a, j1);
             ConstantJerkTraversalSection jerkDecelDown = ConstantJerkSectionFactory.jerkDecelerationDown(d, j4);
-            ConstantJerkTraversalSection jerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUpToV(0, jerkDecelDown.initialSpeed, d, j3).get();
+            Optional<ConstantJerkTraversalSection> maybeJerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUpToV(0, jerkDecelDown.initialSpeed, d, j3);
+            if (maybeJerkDecelUp.isEmpty() ||
+                    d < vehicleProperties.deceleration) {
+                return Optional.empty();
+            }
+            ConstantJerkTraversalSection jerkDecelUp = maybeJerkDecelUp.get();
             ConstantJerkTraversalSection jerkAccelDown = ConstantJerkSectionFactory.jerkAccelerationDownToV(a, jerkDecelUp.initialSpeed, j2);
+            double maxSpeedReached = jerkAccelDown.finalSpeed;
+            if (maxSpeedReached > vehicleProperties.maxSpeed) {
+                return Optional.empty();
+            }
             TraversalSection accelerate = ConstantJerkSectionFactory.constantAcceleration(jerkAccelUp.finalSpeed, jerkAccelDown.initialSpeed, a);
-
-            return ImmutableList.of(jerkAccelUp, accelerate, jerkAccelDown, jerkDecelUp, jerkDecelDown);
+            return Optional.of(ImmutableList.of(jerkAccelUp, accelerate, jerkAccelDown, jerkDecelUp, jerkDecelDown));
         }
 
         double d = vehicleProperties.deceleration;
 
-        double A = (1 / (4 * d)) * (1 / (j1 * j2) - 1 / (2 * Math.pow(j1, 2)) - 1 / ( 2 * Math.pow(j2, 2)));
+        double A = (1 / (4 * d)) * (1 / (j1 * j2) - 1 / (2 * Math.pow(j1, 2)) - 1 / (2 * Math.pow(j2, 2)));
 
-        double B =  1 / (3 * Math.pow(j2, 2)) - 1 / (2 * j1 * j2) + 1 / (6 * Math.pow(j1, 2));
+        double B = 1 / (3 * Math.pow(j2, 2)) - 1 / (2 * j1 * j2) + 1 / (6 * Math.pow(j1, 2));
 
-        double C = (d / 4d) * (1 / (j2 * j3) - 1 / (j1 * j3)) + d / (2 * j3) * ( 1 / j1 - 1 / j2);
+        double C = (d / 4d) * (1 / (j2 * j3) - 1 / (j1 * j3)) + d / (2 * j3) * (1 / j1 - 1 / j2);
 
         double D = 0;
 
-        double E = (Math.pow(d, 3) / 8d) * ( 1 / Math.pow(j4, 2) - 1 / Math.pow(j3, 2)) - Math.pow(d, 3) / (6d * Math.pow(j4, 2)) + Math.pow(d, 3) / (6 * Math.pow(j3, 2)) - totalDistance;
+        double E = (Math.pow(d, 3) / 8d) * (1 / Math.pow(j4, 2) - 1 / Math.pow(j3, 2)) - Math.pow(d, 3) / (6d * Math.pow(j4, 2)) + Math.pow(d, 3) / (6 * Math.pow(j3, 2)) - totalDistance;
 
         ImmutableList<Complex> roots = QuarticRootFinder.find(A, B, C, D, E);
 
         double a = PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
-
         ConstantJerkTraversalSection jerkDecelDown = ConstantJerkSectionFactory.jerkDecelerationDown(d, j4);
         ConstantJerkTraversalSection jerkAccelUp = ConstantJerkSectionFactory.jerkAccelerationUp(a, j1);
         ConstantJerkTraversalSection jerkAccelDown = ConstantJerkSectionFactory.jerkAccelerationDown(a, jerkAccelUp.finalSpeed, j2);
-        ConstantJerkTraversalSection jerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUp(0, jerkAccelDown.finalSpeed, d, j3).get();
+        Optional<ConstantJerkTraversalSection> maybeJerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUp(0, jerkAccelDown.finalSpeed, d, j3);
+        if (maybeJerkDecelUp.isEmpty() ||
+                jerkAccelDown.finalSpeed > vehicleProperties.maxSpeed ||
+                willStopMovingWhileTryingToReachMaxDecel(vehicleProperties, jerkAccelDown.finalSpeed) ||
+                a > vehicleProperties.acceleration) {
+            return Optional.empty();
+        }
+        ConstantJerkTraversalSection jerkDecelUp = maybeJerkDecelUp.get();
         TraversalSection decelerate = ConstantJerkSectionFactory.constantAcceleration(jerkDecelUp.finalSpeed, jerkDecelDown.initialSpeed, d);
+        return Optional.of(ImmutableList.of(jerkAccelUp, jerkAccelDown, jerkDecelUp, decelerate, jerkDecelDown));
+    }
 
-        return ImmutableList.of(jerkAccelUp, jerkAccelDown, jerkDecelUp, decelerate, jerkDecelDown);
+    private static boolean willExceedMaxSpeedTryingToReachMaxAccel(VehicleMotionProperties vehicleProperties) {
+        double j1 = vehicleProperties.jerkAccelerationUp;
+        double j2 = vehicleProperties.jerkAccelerationDown;
+        double maxSpeed = vehicleProperties.maxSpeed;
+        double maxAcc = vehicleProperties.acceleration;
+
+        double minSpeedReached = 0.5 * Math.pow(maxAcc, 2) * (1 / j1 - 1 / j2);
+        return minSpeedReached > maxSpeed;
+    }
+
+    private static boolean willStopMovingWhileTryingToReachMaxDecel(VehicleMotionProperties vehicleProperties, double initialSpeed) {
+        double j3 = vehicleProperties.jerkDecelerationUp;
+        double j4 = vehicleProperties.jerkDecelerationDown;
+        double maxDec = vehicleProperties.deceleration;
+
+        double maxSpeedReached = initialSpeed + (0.5 * Math.pow(maxDec, 2) * (1 / j3 - 1 / j4));
+        return maxSpeedReached < 0;
     }
 
     /**
@@ -232,7 +340,7 @@ class ConstantJerkSectionsFactory {
         Optional<ConstantJerkTraversalSection> optionalFirstSection;
         if (initialAcceleration < vehicleProperties.deceleration) {
             optionalFirstSection = ConstantJerkSectionFactory.jerkAccelerationDownToAcceleration(initialAcceleration, vehicleProperties.deceleration, initialSpeed, vehicleProperties.jerkDecelerationDown);
-        }  else {
+        } else {
             optionalFirstSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, vehicleProperties.deceleration, vehicleProperties.jerkDecelerationUp);
         }
 
@@ -267,20 +375,20 @@ class ConstantJerkSectionsFactory {
         double j1 = vehicleProperties.jerkDecelerationUp;
         double j2 = vehicleProperties.jerkDecelerationDown;
 
-        double a = (1/2d) * (1/j1 - 1/j2);
+        double a = (1 / 2d) * (1 / j1 - 1 / j2);
         double c = initialSpeed - (Math.pow(initialAcceleration, 2)) / (2 * j1);
 
         double acceleration = -Math.sqrt(-c / a);
 
         ConstantJerkTraversalSection jerkDecelerationDown = ConstantJerkSectionFactory.jerkDecelerationDown(acceleration, vehicleProperties.jerkDecelerationDown);
 
-        if (jerkDecelerationDown.initialSpeed > initialSpeed) {
+        if (jerkDecelerationDown.initialSpeed > initialSpeed + EPSILON) {
             return ImmutableList.of(ConstantJerkSectionFactory.jerkDecelerationDownToZeroV(initialSpeed, initialAcceleration, vehicleProperties.jerkDecelerationDown));
         }
 
-        ConstantJerkTraversalSection constantJerkTraversalSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, acceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
-        if (constantJerkTraversalSection.duration > 0 + EPSILON) {
-            return ImmutableList.of(constantJerkTraversalSection, jerkDecelerationDown);
+        ConstantJerkTraversalSection jerkDecelerationUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, acceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
+        if (jerkDecelerationUpSection.duration > 0 + EPSILON) {
+            return ImmutableList.of(jerkDecelerationUpSection, jerkDecelerationDown);
         }
 
         return ImmutableList.of(jerkDecelerationDown);
@@ -340,7 +448,7 @@ class ConstantJerkSectionsFactory {
             double j2 = vehicleProperties.jerkAccelerationDown;
 
             //TODO: strip out commonality between this and another place in this file that does the same thing (it's got doube a and double c)
-            double a = (1/2d) * (1/j1 - 1/j2);
+            double a = (1 / 2d) * (1 / j1 - 1 / j2);
             double c = initialSpeed - (Math.pow(initialAcceleration, 2)) / (2 * j1) - vehicleProperties.maxSpeed;
 
             double a1 = Math.sqrt(-c / a);

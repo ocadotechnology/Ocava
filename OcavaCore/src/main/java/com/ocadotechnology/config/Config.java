@@ -28,8 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
@@ -509,7 +507,6 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
         void accept(String key, String value, Boolean isSecret);
     }
 
-    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "We explicitly check if the map contains the key.")
     private Optional<String> getIfKeyDefined(Enum<?> key) {
         if (key.getClass().equals(cls) && values.containsKey(cls.cast(key))) {
             return Optional.ofNullable(values.get(cls.cast(key)).currentValue)

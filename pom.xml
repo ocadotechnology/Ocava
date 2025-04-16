@@ -36,37 +36,40 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Maven Plugin versions -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <deploy.plugin.version>2.8.2</deploy.plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
 
         <!-- Extra rules for maven enforcer -->
-        <extra-enforcer-rules.version>1.9.0</extra-enforcer-rules.version>
+        <extra-enforcer-rules.version>1.10.0</extra-enforcer-rules.version>
 
         <!-- Dependency versions -->
-        <guava.version>33.4.0-jre</guava.version>
+        <guava.version>33.4.7-jre</guava.version>
         <apache-commons.version>3.6.1</apache-commons.version>
         <jcommander.version>1.82</jcommander.version>
 
-        <slf4j-api.version>2.0.16</slf4j-api.version>
+        <slf4j-api.version>2.0.17</slf4j-api.version>
         <junit-jupiter.version>5.11.4</junit-jupiter.version>
-        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <junit-platform-engine.version>1.11.4</junit-platform-engine.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <assertj.version>3.27.3</assertj.version>
-        <mockito.version>5.15.2</mockito.version>
+        <mockito.version>5.17.0</mockito.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
-        <aws-java-sdk-s3.version>1.12.781</aws-java-sdk-s3.version>
-        <jackson-databind.version>2.18.2</jackson-databind.version>
-        <jackson-dataformat-cbor.version>2.18.2</jackson-dataformat-cbor.version>
+        <aws-java-sdk-s3.version>1.12.782</aws-java-sdk-s3.version>
+        <jackson-databind.version>2.18.3</jackson-databind.version>
+        <jackson-dataformat-cbor.version>2.18.3</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
-        <logback-classic.version>1.5.16</logback-classic.version>
+        <logback-classic.version>1.5.18</logback-classic.version>
         <jmh.version>1.37</jmh.version>
+        <sqlite-jdbc.version>3.49.1.0</sqlite-jdbc.version>
+        <commons-lang3.version>3.17.0</commons-lang3.version>
         <!-- EE dependency required for s3 to work -->
         <jaxb.version>2.3.1</jaxb.version>
         <!-- Static Analysis Plugin Versions -->
         <checkstyle-fail-on-violation>false</checkstyle-fail-on-violation>
-        <checkstyle.version>10.21.2</checkstyle.version>
+        <checkstyle.version>10.23.0</checkstyle.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <license-maven-plugin.version>2.5.0</license-maven-plugin.version>
         <mycila-license-maven-plugin.version>4.6</mycila-license-maven-plugin.version>
@@ -79,9 +82,9 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <!-- Spotbugs versions -->
-        <spotbugs.version>4.9.1</spotbugs.version>
-        <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
-        <spotbugs-annotations.version>4.9.1</spotbugs-annotations.version>
+        <spotbugs.version>4.9.3</spotbugs.version>
+        <spotbugs-maven-plugin.version>4.9.3.0</spotbugs-maven-plugin.version>
+        <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -96,6 +99,7 @@
     </properties>
 
     <modules>
+        <module>Bill of Materials</module>
         <module>OcavaCore</module>
         <module>OcavaScenarioTest</module>
         <module>OcavaS3</module>
@@ -113,6 +117,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Import our own Bill of Materials  -->
+            <dependency>
+                <groupId>com.ocadotechnology</groupId>
+                <artifactId>ocava-open-source-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>org.openjdk.jmh</groupId>
                 <artifactId>jmh-core</artifactId>
@@ -122,21 +135,6 @@
                 <groupId>org.openjdk.jmh</groupId>
                 <artifactId>jmh-generator-annprocess</artifactId>
                 <version>${jmh.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ocadotechnology</groupId>
-                <artifactId>OcavaCore</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ocadotechnology</groupId>
-                <artifactId>OcavaScenarioTest</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ocadotechnology</groupId>
-                <artifactId>OcavaS3</artifactId>
-                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -254,8 +252,39 @@
                 <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.xerial</groupId>
+                <artifactId>sqlite-jdbc</artifactId>
+                <version>${sqlite-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <!--
+                JUnit engine dependency for building the test suite.
+                These are not test-dependencies, they need to be imported with regular scope.
+            -->
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-engine</artifactId>
+                <version>${junit-platform-engine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-suite-api</artifactId>
+                <version>${junit-platform-engine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-launcher</artifactId>
+                <version>${junit-platform-engine.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
     <reporting>
         <plugins>
             <plugin>
@@ -293,6 +322,16 @@
     </scm>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

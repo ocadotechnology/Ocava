@@ -22,8 +22,6 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.event.scheduling.EventScheduler;
@@ -34,25 +32,13 @@ import com.ocadotechnology.validation.Failer;
 class WithinAppNotificationRouter implements NotificationRouter {
     private static final Logger logger = LoggerFactory.getLogger(WithinAppNotificationRouter.class);
 
-    public enum BroadcastPriority {
-        /**
-         * Schedules cross-thread notifications first, then executes in-thread subscribers.
-         */
-        CROSS_THREAD_FIRST,
-        /**
-         * Processes broadcasters in registration order, with no regard to handling cross-thread notifications earlier
-         * or later.
-         */
-        BROADCASTER_REGISTRATION_ORDER
-    }
-
     private static final String SYSTEM_PROPERTY_BROADCAST_TYPE = System.getProperties().getProperty("com.ocadotechnology.notificationrouter.broadcast");
 
     /**
      * Defaults to BROADCASTER_REGISTRATION_ORDER if the system property is not set, or is set to any string other than
      * "CROSS_THREAD_FIRST" (case-insensitive).
      */
-    private static BroadcastPriority broadcastPriority = BroadcastPriority.CROSS_THREAD_FIRST.name().equalsIgnoreCase(SYSTEM_PROPERTY_BROADCAST_TYPE)
+    private BroadcastPriority broadcastPriority = BroadcastPriority.CROSS_THREAD_FIRST.name().equalsIgnoreCase(SYSTEM_PROPERTY_BROADCAST_TYPE)
             ? BroadcastPriority.CROSS_THREAD_FIRST
             : BroadcastPriority.BROADCASTER_REGISTRATION_ORDER;
 
@@ -60,7 +46,6 @@ class WithinAppNotificationRouter implements NotificationRouter {
         private static final WithinAppNotificationRouter instance = new WithinAppNotificationRouter();
     }
 
-    @SuppressFBWarnings(value = "SING_SINGLETON_GETTER_NOT_SYNCHRONIZED", justification = "Bug in spotbugs, see RBOWIMP-1145")
     static WithinAppNotificationRouter get() {
         return SingletonHolder.instance;
     }
@@ -70,8 +55,9 @@ class WithinAppNotificationRouter implements NotificationRouter {
 
     private final AtomicReference<ImmutableList<Broadcaster<?>>> broadcasters = new AtomicReference<>(ImmutableList.of());
 
-    public static void setBroadcastPriority(BroadcastPriority broadcastPriority) {
-        WithinAppNotificationRouter.broadcastPriority = broadcastPriority;
+    @Override
+    public void setBroadcastPriority(BroadcastPriority broadcastPriority) {
+        this.broadcastPriority = broadcastPriority;
     }
 
     @Override
@@ -165,7 +151,7 @@ class WithinAppNotificationRouter implements NotificationRouter {
     }
 
     // Can be retried multiple times -- must be side-effect free.
-    private static <T> ImmutableList<Broadcaster<?>> registerExecutionLayer(ImmutableList<Broadcaster<?>> broadcasters, Broadcaster<T> newBroadcaster) {
+    private <T> ImmutableList<Broadcaster<?>> registerExecutionLayer(ImmutableList<Broadcaster<?>> broadcasters, Broadcaster<T> newBroadcaster) {
         if (broadcasters.isEmpty()) {
             logger.info("The configured broadcast order is: {}", broadcastPriority);
         }

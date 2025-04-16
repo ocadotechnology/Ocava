@@ -63,12 +63,12 @@ public class UncachedPredicateIndex<C extends Identified<? extends I>, I> extend
     }
 
     @Override
-    protected void update(@Nullable C c, @Nullable C c1) {
+    protected final void update(@Nullable C c, @Nullable C c1) {
         // nop
     }
 
     @Override
-    protected void updateAll(Iterable<Change<C>> iterable) {
+    protected final void updateAll(Iterable<Change<C>> iterable) {
         // nop
     }
 }

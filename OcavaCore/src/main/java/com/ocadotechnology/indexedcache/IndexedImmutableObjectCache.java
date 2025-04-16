@@ -320,6 +320,38 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         }
     }
 
+    /**
+     * Add a {@link SortedPredicateIndex} to the cache, which defines a sort order for elements that pass the predicate.
+     * <br>
+     * Defaults to optimising for querying the index.
+     */
+    public SortedPredicateIndex<C> addSortedPredicateIndex(@CheckForNull String name, Predicate<? super C> predicate, Comparator<? super C> comparator) {
+        return addSortedPredicateIndex(name, predicate, comparator, Hints.optimiseForQuery);
+    }
+
+    /**
+     * Add a {@link SortedPredicateIndex} to the cache, which defines a sort order for elements that pass the predicate.
+     * <br>
+     * An optimiseForUpdate index has zero update overhead and streaming queries are performed by applying the predicate
+     * function to every object in the parent cache.<br>
+     *
+     * An optimiseForQuery index caches a mapping from predicate result to object during update, so that streaming
+     * queries can directly stream the pre-cached result.<br>
+     *
+     * An optimiseForInfrequentChanges index caches a mapping from predicate result to object id during update, so that
+     * streaming queries can stream the pre-cached result and lookup the actual object in the parent cache. This makes
+     * querying faster than an optimiseForUpdate index (especially when there are few matches), and updates faster
+     * than an optimiseForQuery index (when the outcome of the predicate function does not change, the index cache
+     * requires no changes).<br>
+     */
+    public SortedPredicateIndex<C> addSortedPredicateIndex(@CheckForNull String name, Predicate<? super C> predicate, Comparator<? super C> comparator, Hints hint) {
+        return switch (hint) {
+            case optimiseForUpdate -> addIndex(new SortedUncachedPredicateIndex<>(name, this, predicate, comparator));
+            case optimiseForQuery -> addIndex(new DefaultSortedPredicateIndex<>(name, predicate, comparator));
+            case optimiseForInfrequentChanges -> addIndex(new SortedIdCachedPredicateIndex<>(name, this, predicate, comparator));
+        };
+    }
+
     public <R, T> PredicateValue<C, R, T> addPredicateValue(
             Predicate<? super C> predicate,
             Function<? super C, R> extract,

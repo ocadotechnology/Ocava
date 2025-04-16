@@ -68,6 +68,7 @@ public class TrafficSimulation implements Simulation {
     private CarSpawner carSpawner;
     private PedestrianSimulation pedestrianSimulation;
     private PedestrianSpawner pedestrianSpawner;
+
     @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     private TrafficSimulation(Config<TrafficConfig> trafficConfig) {
         this.trafficConfig = trafficConfig;
@@ -75,7 +76,7 @@ public class TrafficSimulation implements Simulation {
         this.scheduler = createScheduler(trafficConfig);
         Logging.configure(scheduler.getTimeProvider());
     }
-    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
+
     public static TrafficSimulation create(String... args) {
         ConfigManager config = createConfigManager(args);
         Config<TrafficConfig> trafficConfig  = config.getConfig(TrafficConfig.class);

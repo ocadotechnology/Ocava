@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.physics;
 
-import java.util.Optional;
 import java.util.function.DoubleFunction;
 import java.util.function.ToDoubleFunction;
 
@@ -35,22 +34,13 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator {
             return Traversal.EMPTY_TRAVERSAL;
         }
 
-        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationReached(distance, vehicleProperties);
-        if (sections.isPresent()) {
-            return new Traversal(sections.get());
-        }
+        ImmutableList<TraversalSection> sections =
+                ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(distance, vehicleProperties)
+                        .or(() -> ConstantJerkSectionsFactory.maxSpeedReached(distance, vehicleProperties))
+                        .or(() -> ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(distance, vehicleProperties))
+                        .orElseGet(() -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(distance, vehicleProperties));
 
-        sections = ConstantJerkSectionsFactory.maxAccelerationDecelerationAndSpeedReached(distance, vehicleProperties);
-        if (sections.isPresent()) {
-            return new Traversal(sections.get());
-        }
-
-        sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButNotMaxSpeed(distance, vehicleProperties);
-        if (sections.isPresent()) {
-            return new Traversal(sections.get());
-        }
-
-        return new Traversal(ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOther(distance, vehicleProperties));
+        return new Traversal(sections);
     }
 
     /**

@@ -74,7 +74,6 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
      * Use {@link #ExecutorEventScheduler(UtcTimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type)} instead.
      */
     @Deprecated
-    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public ExecutorEventScheduler(TimeProvider timeProvider, String name, boolean daemon, EventSchedulerType type) {
         this(
                 Types.fromTypeOrFail(timeProvider, UtcTimeProvider.class),

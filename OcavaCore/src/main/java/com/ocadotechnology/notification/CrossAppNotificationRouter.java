@@ -19,8 +19,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.utils.RememberingSupplier;
@@ -30,7 +28,6 @@ public class CrossAppNotificationRouter implements NotificationRouter {
         private static final CrossAppNotificationRouter instance = new CrossAppNotificationRouter();
     }
 
-    @SuppressFBWarnings(value = "SING_SINGLETON_GETTER_NOT_SYNCHRONIZED", justification = "Bug in spotbugs, see RBOWIMP-1145")
     public static CrossAppNotificationRouter get() {
         return SingletonHolder.instance;
     }
@@ -42,6 +39,11 @@ public class CrossAppNotificationRouter implements NotificationRouter {
     private volatile NotificationLogger logger = null;
 
     private volatile boolean disableBroadcast = false;
+
+    @Override
+    public void setBroadcastPriority(BroadcastPriority broadcastPriority) {
+        WithinAppNotificationRouter.get().setBroadcastPriority(broadcastPriority); //The CrossAppNotificationRouter calls into the WithinAppNotificationRouter in broadcastImplementation
+    }
 
     public void setEavesDropper(Consumer<Notification> eavesDropper) {
         Preconditions.checkState(this.eavesDropper == null || eavesDropper == null, "Attempting to override eavesdropper: old %s new %s", this.eavesDropper, eavesDropper);

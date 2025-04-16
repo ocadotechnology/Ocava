@@ -33,6 +33,7 @@ import com.ocadotechnology.maths.PolynomialRootUtils;
  */
 public class ConstantJerkTraversalSection implements TraversalSection {
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
+    private static final double EPSILON = 1E-9;
 
     final double duration;
     final double distance;
@@ -108,26 +109,32 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getTimeAtDistance(@Nonnegative double distance) {
-        if (distance > this.distance) {
+        if (distance > this.distance + EPSILON) {
             throw new TraversalCalculationException("Distance " + distance + " must not be greater than traversal section distance " + this.distance);
         }
 
-        if (distance < 0) {
+        if (distance > this.distance - EPSILON) {
+            return duration;
+        }
+
+        if (distance < -EPSILON) {
             throw new TraversalCalculationException("Distance must be non-negative");
         }
 
-        if (distance == 0) {
+        if (distance < EPSILON) {
             return 0;
         }
 
         //s = u*t + 1/2*a.*t^2 + 1/6*j*t^3
         ImmutableList<Complex> roots = CubicRootFinder.find((1/6d)*jerk, (1/2d)*initialAcceleration, initialSpeed, -distance);
         double minimumPositiveTime = PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
-        if (minimumPositiveTime <= duration) {
+        if (minimumPositiveTime <= duration + EPSILON) {
             return minimumPositiveTime;
         }
         //rounding error detection
-        if (roots.contains(Complex.ZERO)) {
+        boolean rootsContainZero = roots.stream()
+                .anyMatch(root -> root.abs() < EPSILON);
+        if (rootsContainZero) {
             return 0;
         }
         throw new TraversalCalculationException("No solution found for time to reach distance " + distance + " in " + this);
@@ -139,15 +146,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getDistanceAtTime(@Nonnegative double time) {
-        if (time > this.duration) {
+        if (time > this.duration + EPSILON) {
             throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
         }
 
-        if (time < 0) {
+        if (time > this.duration - EPSILON) {
+            return distance;
+        }
+
+        if (time < -EPSILON) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time == 0) {
+        if (time < EPSILON) {
             return 0;
         }
 
@@ -161,15 +172,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getSpeedAtTime(@Nonnegative double time) {
-        if (time > this.duration) {
+        if (time > this.duration + EPSILON) {
             throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
         }
 
-        if (time < 0) {
+        if (time > this.duration - EPSILON) {
+            return finalSpeed;
+        }
+
+        if (time < -EPSILON) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time == 0) {
+        if (time < EPSILON) {
             return initialSpeed;
         }
 
@@ -182,15 +197,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getAccelerationAtTime(@Nonnegative double time) {
-        if (time > this.duration) {
+        if (time > this.duration + EPSILON) {
             throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
         }
 
-        if (time < 0) {
+        if (time > this.duration - EPSILON) {
+            return finalAcceleration;
+        }
+
+        if (time < -EPSILON) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time == 0) {
+        if (time < EPSILON) {
             return initialAcceleration;
         }
 

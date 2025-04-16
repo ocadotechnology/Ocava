@@ -27,8 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.tableio.TableLine;
@@ -139,7 +137,6 @@ public class SQLiteConnection implements AutoCloseable {
      * @param tableLinesStream the entries to insert into the table.
      * @throws SQLException If the query failed to execute.
      */
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "known bug in spotbugs - https://github.com/spotbugs/spotbugs/issues/259")
     public void insertEntries(String tableName, Stream<TableLine> tableLinesStream) throws SQLException {
         ImmutableList<TableLine> tableLines = tableLinesStream.collect(ImmutableList.toImmutableList());
 
