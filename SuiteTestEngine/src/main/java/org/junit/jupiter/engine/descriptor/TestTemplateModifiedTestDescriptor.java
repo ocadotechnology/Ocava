@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -45,8 +46,9 @@ public class TestTemplateModifiedTestDescriptor extends TestTemplateTestDescript
             UniqueId uniqueId,
             Class<?> testClass,
             Method templateMethod,
+            Supplier<List<Class<?>>> enclosingInstanceTypes,
             JupiterConfiguration configuration) {
-        super(uniqueId, testClass, templateMethod, configuration);
+        super(uniqueId, testClass, templateMethod, enclosingInstanceTypes, configuration);
     }
 
     @Override

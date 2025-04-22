@@ -17,15 +17,14 @@ package com.ocadotechnology.junit5.suite.engine;
 
 import static org.junit.platform.commons.util.ReflectionUtils.isStatic;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
-import static org.junit.platform.engine.support.filter.ClasspathScanningSupport.buildClassNamePredicate;
 import static org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder.request;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,12 +34,16 @@ import org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor;
 import org.junit.jupiter.engine.discovery.DiscoverySelectorResolver;
 import org.junit.jupiter.engine.discovery.TestTemplateWrappingDiscoverySelectorResolver;
 import org.junit.jupiter.engine.execution.JupiterEngineExecutionContext;
-import org.junit.platform.commons.util.ClassFilter;
+import org.junit.platform.commons.support.scanning.ClassFilter;
+import org.junit.platform.engine.DiscoveryFilter;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
+import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.discovery.ClassNameFilter;
 import org.junit.platform.engine.discovery.ClassSelector;
+import org.junit.platform.engine.discovery.PackageNameFilter;
 import org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -61,18 +64,21 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         JupiterEngineDescriptor engine = new JupiterEngineDescriptor(
                 uniqueId,
-                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters()));
+                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryProvider()));
 
-        ClassFilter classFilter = ClassFilter.of(buildClassNamePredicate(discoveryRequest), c -> true);
+        List<DiscoveryFilter<String>> filters = new ArrayList<>();
+        filters.addAll(discoveryRequest.getFiltersByType(ClassNameFilter.class));
+        filters.addAll(discoveryRequest.getFiltersByType(PackageNameFilter.class));
+        ClassFilter classFilter = ClassFilter.of(Filter.composeFilters(filters).toPredicate(), c -> true);
 
         // just class selection is needed for this engine
         List<? extends Class<?>> candidates = discoveryRequest
                 .getSelectorsByType(ClassSelector.class)
                 .stream()
                 .map(ClassSelector::getJavaClass)
-                .filter(classFilter)
+                .filter(c -> classFilter.match(c.getName()))
                 .filter(c -> c.isAnnotationPresent(DynamicTestSuite.class))
-                .collect(Collectors.toList());
+                .toList();
 
         boolean exitOnException = getExitOnExceptionFlag(engine);
 
@@ -102,7 +108,7 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     protected JupiterEngineExecutionContext createExecutionContext(ExecutionRequest request) {
         return new JupiterEngineExecutionContext(
                 request.getEngineExecutionListener(),
-                new DefaultJupiterConfiguration(request.getConfigurationParameters()));
+                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryProvider()));
     }
 
     private void handleCandidate(JupiterEngineDescriptor engine, Class<?> candidate) throws InvocationTargetException, IllegalAccessException {

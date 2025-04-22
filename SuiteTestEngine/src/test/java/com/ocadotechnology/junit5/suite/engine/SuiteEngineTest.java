@@ -30,20 +30,27 @@ import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.reporting.OutputDirectoryProvider;
 
 class SuiteEngineTest {
 
-    private SuiteEngine engine = new SuiteEngine();
+    private final SuiteEngine engine = new SuiteEngine();
+    private final OutputDirectoryProvider outputDirectoryProvider = new TestOutputDirectoryProvider();
 
     @Test
     void testEngine() {
         EngineDiscoveryRequest discoveryRequest = request()
                 .selectors(selectClass(SomeDynamicTestSuite.class))
+                .outputDirectoryProvider(outputDirectoryProvider)
                 .build();
         TestDescriptor testsDiscovered = engine.discover(discoveryRequest, UniqueId.forEngine(engine.getId()));
 
         TestExecutionListener executionListener = new TestExecutionListener();
-        ExecutionRequest executionRequest = new ExecutionRequest(testsDiscovered, executionListener, new TestConfigurationParameters());
+        ExecutionRequest executionRequest = ExecutionRequest.create(
+                testsDiscovered,
+                executionListener,
+                new TestConfigurationParameters(),
+                outputDirectoryProvider);
         engine.execute(executionRequest);
 
         assertEquals(8, executionListener.getExecutedTests().size(), "1 engine + 2 classes + 2 regular test methods + 3 parameterized test templates expected to be discovered and executed");

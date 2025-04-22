@@ -24,6 +24,8 @@ import static org.junit.platform.engine.support.discovery.SelectorResolver.Resol
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -102,26 +104,26 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
 
         TEST(new IsTestMethod(), TestTemplateTestDescriptor.SEGMENT_TYPE) {
             @Override
-            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, JupiterConfiguration configuration) {
+            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
                 // Test method is wrapped in template descriptor
-                return new TestTemplateTestDescriptor(uniqueId, testClass, method, configuration);
+                return new TestTemplateTestDescriptor(uniqueId, testClass, method, enclosingInstanceTypes, configuration);
             }
         },
 
         TEST_FACTORY(new IsTestFactoryMethod(), TestFactoryTestDescriptor.SEGMENT_TYPE) {
             @Override
-            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, JupiterConfiguration configuration) {
+            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
                 // Test factory remains mapped to factory descriptor
-                return new TestFactoryTestDescriptor(uniqueId, testClass, method, configuration);
+                return new TestFactoryTestDescriptor(uniqueId, testClass, method, enclosingInstanceTypes, configuration);
             }
         },
 
         TEST_TEMPLATE(new IsTestTemplateMethod(), TestTemplateModifiedTestDescriptor.SEGMENT_TYPE) {
             @Override
-            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, JupiterConfiguration configuration) {
+            protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
 
                 // Test template mapped to TestTemplateModifiedTestDescriptor in order to modify any already templated tests
-                return new TestTemplateModifiedTestDescriptor(uniqueId, testClass, method, configuration);
+                return new TestTemplateModifiedTestDescriptor(uniqueId, testClass, method, enclosingInstanceTypes, configuration);
             }
         };
 
@@ -139,9 +141,20 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
             }
             Class<?> testClass = selector.getJavaClass();
             Method method = selector.getJavaMethod();
-            return resolver.addToParent(() -> selectClass(testClass),
-                                        parent -> Optional.of(
-                                                createTestDescriptor(createUniqueId(method, parent), testClass, method, configuration)));
+            return resolver.addToParent(
+                    () -> selectClass(testClass),
+                    parent -> createMaybeTestDescriptor(parent, testClass, method, configuration));
+        }
+
+        private Optional<TestDescriptor> createMaybeTestDescriptor(TestDescriptor parent, Class<?> testClass, Method method, JupiterConfiguration configuration) {
+            return Optional.of(createTestDescriptor(
+                    createUniqueId(method, parent),
+                    testClass,
+                    method,
+                    testClass.getEnclosingClass() == null
+                            ? Collections::emptyList
+                            : () -> List.of(testClass.getEnclosingClass()),
+                    configuration));
         }
 
         private UniqueId createUniqueId(Method method, TestDescriptor parent) {
@@ -150,7 +163,7 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
             return parent.getUniqueId().append(segmentType, methodId);
         }
 
-        protected abstract TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, JupiterConfiguration configuration);
+        protected abstract TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration);
 
     }
 }
