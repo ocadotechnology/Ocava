@@ -19,18 +19,18 @@ import java.util.function.DoubleFunction;
 import java.util.function.ToDoubleFunction;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.math.DoubleMath;
 import com.ocadotechnology.physics.utils.BinarySearch;
 
 public class ConstantJerkTraversalCalculator implements TraversalCalculator {
-    private static final double ERROR_MARGIN = 0.000000001;
-
+    private static final double ROUNDING_ERROR_MARGIN = 1E-9;
     public static final ConstantJerkTraversalCalculator INSTANCE = new ConstantJerkTraversalCalculator();
 
     private ConstantJerkTraversalCalculator() {
     }
 
     public Traversal create(double distance, VehicleMotionProperties vehicleProperties) {
-        if (distance == 0) {
+        if (DoubleMath.fuzzyEquals(distance, 0d, getDistanceToReachMaxSpeed(vehicleProperties) * ROUNDING_ERROR_MARGIN)) {
             return Traversal.EMPTY_TRAVERSAL;
         }
 
@@ -48,11 +48,11 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator {
      */
     @Override
     public Traversal create(double distance, double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
-        if (distance == 0) {
+        if (DoubleMath.fuzzyEquals(distance, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
             return Traversal.EMPTY_TRAVERSAL;
         }
 
-        if (initialSpeed == 0) {
+        if (DoubleMath.fuzzyEquals(initialSpeed, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
             return create(distance, vehicleProperties);
         }
 
@@ -117,18 +117,43 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator {
 
     @Override
     public Traversal getBrakingTraversal(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
+        if (DoubleMath.fuzzyEquals(initialSpeed, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
+            return Traversal.EMPTY_TRAVERSAL;
+        }
         return new Traversal(ConstantJerkSectionsFactory.findBrakingTraversal(initialSpeed, initialAcceleration, vehicleProperties));
     }
 
     private ToDoubleFunction<Traversal> getDistanceComp(double distance) {
         return t -> {
-            double difference = t.getTotalDistance() - distance;
-            if (Math.abs(difference) < ERROR_MARGIN) {
+            if (DoubleMath.fuzzyEquals(t.getTotalDistance(), distance, distance * ROUNDING_ERROR_MARGIN)) {
                 return 0;
             }
 
-            return difference;
+            return t.getTotalDistance() - distance;
         };
+    }
+
+    private double getDistanceToReachMaxSpeed(VehicleMotionProperties vehicleProperties) {
+        double maxSpeed = vehicleProperties.maxSpeed;
+        double maxAcc = vehicleProperties.acceleration;
+        double jerk = vehicleProperties.jerkAccelerationUp;
+        // Assuming vehicle starts from rest
+        // a = jt
+        // v = (1/2) jt^2
+        // s = (1/6) jt^3
+        double timeToReachMaxSpeedIfJerkConstant = Math.sqrt(2 * maxSpeed / jerk);
+        double impliedAccelerationWhenMaxSpeedReached = timeToReachMaxSpeedIfJerkConstant * jerk;
+        if (impliedAccelerationWhenMaxSpeedReached <= maxAcc) {
+            return 1/6 * jerk * Math.pow(timeToReachMaxSpeedIfJerkConstant, 3);
+        } else {
+            // Max acceleration is reached before max speed
+            double timeToReachMaxAcceleration = maxAcc / jerk;
+            double speedReachedAtPointOfReachingMaxAcceleration = 1/2d * jerk * Math.pow(timeToReachMaxAcceleration, 2);
+            double distanceTraveledAtPointOfReachingMaxAcceleration = 1/6d * jerk * Math.pow(timeToReachMaxAcceleration, 3);
+            // constant acceleration so s = (v^2 - u^2) / 2a
+            double distanceNeededToReachMaxSpeed = (Math.pow(maxSpeed, 2) - Math.pow(speedReachedAtPointOfReachingMaxAcceleration, 2)) / (2 * maxAcc);
+            return distanceTraveledAtPointOfReachingMaxAcceleration + distanceNeededToReachMaxSpeed;
+        }
     }
 
     private DoubleFunction<Traversal> calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(double u, double a, VehicleMotionProperties vehicleProperties) {

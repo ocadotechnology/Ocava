@@ -33,7 +33,6 @@ import com.ocadotechnology.maths.PolynomialRootUtils;
  */
 public class ConstantJerkTraversalSection implements TraversalSection {
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
-    private static final double EPSILON = 1E-9;
 
     final double duration;
     final double distance;
@@ -109,31 +108,31 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getTimeAtDistance(@Nonnegative double distance) {
-        if (distance > this.distance + EPSILON) {
+        if (DoubleMath.fuzzyCompare(distance, this.distance, this.distance * ROUNDING_ERROR_FRACTION) == 1) {
             throw new TraversalCalculationException("Distance " + distance + " must not be greater than traversal section distance " + this.distance);
         }
 
-        if (distance > this.distance - EPSILON) {
-            return duration;
-        }
-
-        if (distance < -EPSILON) {
+        if (DoubleMath.fuzzyCompare(distance, 0, this.distance * ROUNDING_ERROR_FRACTION) == -1) {
             throw new TraversalCalculationException("Distance must be non-negative");
         }
 
-        if (distance < EPSILON) {
+        if (DoubleMath.fuzzyEquals(distance, this.distance, this.distance * ROUNDING_ERROR_FRACTION)) {
+            return duration;
+        }
+
+        if (DoubleMath.fuzzyEquals(distance, 0, this.distance * ROUNDING_ERROR_FRACTION))  {
             return 0;
         }
 
         //s = u*t + 1/2*a.*t^2 + 1/6*j*t^3
         ImmutableList<Complex> roots = CubicRootFinder.find((1/6d)*jerk, (1/2d)*initialAcceleration, initialSpeed, -distance);
         double minimumPositiveTime = PolynomialRootUtils.getMinimumPositiveRealRoot(roots);
-        if (minimumPositiveTime <= duration + EPSILON) {
+        if (DoubleMath.fuzzyCompare(minimumPositiveTime, duration, duration * ROUNDING_ERROR_FRACTION) <= 0) {
             return minimumPositiveTime;
         }
         //rounding error detection
         boolean rootsContainZero = roots.stream()
-                .anyMatch(root -> root.abs() < EPSILON);
+                .anyMatch(root -> DoubleMath.fuzzyEquals(root.abs(), 0, duration * ROUNDING_ERROR_FRACTION));
         if (rootsContainZero) {
             return 0;
         }
@@ -146,19 +145,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getDistanceAtTime(@Nonnegative double time) {
-        if (time > this.duration + EPSILON) {
-            throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
+        if (DoubleMath.fuzzyCompare(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION) == 1) {
+            throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section Time " + this.duration);
         }
 
-        if (time > this.duration - EPSILON) {
-            return distance;
-        }
-
-        if (time < -EPSILON) {
+        if (DoubleMath.fuzzyCompare(time, 0, this.duration * ROUNDING_ERROR_FRACTION) == -1) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time < EPSILON) {
+        if (DoubleMath.fuzzyEquals(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION)) {
+            return distance;
+        }
+
+        if (DoubleMath.fuzzyEquals(time, 0, this.duration * ROUNDING_ERROR_FRACTION))  {
             return 0;
         }
 
@@ -172,19 +171,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getSpeedAtTime(@Nonnegative double time) {
-        if (time > this.duration + EPSILON) {
+        if (DoubleMath.fuzzyCompare(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION) == 1) {
             throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
         }
 
-        if (time > this.duration - EPSILON) {
-            return finalSpeed;
-        }
-
-        if (time < -EPSILON) {
+        if (DoubleMath.fuzzyCompare(time, 0, this.duration * ROUNDING_ERROR_FRACTION) == -1) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time < EPSILON) {
+        if (DoubleMath.fuzzyEquals(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION)) {
+            return finalSpeed;
+        }
+
+        if (DoubleMath.fuzzyEquals(time, 0, this.duration * ROUNDING_ERROR_FRACTION))  {
             return initialSpeed;
         }
 
@@ -197,19 +196,19 @@ public class ConstantJerkTraversalSection implements TraversalSection {
      */
     @Override
     public double getAccelerationAtTime(@Nonnegative double time) {
-        if (time > this.duration + EPSILON) {
+        if (DoubleMath.fuzzyCompare(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION) == 1) {
             throw new TraversalCalculationException("Time " + time + " must not be greater than traversal section duration " + this.duration);
         }
 
-        if (time > this.duration - EPSILON) {
-            return finalAcceleration;
-        }
-
-        if (time < -EPSILON) {
+        if (DoubleMath.fuzzyCompare(time, 0, this.duration * ROUNDING_ERROR_FRACTION) == -1) {
             throw new TraversalCalculationException("Time must be non-negative");
         }
 
-        if (time < EPSILON) {
+        if (DoubleMath.fuzzyEquals(time, this.duration, this.duration * ROUNDING_ERROR_FRACTION)) {
+            return finalAcceleration;
+        }
+
+        if (DoubleMath.fuzzyEquals(time, 0, this.duration * ROUNDING_ERROR_FRACTION))  {
             return initialAcceleration;
         }
 

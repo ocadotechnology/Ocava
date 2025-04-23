@@ -23,6 +23,7 @@ import org.apache.commons.math3.complex.Complex;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.math.DoubleMath;
 import com.ocadotechnology.maths.PolynomialRootUtils;
 import com.ocadotechnology.maths.QuadraticRootFinder;
 import com.ocadotechnology.maths.QuarticRootFinder;
@@ -122,17 +123,16 @@ class ConstantJerkSectionsFactory {
         double distanceTraveledDuringDeceleratingSections = deceleratingSections.stream()
                 .map(TraversalSection::getTotalDistance)
                 .reduce(0d, Double::sum);
-        double distanceToTravelAtMaxSpeed = distance - distanceTraveledDuringAcceleratingSections - distanceTraveledDuringDeceleratingSections;
+        double distanceTraveledByAcceleratingAndDeceleratingSections = distanceTraveledDuringAcceleratingSections + distanceTraveledDuringDeceleratingSections;
 
         Builder<TraversalSection> traversalSectionBuilder = new Builder<TraversalSection>()
                 .addAll(acceleratingSections);
 
-        if (distanceToTravelAtMaxSpeed <= -EPSILON) {
-            return Optional.empty();
-        }
         // in the edge case where the constant speed section would be infinitesimally small, we don't add it.
-        if (distanceToTravelAtMaxSpeed >= EPSILON) {
-            traversalSectionBuilder.add(ConstantJerkSectionFactory.constantSpeed(distanceToTravelAtMaxSpeed, maxSpeed));
+        if (DoubleMath.fuzzyCompare(distanceTraveledByAcceleratingAndDeceleratingSections, distance, distance * EPSILON) == -1) {
+            traversalSectionBuilder.add(ConstantJerkSectionFactory.constantSpeed(distance - distanceTraveledByAcceleratingAndDeceleratingSections, maxSpeed));
+        } else if (DoubleMath.fuzzyCompare(distanceTraveledByAcceleratingAndDeceleratingSections, distance, distance * EPSILON) == 1) {
+            return Optional.empty();
         }
 
         return Optional.of(traversalSectionBuilder
@@ -172,9 +172,9 @@ class ConstantJerkSectionsFactory {
         double v2 = v3 + ((1 / 2d) * Math.pow(vehicleProperties.acceleration, 2)) / j2;
         double v4 = v3 + ((1 / 2d) * Math.pow(vehicleProperties.deceleration, 2)) / j3;
 
-        if (v3 > vehicleProperties.maxSpeed + EPSILON ||
-                v1 >= v2 + EPSILON ||
-                v5 >= v4 + EPSILON) {
+        if (DoubleMath.fuzzyCompare(v3, vehicleProperties.maxSpeed, vehicleProperties.maxSpeed * EPSILON) == 1 ||
+                DoubleMath.fuzzyCompare(v1, v2, v2 * EPSILON) == 1 ||
+                DoubleMath.fuzzyCompare(v5, v4, v4 * EPSILON) == 1) {
             throw new TraversalCalculationException("Should never reach this point.");
         }
 
@@ -184,7 +184,7 @@ class ConstantJerkSectionsFactory {
         listBuilder.add(accUpSection);
 
         // No need to add the const acc section if it would be infinitesmally small.
-        if (Math.abs(v2 - accUpSection.finalSpeed) > EPSILON) {
+        if (!DoubleMath.fuzzyEquals(v2, accUpSection.finalSpeed, accUpSection.finalSpeed * EPSILON)) {
             TraversalSection constAccSection = ConstantJerkSectionFactory.constantAcceleration(accUpSection.finalSpeed, v2, vehicleProperties.acceleration);
             listBuilder.add(constAccSection);
         }
@@ -193,7 +193,7 @@ class ConstantJerkSectionsFactory {
         listBuilder.add(accDownSection, decUpSection);
 
         // No need to add the const acc section if it would be infinitesmally small.
-        if (Math.abs(decUpSection.finalSpeed - v5) > EPSILON) {
+        if (!DoubleMath.fuzzyEquals(decUpSection.finalSpeed, v5, v5 * EPSILON)) {
             TraversalSection constDecSection = ConstantJerkSectionFactory.constantAcceleration(v4, v5, vehicleProperties.deceleration);
             listBuilder.add(constDecSection);
         }
@@ -235,13 +235,13 @@ class ConstantJerkSectionsFactory {
             ConstantJerkTraversalSection jerkDecelDown = ConstantJerkSectionFactory.jerkDecelerationDown(d, j4);
             Optional<ConstantJerkTraversalSection> maybeJerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUpToV(0, jerkDecelDown.initialSpeed, d, j3);
             if (maybeJerkDecelUp.isEmpty() ||
-                    d < vehicleProperties.deceleration) {
+                    DoubleMath.fuzzyCompare(d, vehicleProperties.deceleration, Math.abs(vehicleProperties.deceleration * EPSILON)) == -1) {
                 return Optional.empty();
             }
             ConstantJerkTraversalSection jerkDecelUp = maybeJerkDecelUp.get();
             ConstantJerkTraversalSection jerkAccelDown = ConstantJerkSectionFactory.jerkAccelerationDownToV(a, jerkDecelUp.initialSpeed, j2);
             double maxSpeedReached = jerkAccelDown.finalSpeed;
-            if (maxSpeedReached > vehicleProperties.maxSpeed) {
+            if (DoubleMath.fuzzyCompare(maxSpeedReached, vehicleProperties.maxSpeed, vehicleProperties.maxSpeed * EPSILON) == 1) {
                 return Optional.empty();
             }
             TraversalSection accelerate = ConstantJerkSectionFactory.constantAcceleration(jerkAccelUp.finalSpeed, jerkAccelDown.initialSpeed, a);
@@ -268,9 +268,10 @@ class ConstantJerkSectionsFactory {
         ConstantJerkTraversalSection jerkAccelDown = ConstantJerkSectionFactory.jerkAccelerationDown(a, jerkAccelUp.finalSpeed, j2);
         Optional<ConstantJerkTraversalSection> maybeJerkDecelUp = ConstantJerkSectionFactory.jerkDecelerationUp(0, jerkAccelDown.finalSpeed, d, j3);
         if (maybeJerkDecelUp.isEmpty() ||
-                jerkAccelDown.finalSpeed > vehicleProperties.maxSpeed ||
+                DoubleMath.fuzzyCompare(jerkAccelDown.finalSpeed, vehicleProperties.maxSpeed, vehicleProperties.maxSpeed * EPSILON) == 1 ||
                 willStopMovingWhileTryingToReachMaxDecel(vehicleProperties, jerkAccelDown.finalSpeed) ||
-                a > vehicleProperties.acceleration) {
+                DoubleMath.fuzzyCompare(a, vehicleProperties.acceleration, vehicleProperties.acceleration * EPSILON) == 1
+        ) {
             return Optional.empty();
         }
         ConstantJerkTraversalSection jerkDecelUp = maybeJerkDecelUp.get();
@@ -382,12 +383,12 @@ class ConstantJerkSectionsFactory {
 
         ConstantJerkTraversalSection jerkDecelerationDown = ConstantJerkSectionFactory.jerkDecelerationDown(acceleration, vehicleProperties.jerkDecelerationDown);
 
-        if (jerkDecelerationDown.initialSpeed > initialSpeed + EPSILON) {
+        if (DoubleMath.fuzzyCompare(jerkDecelerationDown.initialSpeed, initialSpeed, initialSpeed * EPSILON) == 1) {
             return ImmutableList.of(ConstantJerkSectionFactory.jerkDecelerationDownToZeroV(initialSpeed, initialAcceleration, vehicleProperties.jerkDecelerationDown));
         }
 
         ConstantJerkTraversalSection jerkDecelerationUpSection = ConstantJerkSectionFactory.jerkDecelerationUp(initialAcceleration, initialSpeed, acceleration, vehicleProperties.jerkDecelerationUp).orElseThrow(Failer::valueExpected);
-        if (jerkDecelerationUpSection.duration > 0 + EPSILON) {
+        if (DoubleMath.fuzzyCompare(jerkDecelerationUpSection.duration, 0, jerkDecelerationDown.duration * EPSILON) == 1) {
             return ImmutableList.of(jerkDecelerationUpSection, jerkDecelerationDown);
         }
 
