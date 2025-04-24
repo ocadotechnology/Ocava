@@ -89,6 +89,50 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
         }
     }
 
+    /**
+     * Unpauses the scheduler and allows it to run for a specified duration. This method guarantees that all events
+     * scheduled for the exact end of the duration will be executed before the scheduler is paused again.
+     * @param duration The duration to run the scheduler for, in scheduler time units.
+     * @throws IllegalStateException if the scheduler is not paused or if the provided duration is negative.
+     */
+    public void runForDuration(double duration) {
+        double endTime = timeProvider.getTime() + duration;
+        unpauseUntil(endTime, "runForDuration");
+    }
+
+    /**
+     * Unpauses the scheduler and allows it to run until a specified time. This method guarantees that all events
+     * scheduled for the exact end time will be executed before the scheduler is paused again.
+     * @param endTime The time to run the scheduler to, in scheduler time units.
+     * @throws IllegalStateException if the scheduler is not paused or if the provided time is in the past.
+     */
+    public void runUntilTime(double endTime) {
+        unpauseUntil(endTime, "runUntilTime");
+    }
+
+    private void unpauseUntil(double endTime, String methodName) {
+        Preconditions.checkState(runState.isPaused(), "Method SimpleDiscreteEventScheduler#%s can only be called when the scheduler is paused", methodName);
+        Preconditions.checkState(!runState.isRunningUnpauseUntil(), "Method SimpleDiscreteEventScheduler#%s cannot be called while still executing another similar method call", methodName);
+        Preconditions.checkState(endTime >= getTime(), "Method SimpleDiscreteEventScheduler#%s cannot be called with an end time in the past", methodName);
+
+        doAt(endTime, () -> pauseIfNextEventIsAfter(endTime), "Scheduled pause event"); //More efficient than using an exitCondition in the unpause call
+        try {
+            runState.setRunningUnpauseUntil();
+            unPause();
+        } finally {
+            runState.clearRunningUnpauseUntil();
+        }
+    }
+
+    private void pauseIfNextEventIsAfter(double endTime) {
+        double nextEventTime = discreteEventsQueue.getNextScheduledEventTime();
+        if (Double.isNaN(nextEventTime) || nextEventTime > endTime) {
+            pause();
+        } else {
+            doAt(endTime, () -> pauseIfNextEventIsAfter(endTime), "Scheduled pause event");
+        }
+    }
+
     @Override
     public Cancelable doNow(Runnable r, String description) {
         Cancelable event = scheduleDoNowDontStart(r, description);
@@ -252,9 +296,14 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
         private boolean isExecuting = false;
         private boolean isStopped = false;
         private boolean isStopping = false;
+        private boolean isRunningUnpauseUntil = false;
 
         public boolean isIdle() {
             return !isPaused && !isExecuting && !isStopped && !isStopping;
+        }
+
+        public boolean isPaused() {
+            return isPaused;
         }
 
         public void setPause() {
@@ -312,6 +361,18 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
                 return true;
             }
             return false;
+        }
+
+        public boolean isRunningUnpauseUntil() {
+            return isRunningUnpauseUntil;
+        }
+
+        public void setRunningUnpauseUntil() {
+            isRunningUnpauseUntil = true;
+        }
+
+        public void clearRunningUnpauseUntil() {
+            isRunningUnpauseUntil = false;
         }
     }
 }
