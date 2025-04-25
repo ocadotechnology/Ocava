@@ -58,7 +58,7 @@
         <jfreechart.version>1.5.5</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.782</aws-java-sdk-s3.version>
-        <jackson-databind.version>2.18.3</jackson-databind.version>
+        <jackson-databind.version>2.19.0</jackson-databind.version>
         <jackson-dataformat-cbor.version>2.18.3</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
         <logback-classic.version>1.5.18</logback-classic.version>
