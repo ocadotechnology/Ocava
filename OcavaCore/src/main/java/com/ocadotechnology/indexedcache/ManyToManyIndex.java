@@ -15,12 +15,6 @@
  */
 package com.ocadotechnology.indexedcache;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
@@ -28,60 +22,23 @@ import javax.annotation.CheckForNull;
 import com.google.common.collect.ImmutableCollection;
 import com.ocadotechnology.id.Identified;
 
-public final class ManyToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
-
-    private final Map<R, Set<C>> indexValues = new LinkedHashMap<>();
-    private final Function<? super C, Set<R>> function;
-
-    ManyToManyIndex(Function<? super C, Set<R>> function) {
-        this(null, function);
-    }
-
-    ManyToManyIndex(@CheckForNull String name, Function<? super C, Set<R>> function) {
+/**
+ * Abstract many-to-many index.
+ */
+public abstract class ManyToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
+    ManyToManyIndex(@CheckForNull String name) {
         super(name);
-        this.function = function;
     }
 
-    public boolean containsKey(R r) {
-        return indexValues.containsKey(r);
-    }
+    public abstract Stream<C> stream(R r);
 
-    public Stream<C> stream(R r) {
-        return getMutable(r).stream();
-    }
+    public abstract Stream<R> streamKeySet();
 
-    public Stream<R> streamKeySet() {
-        return indexValues.keySet().stream();
-    }
+    public abstract boolean containsKey(R r);
 
-    private Set<C> getMutable(R r) {
-        Set<C> set = indexValues.get(r);
-        return set == null ? Collections.emptySet() : set;
-    }
+    public abstract int count(R r);
 
-    public int count(R r) {
-        return getMutable(r).size();
-    }
-
-    public int countKeys() {
-        return indexValues.size();
-    }
-
-    @Override
-    protected void remove(C object) {
-        function.apply(object).forEach(r -> {
-            Set<C> rs = indexValues.get(r);
-            rs.remove(object);
-            if (rs.isEmpty()) {
-                indexValues.remove(r);
-            }
-        });
-    }
-
-    @Override
-    protected void add(C object) {
-        function.apply(object).forEach(value -> indexValues.computeIfAbsent(value, set -> new LinkedHashSet<>()).add(object));
-    }
+    public abstract int countKeys();
 
     public Stream<C> streamIncludingDuplicates(ImmutableCollection<R> keys) {
         return keys.stream().flatMap(this::stream);

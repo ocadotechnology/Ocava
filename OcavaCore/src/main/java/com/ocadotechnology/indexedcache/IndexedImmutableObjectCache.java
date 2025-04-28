@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 import com.ocadotechnology.id.Identity;
+import com.ocadotechnology.validation.Failer;
 
 /**
  * This implementation is <em>not</em> thread-safe.
@@ -386,7 +387,25 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     public <R> ManyToManyIndex<R, C> addManyToManyIndex(@CheckForNull String name, Function<? super C, Set<R>> function) {
-        ManyToManyIndex<R, C> index = new ManyToManyIndex<>(name, function);
+        return addManyToManyIndex(name, function, Hints.optimiseForQuery);
+    }
+
+    /**
+     * Add a {@link ManyToManyIndex} to the cache.
+     * <br>
+     * An optimiseForQuery index caches a mapping from function result to object during update, so that streaming
+     * queries can directly stream the pre-cached result.<br>
+     *
+     * An optimiseForInfrequentChanges index caches a mapping from function result to object id during update, so that
+     * streaming queries can stream the pre-cached result and lookup the actual object in the parent cache. This makes
+     * querying slower than an optimiseForQuery index, but updates are faster.
+     */
+    public <R> ManyToManyIndex<R, C> addManyToManyIndex(@CheckForNull String name, Function<? super C, Set<R>> function, Hints hints) {
+        ManyToManyIndex<R, C> index = switch (hints) {
+            case optimiseForUpdate -> throw Failer.fail("No optimiseForUpdate implementation exists yet.");
+            case optimiseForQuery -> new DefaultManyToManyIndex<>(name, function);
+            case optimiseForInfrequentChanges -> new IdCachedManyToManyIndex<>(name, this, function);
+        };
         return addIndex(index);
     }
 

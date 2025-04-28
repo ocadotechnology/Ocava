@@ -29,13 +29,13 @@ import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
 @DisplayName("ManyToManyIndex class tests")
-class ManyToManyIndexTest {
+class DefaultManyToManyIndexTest {
 
-    private ManyToManyIndex<Integer, TestObject> index;
+    private DefaultManyToManyIndex<Integer, TestObject> index;
 
     @BeforeEach
     void init() {
-        index = new ManyToManyIndex<>(TestObject::getKeys);
+        index = new DefaultManyToManyIndex<>(TestObject::getKeys);
     }
 
     @Test
