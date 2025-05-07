@@ -72,7 +72,7 @@ public abstract class AbstractIndex<C extends Identified<?>> extends Index<C> {
     }
 
     @Override
-    protected final void updateAll(Iterable<Change<C>> changes) throws IndexUpdateException {
+    protected void updateAll(Iterable<Change<C>> changes) throws IndexUpdateException {
         int removed = 0;
         int added = 0;
         try {

@@ -98,6 +98,32 @@ public class SortedIdCachedPredicateIndex<C extends Identified<? extends I>, I> 
     }
 
     @Override
+    protected void updateAll(Iterable<Change<C>> changes) {
+        Set<C> removed = new LinkedHashSet<>();
+        for (Change<C> change : changes) {
+            if (change.originalObject != null) {
+                removed.add(change.originalObject);
+            }
+        }
+
+        backingCacheWithLocalTemporaryChanges.doWithTemporaryObjectsInCache(
+                removed,
+                () -> {
+                    for (Change<C> c : changes) {
+                        if (c.originalObject != null) {
+                            remove(c.originalObject);
+                        }
+                    }
+                });
+
+        for (Change<C> c : changes) {
+            if (c.newObject != null) {
+                add(c.newObject);
+            }
+        }
+    }
+
+    @Override
     public Optional<C> getFirst() {
         if (objectIdsMatchingPredicate.isEmpty()) {
             return Optional.empty();
@@ -144,11 +170,19 @@ public class SortedIdCachedPredicateIndex<C extends Identified<? extends I>, I> 
     /**
      *  A wrapper around the backing cache that allows for temporary changes to be made to the cache.
      *  <br>
-     *  Note that {@link BackingCacheWithLocalTemporaryChanges#add} has purposefully been made private to enforce that changes are always cleared after use.
+     *  Note that methods such as {@link BackingCacheWithLocalTemporaryChanges#add} have purposefully been made private to enforce that changes are always cleared after use.
      */
     private static class BackingCacheWithLocalTemporaryChanges<C extends Identified<? extends I>, I> {
         private final IndexedImmutableObjectCache<C, I> backingCache;
         private final Map<Identity<? extends I>, C> addedObjects = new HashMap<>();
+
+        /**
+         * We may perform multiple operations on the cache at once,
+         * for instance if one action adds an object, and calls another action which adds further objects.
+         * When the sub-action is complete, we don't want to clear the changes made by the first action.
+         * This flag prevents that.
+         */
+        private boolean transactionInProgress = false;
 
         public BackingCacheWithLocalTemporaryChanges(IndexedImmutableObjectCache<C, I> backingCache) {
             this.backingCache = backingCache;
@@ -156,13 +190,21 @@ public class SortedIdCachedPredicateIndex<C extends Identified<? extends I>, I> 
 
         public void doWithTemporaryObjectInCache(C tempObject, Runnable action) {
             add(tempObject);
-            action.run();
+            doAction(action);
+            clearChanges();
+        }
+
+        public void doWithTemporaryObjectsInCache(Iterable<C> tempObjects, Runnable action) {
+            addAll(tempObjects);
+            doAction(action);
             clearChanges();
         }
 
         public <T> T getWithTemporaryObjectInCache(C tempObject, Supplier<T> action) {
             add(tempObject);
+            boolean wasTransactionInProgress = transactionInProgress;
             T result = action.get();
+            transactionInProgress = wasTransactionInProgress;
             clearChanges();
             return result;
         }
@@ -176,12 +218,25 @@ public class SortedIdCachedPredicateIndex<C extends Identified<? extends I>, I> 
             return backingCache.get((Identity<I>) id);
         }
 
+        private void doAction(Runnable action) {
+            boolean wasTransactionInProgress = transactionInProgress;
+            transactionInProgress = true;
+            action.run();
+            transactionInProgress = wasTransactionInProgress;
+        }
+
         private void add(C object) {
             addedObjects.put(object.getId(), object);
         }
 
+        private void addAll(Iterable<C> objects) {
+            objects.forEach(this::add);
+        }
+
         private void clearChanges() {
-            addedObjects.clear();
+            if (!transactionInProgress) {
+                addedObjects.clear();
+            }
         }
     }
 }

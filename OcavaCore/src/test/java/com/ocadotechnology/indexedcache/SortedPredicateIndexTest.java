@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
+import com.ocadotechnology.id.Identity;
 import com.ocadotechnology.indexedcache.IndexedImmutableObjectCache.Hints;
 
 @DisplayName("A SortedPredicateIndexTest")
@@ -215,6 +216,65 @@ class SortedPredicateIndexTest {
             cache.update(null, stateFour);
 
             assertThat(getIndex().after(stateFour)).contains(stateOne);
+        }
+
+        @ParameterizedTest
+        @EnumSource(Hints.class)
+        void testUpdateAll_givenRemovingManyElementsPassingPredicate(Hints hint) {
+            initialise(hint);
+
+            TestState stateOne = new TestState(Id.create(1), true, 1);
+            TestState stateTwo = new TestState(Id.create(2), true, 2);
+            TestState stateThree = new TestState(Id.create(3), true, 3);
+            TestState stateFour = new TestState(Id.create(4), true, 4);
+            TestState stateFive = new TestState(Id.create(5), true, 5);
+            TestState stateSix = new TestState(Id.create(6), true, 6);
+
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree, stateFour, stateFive, stateSix));
+
+            ImmutableList<TestState> expectedOrder = ImmutableList.of(stateOne, stateTwo, stateThree, stateFour, stateFive, stateSix);
+            ImmutableList<TestState> actualOrder = getIndex().stream().collect(ImmutableList.toImmutableList());
+            assertThat(actualOrder).containsExactlyElementsOf(expectedOrder);
+
+            ImmutableSet<Identity<? extends TestState>> statesToRemove = ImmutableSet.of(
+                    stateTwo.getId(),
+                    stateFour.getId(),
+                    stateFive.getId());
+
+            cache.deleteAll(statesToRemove);
+
+            ImmutableList<TestState> expectedOrderAfterDelete = ImmutableList.of(stateOne, stateThree, stateSix);
+            ImmutableList<TestState> actualOrderAfterDelete = getIndex().stream().collect(ImmutableList.toImmutableList());
+            assertThat(actualOrderAfterDelete).containsExactlyElementsOf(expectedOrderAfterDelete);
+        }
+
+        @ParameterizedTest
+        @EnumSource(Hints.class)
+        void testUpdateAll_givenManyElementsPassingPredicateChangeOrder(Hints hint) {
+            initialise(hint);
+
+            TestState stateOne = new TestState(Id.create(1), true, 1);
+            TestState stateTwo = new TestState(Id.create(2), true, 2);
+            TestState stateThree = new TestState(Id.create(3), true, 3);
+            TestState stateFour = new TestState(Id.create(4), true, 4);
+            TestState stateFive = new TestState(Id.create(5), true, 5);
+            TestState stateSix = new TestState(Id.create(6), true, 6);
+
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree, stateFour, stateFive, stateSix));
+
+            // State 3 & 4 swap order
+            TestState stateThreeUpdated = new TestState(Id.create(3), true, 4);
+            TestState stateFourUpdated = new TestState(Id.create(4), true, 3);
+
+            ImmutableSet<Change<TestState>> updates = ImmutableSet.of(
+                    Change.update(stateThree, stateThreeUpdated),
+                    Change.update(stateFour, stateFourUpdated));
+
+            cache.updateAll(updates);
+
+            ImmutableList<TestState> expectedOrderAfterUpdate = ImmutableList.of(stateOne, stateTwo, stateFour, stateThree, stateFive, stateSix);
+            ImmutableList<TestState> actualOrderAfterDelete = getIndex().stream().collect(ImmutableList.toImmutableList());
+            assertThat(actualOrderAfterDelete).containsExactlyElementsOf(expectedOrderAfterUpdate);
         }
 
         private TestState getWithInvertedSomething(TestState state) {
