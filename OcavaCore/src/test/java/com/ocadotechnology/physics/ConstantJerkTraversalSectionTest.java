@@ -133,7 +133,7 @@ class ConstantJerkTraversalSectionTest {
 
         @Test
         @DisplayName("Calculates zero time on distances smaller than the tolerance")
-        void getTimeAtDistance_whenDistanceSmallerThanTolerance_thenThenTimeZero() {
+        void getTimeAtDistance_whenDistanceSmallerThanTolerance_thenTimeZero() {
             double distance = JERK_UP_DISTANCE * ROUNDING_ERROR_FRACTION * 0.99;
             assertThat(jerkUpAcceleratingSection.getTimeAtDistance(distance)).isEqualTo(0);
             assertThat(jerkUpAcceleratingSection.getTimeAtDistance(-distance)).isEqualTo(0);
@@ -141,7 +141,7 @@ class ConstantJerkTraversalSectionTest {
 
         @Test
         @DisplayName("Calculates correct time when distance is very small BUT not smaller than the tolerance")
-        void getTimeAtDistance_whenDistanceSmallButLargerThanTolerance_thenThenTimeCorrect() {
+        void getTimeAtDistance_whenDistanceSmallButLargerThanTolerance_thenTimeCorrect() {
             double distance = JERK_UP_DISTANCE * ROUNDING_ERROR_FRACTION * 1.01;
             assertThat(jerkUpAcceleratingSection.getTimeAtDistance(distance))
                     .isCloseTo(3.669E-5, Percentage.withPercentage(0.1));
@@ -210,7 +210,7 @@ class ConstantJerkTraversalSectionTest {
 
         @Test
         @DisplayName("Calculates zero distance on times smaller than the tolerance")
-        void getDistanceAtTime_whenTimeSmallerThanTolerance_thenThenDistanceZero() {
+        void getDistanceAtTime_whenTimeSmallerThanTolerance_thenDistanceZero() {
             double time = DURATION * ROUNDING_ERROR_FRACTION * 0.99;
             assertThat(jerkUpAcceleratingSection.getDistanceAtTime(time)).isEqualTo(0);
             assertThat(jerkUpAcceleratingSection.getDistanceAtTime(-time)).isEqualTo(0);
@@ -218,7 +218,7 @@ class ConstantJerkTraversalSectionTest {
 
         @Test
         @DisplayName("Calculates correct distance when time is very small BUT not smaller than the tolerance")
-        void getDistanceAtTime_whenTimeSmallButLargerThanTolerance_thenThenDistanceCorrect() {
+        void getDistanceAtTime_whenTimeSmallButLargerThanTolerance_thenDistanceCorrect() {
             double time = DURATION * ROUNDING_ERROR_FRACTION * 1.01;
             assertThat(jerkUpAcceleratingSection.getDistanceAtTime(time))
                     .isCloseTo(5.100E-19, Percentage.withPercentage(0.1));
