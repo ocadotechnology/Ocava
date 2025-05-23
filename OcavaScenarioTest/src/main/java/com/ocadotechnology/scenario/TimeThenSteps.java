@@ -22,6 +22,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.junit.jupiter.api.Assertions;
 
+import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.simulation.Simulation;
 
 /**
@@ -182,11 +183,9 @@ public final class TimeThenSteps<S extends Simulation> {
      * {@link ScenarioSimulationApi#getSchedulerStartTime()})
      */
     public void timeIsLessThan(double time, TimeUnit unit) {
-        addExecuteStep(() -> {
-            double beforeTime = scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit());
-            double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
-            Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
-        });
+        timeIsLessThan(StepFuture.of(
+                scenarioSimulationApi.getSchedulerStartTime() + convertToUnit(time, unit, stepManager.getTimeUnit())
+        ));
     }
 
     /**
@@ -197,7 +196,9 @@ public final class TimeThenSteps<S extends Simulation> {
         addExecuteStep(() -> {
             double beforeTime = instant.get();
             double now = scenarioSimulationApi.getEventScheduler().getTimeProvider().getTime();
-            Assertions.assertTrue(now < beforeTime, "Time now (" + now + ") should not exceed " + beforeTime);
+            Assertions.assertTrue(
+                    now < beforeTime,
+                    () -> "Time now (" + EventUtil.logTime(now) + ") should not exceed " + EventUtil.logTime(beforeTime));
         });
     }
 

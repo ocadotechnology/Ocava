@@ -178,10 +178,14 @@ public abstract class NotificationBus<N> {
             return;
         }
 
+        String busType = getClass().getSimpleName();
         throw Failer.fail(
-                "A thread is trying to broadcast through a NotificationBus which is already in use by another thread."
-                        + " NotificationBus: %s. First Thread: %s, ID=%s. Current Thread: %s, ID=%s. Notification: %s",
-                getClass().getSimpleName(),
+                "Notification buses of type %s can only be used in deterministic contexts. Notifications have been" +
+                        "broadcast from multiple threads in this test, which is likely to cause determinism issues because the order of" +
+                        "these broadcasts are not guaranteed. If this test is legitimately allowed to do things that are not deterministic," +
+                        "consider to change the type of bus used instead." +
+                        "First Thread: %s, ID=%s. Current Thread: %s, ID=%s. Notification: %s",
+                busType,
                 permitted,
                 permitted.getId(),
                 current,
