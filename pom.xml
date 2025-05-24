@@ -55,7 +55,7 @@
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <assertj.version>3.27.3</assertj.version>
         <mockito.version>5.17.0</mockito.version>
-        <jfreechart.version>1.5.5</jfreechart.version>
+        <jfreechart.version>1.5.6</jfreechart.version>
         <source.plugin.version>3.0.0</source.plugin.version>
         <aws-java-sdk-s3.version>1.12.783</aws-java-sdk-s3.version>
         <jackson-databind.version>2.19.0</jackson-databind.version>
