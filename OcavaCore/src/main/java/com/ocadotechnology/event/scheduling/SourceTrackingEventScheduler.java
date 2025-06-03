@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 /**
  * A simulation-only implementation of EventScheduler which tracks which simulated thread is active in each event,
@@ -156,6 +157,11 @@ public class SourceTrackingEventScheduler extends TypedEventScheduler {
     @Override
     public TimeProvider getTimeProvider() {
         return backingScheduler.getTimeProvider();
+    }
+
+    @Override
+    public TimeProviderWithUnit getTimeProviderWithUnit() {
+        return backingScheduler.getTimeProviderWithUnit();
     }
 
     @Override

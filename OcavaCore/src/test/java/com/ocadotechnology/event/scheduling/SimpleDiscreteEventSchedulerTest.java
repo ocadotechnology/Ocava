@@ -20,14 +20,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.util.concurrent.Runnables;
 import com.ocadotechnology.notification.TestSchedulerType;
 import com.ocadotechnology.time.AdjustableTimeProvider;
+import com.ocadotechnology.time.AdjustableTimeProviderWithUnit;
 
 public class SimpleDiscreteEventSchedulerTest {
     private final SimpleDiscreteEventScheduler scheduler = new SimpleDiscreteEventScheduler(
@@ -199,5 +204,93 @@ public class SimpleDiscreteEventSchedulerTest {
             assertThrows(IllegalStateException.class, () -> scheduler.runUntilTime(10));
         });
         scheduler.runUntilTime(5);
+    }
+
+    @Test
+    void doAtInstant_withoutTimeUnitSet_thenThrowsException() {
+        scheduler.pause();
+        assertThrows(TimeUnitNotSpecifiedException.class, () -> scheduler.doAt(Instant.ofEpochMilli(1), Runnables.doNothing()));
+    }
+
+    @Test
+    void doInDuration_withoutTimeUnitSet_thenThrowsException() {
+        scheduler.pause();
+        assertThrows(TimeUnitNotSpecifiedException.class, () -> scheduler.doIn(Duration.ofMillis(1), Runnables.doNothing()));
+    }
+
+    @Test
+    void runForDuration_withoutTimeUnitSet_thenThrowsException() {
+        scheduler.pause();
+        assertThrows(TimeUnitNotSpecifiedException.class, () -> scheduler.runForDuration(Duration.ofMillis(1)));
+    }
+
+    @Test
+    void runUntilTime_withoutTimeUnitSet_thenThrowsException() {
+        scheduler.pause();
+        assertThrows(TimeUnitNotSpecifiedException.class, () -> scheduler.runUntilTime(Instant.ofEpochMilli(1)));
+    }
+
+    @Nested
+    class TimeUnitTests {
+        SimpleDiscreteEventScheduler scheduler = new SimpleDiscreteEventScheduler(
+                new EventExecutor(),
+                Runnables.doNothing(),
+                TestSchedulerType.TEST_SCHEDULER_TYPE,
+                new AdjustableTimeProviderWithUnit(1, TimeUnit.SECONDS),
+                true);
+
+        @Test
+        void doAtInstant_withTimeUnitSet_thenRunsExpectedEvent() {
+            AtomicInteger counter = new AtomicInteger(0);
+            scheduler.doAt(Instant.ofEpochSecond(2), counter::incrementAndGet);
+            scheduler.unPause();
+
+            assertEquals(1, counter.get());
+        }
+
+        @Test
+        void doInDuration_withTimeUnitSet_thenRunsExpectedEvent() {
+            AtomicInteger counter = new AtomicInteger(0);
+            scheduler.doIn(Duration.ofMillis(1), counter::incrementAndGet);
+            scheduler.unPause();
+
+            assertEquals(1, counter.get());
+        }
+
+        @Test
+        void runForDuration_whenEventsAreScheduled_thenRunsExpectedEvents() {
+            AtomicInteger counter = new AtomicInteger(0);
+
+            scheduler.pause();
+
+            scheduler.doIn(Duration.ofSeconds(1), counter::incrementAndGet);
+            scheduler.doIn(Duration.ofSeconds(1), counter::incrementAndGet);
+            scheduler.doIn(Duration.ofSeconds(2), counter::incrementAndGet);
+            scheduler.doIn(Duration.ofSeconds(2), counter::incrementAndGet);
+            scheduler.doIn(Duration.ofSeconds(3), counter::incrementAndGet);
+            scheduler.doIn(Duration.ofSeconds(4), counter::incrementAndGet);
+
+            scheduler.runForDuration(Duration.ofSeconds(2));
+
+            assertEquals(4, counter.get());
+        }
+
+        @Test
+        void runUntilTime_whenEventsAreScheduled_thenRunsExpectedEvents() {
+            AtomicInteger counter = new AtomicInteger(0);
+
+            scheduler.pause();
+
+            scheduler.doAt(Instant.ofEpochSecond(1), counter::incrementAndGet);
+            scheduler.doAt(Instant.ofEpochSecond(1), counter::incrementAndGet);
+            scheduler.doAt(Instant.ofEpochSecond(2), counter::incrementAndGet);
+            scheduler.doAt(Instant.ofEpochSecond(2), counter::incrementAndGet);
+            scheduler.doAt(Instant.ofEpochSecond(3), counter::incrementAndGet);
+            scheduler.doAt(Instant.ofEpochSecond(4), counter::incrementAndGet);
+
+            scheduler.runUntilTime(Instant.ofEpochSecond(2));
+
+            assertEquals(4, counter.get());
+        }
     }
 }

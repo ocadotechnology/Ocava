@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 public class NonExecutingEventScheduler extends TypedEventScheduler {
 
@@ -36,6 +37,14 @@ public class NonExecutingEventScheduler extends TypedEventScheduler {
     @Override
     public TimeProvider getTimeProvider() {
         return timeProvider;
+    }
+
+    @Override
+    public TimeProviderWithUnit getTimeProviderWithUnit() {
+        if (timeProvider instanceof TimeProviderWithUnit timeProviderWithUnit) {
+            return timeProviderWithUnit;
+        }
+        throw new TimeUnitNotSpecifiedException();
     }
 
     @Override

@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -27,6 +29,7 @@ import com.google.common.base.Preconditions;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.time.ModifiableTimeProvider;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling {
 
@@ -101,6 +104,18 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     }
 
     /**
+     * Unpauses the scheduler and allows it to run for a specified duration. This method guarantees that all events
+     * scheduled for the exact end of the duration will be executed before the scheduler is paused again.
+     * @param duration The Duration to run the scheduler for.
+     * @throws IllegalStateException if the scheduler is not paused or if the provided duration is negative.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    public void runForDuration(Duration duration) {
+        double primitiveDuration = getTimeProviderWithUnit().getConverter().convertFromDuration(duration);
+        runForDuration(primitiveDuration);
+    }
+
+    /**
      * Unpauses the scheduler and allows it to run until a specified time. This method guarantees that all events
      * scheduled for the exact end time will be executed before the scheduler is paused again.
      * @param endTime The time to run the scheduler to, in scheduler time units.
@@ -108,6 +123,17 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
      */
     public void runUntilTime(double endTime) {
         unpauseUntil(endTime, "runUntilTime");
+    }
+
+    /**
+     * Unpauses the scheduler and allows it to run until a specified time. This method guarantees that all events
+     * scheduled for the exact end time will be executed before the scheduler is paused again.
+     * @param endTime The Instant to run the scheduler to.
+     * @throws IllegalStateException if the scheduler is not paused or if the provided time is in the past.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    public void runUntilTime(Instant endTime) {
+        runUntilTime(getTimeProviderWithUnit().getConverter().convertFromInstant(endTime));
     }
 
     private void unpauseUntil(double endTime, String methodName) {
@@ -267,6 +293,14 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
     @Override
     public TimeProvider getTimeProvider() {
         return timeProvider;
+    }
+
+    @Override
+    public TimeProviderWithUnit getTimeProviderWithUnit() {
+        if (timeProvider instanceof TimeProviderWithUnit timeProviderWithUnit) {
+            return timeProviderWithUnit;
+        }
+        throw new TimeUnitNotSpecifiedException();
     }
 
     @Override

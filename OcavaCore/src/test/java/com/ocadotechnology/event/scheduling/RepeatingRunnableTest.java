@@ -15,7 +15,10 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.time.AdjustableTimeProvider;
+import com.ocadotechnology.time.AdjustableTimeProviderWithUnit;
 
 public class RepeatingRunnableTest {
 
@@ -76,4 +80,27 @@ public class RepeatingRunnableTest {
         Assertions.assertNull(exceptionSwallowingEventExecutor.getFirstExceptionEncountered());
     }
 
+    @Test
+    public void testStartIn_whenUnitsNotProvidedAndTimeObjectsProvided_thenThrowsException() {
+        Assertions.assertThrows(TimeUnitNotSpecifiedException.class, () -> {
+            RepeatingRunnable.startIn(Duration.ofMillis(1), Duration.ofMillis(10), "Test Event", () -> {}, simpleDiscreteEventScheduler);
+        });
+    }
+
+    @Test
+    public void testStartIn_whenUnitsProvidedAndTimeObjectsProvided_thenRunsEvent() {
+        simpleDiscreteEventScheduler = new SimpleDiscreteEventScheduler(
+                exceptionSwallowingEventExecutor,
+                () -> {},
+                DUMMY_SCHEDULER_TYPE,
+                new AdjustableTimeProviderWithUnit(0, TimeUnit.SECONDS),
+                true);
+
+        AtomicInteger executionCount = new AtomicInteger(0);
+        simpleDiscreteEventScheduler.pause();
+        RepeatingRunnable.startIn(Duration.ofMillis(10), Duration.ofMillis(10), "Test Event", executionCount::getAndIncrement, simpleDiscreteEventScheduler);
+        simpleDiscreteEventScheduler.runForDuration(Duration.ofMillis(100));
+
+        Assertions.assertEquals(10, executionCount.get());
+    }
 }

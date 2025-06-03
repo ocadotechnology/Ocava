@@ -28,6 +28,7 @@ import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.RecoverableException;
 import com.ocadotechnology.event.scheduling.BusyLoopQueue.BusyLoopQueueType;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 public class BusyLoopEventScheduler extends TypedEventScheduler {
     private static final Logger logger = LoggerFactory.getLogger(BusyLoopEventScheduler.class);
@@ -78,7 +79,15 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
         this(timeProvider, name, type, threadManager, heartbeatMonitor, BusyLoopQueueType.SwitchingQueue, 0, parkDurationNanos, useLowLatencyRunner);
     }
 
+    public BusyLoopEventScheduler(TimeProviderWithUnit timeProvider, String name, EventSchedulerType type, ThreadManager threadManager, boolean heartbeatMonitor, long parkDurationNanos, boolean useLowLatencyRunner) {
+        this(timeProvider, name, type, threadManager, heartbeatMonitor, BusyLoopQueueType.SwitchingQueue, 0, parkDurationNanos, useLowLatencyRunner);
+    }
+
     public BusyLoopEventScheduler(TimeProvider timeProvider, String name, EventSchedulerType type) {
+        this(timeProvider, name, type, () -> {}, false, BusyLoopQueueType.SwitchingQueue, 0, 0, false);
+    }
+
+    public BusyLoopEventScheduler(TimeProviderWithUnit timeProvider, String name, EventSchedulerType type) {
         this(timeProvider, name, type, () -> {}, false, BusyLoopQueueType.SwitchingQueue, 0, 0, false);
     }
 
@@ -90,6 +99,14 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
     @Override
     public TimeProvider getTimeProvider() {
         return timeProvider;
+    }
+
+    @Override
+    public TimeProviderWithUnit getTimeProviderWithUnit() {
+        if (timeProvider instanceof TimeProviderWithUnit timeProviderWithUnit) {
+            return timeProviderWithUnit;
+        }
+        throw new TimeUnitNotSpecifiedException();
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Duration;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,6 +70,18 @@ class ExecutorEventSchedulerTest {
         rendezvous.exchange(null);  // wait for second event to start
         Assertions.assertEquals(0, scheduler.getQueueSize());
         rendezvous.exchange(null);  // permit second event to complete
+    }
+
+    @Test
+    void testDoInDuration_thenExecutesEvent() throws InterruptedException {
+        Assertions.assertEquals(0, scheduler.getQueueSize());
+
+        Exchanger<Void> rendezvous = new Exchanger<>();
+        scheduler.doIn(Duration.ofMillis(500), () -> rendezvousRunnable(rendezvous));
+
+        // An executing job is not on the queue:
+        rendezvous.exchange(null);  // wait for first event to start
+        rendezvous.exchange(null);  // permit first event to complete
     }
 
     private static void rendezvousRunnable(Exchanger<Void> rendezvous) {

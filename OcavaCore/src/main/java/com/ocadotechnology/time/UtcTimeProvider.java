@@ -21,11 +21,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Provides a time based on the system clock time.
  */
-public class UtcTimeProvider implements TimeProvider, Serializable {
+public class UtcTimeProvider implements TimeProviderWithUnit, Serializable {
     public static UtcTimeProvider NULL = new UtcTimeProvider(TimeUnit.MILLISECONDS, 0);
 
-    private final TimeUnit timeUnit;
     private final double multiplier;
+    private final TimeConverter converter;
 
     /**
      * Creates a new realtime time provider with a default time unit of MILLISECONDS.
@@ -53,13 +53,19 @@ public class UtcTimeProvider implements TimeProvider, Serializable {
      * @param multiplier The realtime multiplier to use
      */
     UtcTimeProvider(TimeUnit timeUnit, double multiplier) {
-        this.timeUnit = timeUnit;
+        super();
         this.multiplier = multiplier / TimeUnit.MILLISECONDS.convert(1, timeUnit);
+        this.converter = new TimeConverter(timeUnit);
     }
 
     @Override
     public double getTime() {
         return System.currentTimeMillis() * multiplier;
+    }
+
+    @Override
+    public TimeConverter getConverter() {
+        return converter;
     }
 
     public double getMillisecondMultiplier() {

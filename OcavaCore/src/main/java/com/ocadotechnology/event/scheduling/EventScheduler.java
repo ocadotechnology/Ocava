@@ -15,9 +15,12 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 public interface EventScheduler {
 
@@ -60,26 +63,72 @@ public interface EventScheduler {
 
     TimeProvider getTimeProvider();
 
+    /**
+     * @return this scheduler's time provider, if it is a TimeProviderWithUnit.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    TimeProviderWithUnit getTimeProviderWithUnit();
+
+    /**
+     * Schedules an event to occur at the current time.
+     */
     default Cancelable doNow(Runnable r) {
         return doNow(r, r.getClass().getName());
     }
 
+    /**
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doAt(double time, Runnable r) {
         return doAt(time, r, r.getClass().getName());
     }
 
+    /**
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAt(Instant time, Runnable r) {
+        return doAt(time, r, r.getClass().getName());
+    }
+
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     */
     default Cancelable doAtOrNow(double time, Runnable r) {
+        return doAtOrNow(time, r, r.getClass().getName());
+    }
+
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAtOrNow(Instant time, Runnable r) {
         return doAtOrNow(time, r, r.getClass().getName());
     }
 
     Cancelable doNow(Runnable r, String description);
 
+    /**
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doAt(double time, Runnable r, String description) {
         return doAt(time, r, description, false);
     }
 
     /**
-     * Creates a Cancelable Event using the provided Runnable, and glags the Event as a 'daemon' task.  Does NOT imply
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAt(Instant time, Runnable r, String description) {
+        return doAt(time, r, description, false);
+    }
+
+    /**
+     * Creates a Cancelable Event using the provided Runnable, and tags the Event as a 'daemon' task.  Does NOT imply
      * any repetition on the event. Use {@link RepeatingRunnable} to create repeating events.
      *
      * @param time - the time of the event
@@ -91,42 +140,166 @@ public interface EventScheduler {
         return doAt(time, r, description, true);
     }
 
+    /**
+     * Creates a Cancelable Event using the provided Runnable, and tags the Event as a 'daemon' task.  Does NOT imply
+     * any repetition on the event. Use {@link RepeatingRunnable} to create repeating events.
+     *
+     * @param time - the time of the event
+     * @param r - the action to perform at the indicated time
+     * @param description - Human-readable String description for the task.  Important for debugging.
+     * @return the Cancellable event created.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAtDaemon(Instant time, Runnable r, String description) {
+        double primitiveTime = getTimeProviderWithUnit().getConverter().convertFromInstant(time);
+        return doAtDaemon(primitiveTime, r, description);
+    }
+
+    /**
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     */
     Cancelable doAt(double time, Runnable r, String description, boolean isDaemon);
+
+    /**
+     * Schedules an event to occur at the specified time.
+     * May throw IllegalStateException if the time is in the past, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAt(Instant time, Runnable r, String description, boolean isDaemon) {
+        double primitiveTime = getTimeProviderWithUnit().getConverter().convertFromInstant(time);
+        return doAt(primitiveTime, r, description, isDaemon);
+    }
 
     long getThreadId();
 
     EventSchedulerType getType();
 
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doIn(double delay, Runnable r) {
         return doIn(delay, r, r.getClass().getName());
     }
 
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doIn(Duration delay, Runnable r) {
+        return doIn(delay, r, r.getClass().getName());
+    }
+
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doIn(double delay, Runnable r, String description) {
         return doIn(delay, t -> r.run(), description);
     }
+    
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doIn(Duration delay, Runnable r, String description) {
+        return doIn(delay, t -> r.run(), description);
+    }
 
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doIn(double delay, Consumer<Double> eventTimeConsumingAction, String description) {
         double eventTime = getTimeProvider().getTime() + delay;
         return doAt(eventTime, () -> eventTimeConsumingAction.accept(eventTime), description);
     }
 
+    /**
+     * Schedules an event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doIn(Duration delay, Consumer<Double> eventTimeConsumingAction, String description) {
+        double primitiveDelay = getTimeProviderWithUnit().getConverter().convertFromDuration(delay);
+        return doIn(primitiveDelay, eventTimeConsumingAction, description);
+    }
+
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doInDaemon(double delay, Runnable r) {
         return doInDaemon(delay, r, r.getClass().getName());
     }
+    
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doInDaemon(Duration delay, Runnable r) {
+        return doInDaemon(delay, r, r.getClass().getName());
+    }
 
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doInDaemon(double delay, Runnable r, String description) {
         return doInDaemon(delay, t -> r.run(), description);
     }
+    
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doInDaemon(Duration delay, Runnable r, String description) {
+        return doInDaemon(delay, t -> r.run(), description);
+    }
 
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     */
     default Cancelable doInDaemon(double delay, Consumer<Double> eventTimeConsumingAction, String description) {
         double eventTime = getTimeProvider().getTime() + delay;
         return doAtDaemon(eventTime, () -> eventTimeConsumingAction.accept(eventTime), description);
     }
+    
+    /**
+     * Schedules a daemon event to occur after the specified delay.
+     * May throw IllegalStateException if the delay is negative, or may execute the event immediately, depending on implementation.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doInDaemon(Duration delay, Consumer<Double> eventTimeConsumingAction, String description) {
+        double primitiveDelay = getTimeProviderWithUnit().getConverter().convertFromDuration(delay);
+        return doInDaemon(primitiveDelay, eventTimeConsumingAction, description);
+    }
 
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     */
     default Cancelable doAtOrNow(double time, Runnable r, String description) {
         return doAtOrNow(time, t -> r.run(), description);
     }
+    
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAtOrNow(Instant time, Runnable r, String description) {
+        double primitiveTime = getTimeProviderWithUnit().getConverter().convertFromInstant(time);
+        return doAtOrNow(primitiveTime, r, description);
+    }
 
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     */
     default Cancelable doAtOrNow(double time, Consumer<Double> eventTimeConsumingAction, String description) {
         double now = getTimeProvider().getTime();
         if (time > now) {
@@ -134,6 +307,15 @@ public interface EventScheduler {
         } else {
             return doNow(() -> eventTimeConsumingAction.accept(now), description);
         }
+    }
+
+    /**
+     * Schedules an event to occur at the current time or at the specified time, whichever is later.
+     * @throws TimeUnitNotSpecifiedException if this {@link EventScheduler} was not initialised with a {@link TimeProviderWithUnit}.
+     */
+    default Cancelable doAtOrNow(Instant time, Consumer<Double> eventTimeConsumingAction, String description) {
+        double primitiveTime = getTimeProviderWithUnit().getConverter().convertFromInstant(time);
+        return doAtOrNow(primitiveTime, eventTimeConsumingAction, description);
     }
 
     default boolean isThreadHandoverRequired() {

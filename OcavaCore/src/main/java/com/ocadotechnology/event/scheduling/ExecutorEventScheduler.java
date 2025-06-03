@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.ocadotechnology.event.EventUtil;
 import com.ocadotechnology.event.RecoverableException;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 import com.ocadotechnology.time.UtcTimeProvider;
 import com.ocadotechnology.utils.Types;
 import com.ocadotechnology.validation.Failer;
@@ -245,6 +246,11 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
 
     @Override
     public TimeProvider getTimeProvider() {
+        return timeProvider;
+    }
+
+    @Override
+    public TimeProviderWithUnit getTimeProviderWithUnit() {
         return timeProvider;
     }
 
