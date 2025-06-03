@@ -38,7 +38,7 @@
         <!-- Maven Plugin versions -->
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
-        <deploy.plugin.version>2.8.2</deploy.plugin.version>
+        <deploy.plugin.version>3.1.4</deploy.plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
 
         <!-- Extra rules for maven enforcer -->
@@ -87,7 +87,7 @@
         <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+	<central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <versions-maven-plugin.version>2.8.1</versions-maven-plugin.version>
 
@@ -533,14 +533,14 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
+                        <!-- following instructions in:https://central.sonatype.org/publish/publish-portal-maven/ -->
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central-publishing-maven-plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -581,18 +581,7 @@
                 <enabled>false</enabled>
             </snapshots>
             <name>bintray</name>
-            <url>https://dl.bintray.com/cbeust/maven</url>
+            <url>https://repo1.maven.org/maven2</url>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 </project>
