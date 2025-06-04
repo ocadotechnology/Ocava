@@ -9,6 +9,7 @@
         <artifactId>OcavaParent</artifactId>
         <version>0-SNAPSHOT</version>
     </parent>
+    <name>${project.groupId}:${project.artifactId}</name>
 
     <dependencies>
         <dependency>

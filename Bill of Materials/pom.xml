@@ -13,6 +13,27 @@
     <description>Bill of Materials for Ocava Open-Source projects, can be used to facilitate dependency management</description>
     <url>https://github.com/ocadotechnology/Ocava</url>
 
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Ocado Simulation</name>
+            <organization>Ocado</organization>
+            <organizationUrl>https://github.com/ocadotechnology/Ocava</organizationUrl>
+        </developer>
+    </developers>
+
+    <properties>
+        <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <!-- Bill of Materials: for Ocava Open-Source: only specify the modules produced by Ocava -->
@@ -44,6 +65,17 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <scm>
+        <connection>
+            scm:git:git@github.com:ocadotechnology/Ocava.git
+        </connection>
+        <developerConnection>
+            scm:git:git@github.com:ocadotechnology/Ocava.git
+        </developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/ocadotechnology/Ocava</url>
+    </scm>
 
     <build>
         <plugins>
@@ -79,24 +111,47 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>central</id>
-            <name>Ocada Cross Stream Releases</name>
-            <url>https://nexus.ocado.tech/repository/shared-maven-releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>central</id>
-            <name>Ocada Cross Stream Snapshots</name>
-            <url>https://nexus.ocado.tech/repository/shared-maven-snapshots</url>
-            <uniqueVersion>false</uniqueVersion>
-        </snapshotRepository>
-        <site>
-            <id>ocado-maven-nexus</id>
-            <!-- The site is not deployed using maven, but site:stage requires the distribution information -->
-            <url>
-                http://fake/site
-            </url>
-        </site>
-    </distributionManagement>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation><activeByDefault>false</activeByDefault></activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <!-- following instructions in:https://central.sonatype.org/publish/publish-portal-maven/ -->
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central-publishing-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <!-- Ocado artifact will probably want this to be true -->
+                            <autoPublish>true</autoPublish>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>9272F1A5EF012E0ED15709CA7DA5608BAAD629A3</keyname>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

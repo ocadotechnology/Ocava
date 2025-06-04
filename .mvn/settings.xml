@@ -25,6 +25,12 @@
             <username>${env.ossrh_login}</username>
             <password>${env.ossrh_pass}</password>
         </server>
+        <server>
+            <id>central</id>
+	    <!-- TODO: rename these to central_login/central_pass, and create secret variables -->
+            <username>${env.ossrh_login}</username>
+            <password>${env.ossrh_pass}</password>
+        </server>
     </servers>
 
     <profiles>
