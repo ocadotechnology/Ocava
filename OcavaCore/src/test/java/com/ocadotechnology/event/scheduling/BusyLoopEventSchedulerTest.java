@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Instant;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.util.concurrent.Runnables;
 import com.ocadotechnology.notification.TestSchedulerType;
 import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 class BusyLoopEventSchedulerTest {
     private BusyLoopEventScheduler scheduler;
@@ -58,5 +61,21 @@ class BusyLoopEventSchedulerTest {
         event.cancel();
 
         Assertions.assertEquals(0, scheduler.getQueueSize());
+    }
+
+    @Test
+    void whenCreatedWithoutUnits_thenDoesNotAcceptObjectMethodCalls() {
+        Assertions.assertThrows(
+                TimeUnitNotSpecifiedException.class,
+                () -> scheduler.doAt(Instant.ofEpochSecond(1), () -> {}, "Test event", true));
+    }
+
+    @Test
+    void whenCreatedWithUnits_thenAcceptsObjectMethodCalls() {
+        EventScheduler scheduler = new BusyLoopEventScheduler(
+                TimeProviderWithUnit.NULL, //Also testing that TimeProviderWithUnit.NULL is correctly hiding TimeProvider.NULL
+                "BusyLoopEventSchedulerTest",
+                TestSchedulerType.TEST_SCHEDULER_TYPE);
+        scheduler.doAt(Instant.ofEpochSecond(1), () -> {}, "Test event", true);
     }
 }

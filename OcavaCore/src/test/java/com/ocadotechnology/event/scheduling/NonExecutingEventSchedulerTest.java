@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import com.ocadotechnology.notification.TestSchedulerType;
 import com.ocadotechnology.time.AdjustableTimeProvider;
+import com.ocadotechnology.time.TimeProvider;
+import com.ocadotechnology.time.TimeProviderWithUnit;
 
 public class NonExecutingEventSchedulerTest {
 
@@ -179,6 +182,24 @@ public class NonExecutingEventSchedulerTest {
         timeProvider.advanceTime(50);
         eventScheduler.executeOverdueEvents();
         Assertions.assertTrue(eventScheduler.hasOnlyDaemonEvents());
+    }
+
+    @Test
+    void whenCreatedWithoutUnits_thenDoesNotAcceptObjectMethodCalls() {
+        NonExecutingEventScheduler scheduler = new NonExecutingEventScheduler(
+                TestSchedulerType.TEST_SCHEDULER_TYPE,
+                TimeProvider.NULL);
+        Assertions.assertThrows(
+                TimeUnitNotSpecifiedException.class,
+                () -> scheduler.doAt(Instant.ofEpochSecond(1), () -> {}, "Test event", true));
+    }
+
+    @Test
+    void whenCreatedWithUnits_thenAcceptsObjectMethodCalls() {
+        NonExecutingEventScheduler scheduler = new NonExecutingEventScheduler(
+                TestSchedulerType.TEST_SCHEDULER_TYPE,
+                TimeProviderWithUnit.NULL); //Also testing that TimeProviderWithUnit.NULL is correctly hiding TimeProvider.NULL
+        scheduler.doAt(Instant.ofEpochSecond(1), () -> {}, "Test event", true);
     }
 
     private static class ExecutionTrackingRunnable implements Runnable {

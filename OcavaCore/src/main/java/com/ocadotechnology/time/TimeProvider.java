@@ -15,8 +15,15 @@
  */
 package com.ocadotechnology.time;
 
+/**
+ * Interface for providing the current time for an event scheduler. Different implementations may be used for discrete
+ * and realtime environments.
+ */
 @FunctionalInterface
 public interface TimeProvider {
+    /**
+     * A default implementation of TimeProvider for test purposes. Always returns 0 for time.
+     */
     TimeProvider NULL = () -> 0;
 
     double getTime();

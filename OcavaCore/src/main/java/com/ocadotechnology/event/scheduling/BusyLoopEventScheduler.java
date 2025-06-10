@@ -79,15 +79,7 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
         this(timeProvider, name, type, threadManager, heartbeatMonitor, BusyLoopQueueType.SwitchingQueue, 0, parkDurationNanos, useLowLatencyRunner);
     }
 
-    public BusyLoopEventScheduler(TimeProviderWithUnit timeProvider, String name, EventSchedulerType type, ThreadManager threadManager, boolean heartbeatMonitor, long parkDurationNanos, boolean useLowLatencyRunner) {
-        this(timeProvider, name, type, threadManager, heartbeatMonitor, BusyLoopQueueType.SwitchingQueue, 0, parkDurationNanos, useLowLatencyRunner);
-    }
-
     public BusyLoopEventScheduler(TimeProvider timeProvider, String name, EventSchedulerType type) {
-        this(timeProvider, name, type, () -> {}, false, BusyLoopQueueType.SwitchingQueue, 0, 0, false);
-    }
-
-    public BusyLoopEventScheduler(TimeProviderWithUnit timeProvider, String name, EventSchedulerType type) {
         this(timeProvider, name, type, () -> {}, false, BusyLoopQueueType.SwitchingQueue, 0, 0, false);
     }
 

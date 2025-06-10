@@ -26,6 +26,24 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public interface TimeProviderWithUnit extends TimeProvider {
     /**
+     * Static instance of TimeProviderWithUnit which always return 0 for current time, and uses the millisecond time unit
+     */
+    TimeProviderWithUnit NULL_WITH_MILLIS = new UnmodifiableTimeProviderWithUnit(TimeUnit.MILLISECONDS);
+
+    /**
+     * Static instance of TimeProviderWithUnit which always return 0 for current time, and uses the second time unit
+     */
+    TimeProviderWithUnit NULL_WITH_SECONDS = new UnmodifiableTimeProviderWithUnit(TimeUnit.SECONDS);
+
+    /**
+     * Static instance of TimeProviderWithUnit which always return 0 for current time, and uses the millisecond time unit.
+     * The same instance as {@link #NULL_WITH_MILLIS}, but used to hide TimeProvider.NULL. Without this constant, it is
+     * possible to invoke TimeProviderWithUnit.NULL and get a TimeProvider which does not satisfy the contract of this
+     * interface.
+     */
+    TimeProviderWithUnit NULL = NULL_WITH_MILLIS;
+
+    /**
      * Returns the TimeConverter utility class.
      */
     TimeConverter getConverter();
@@ -42,5 +60,35 @@ public interface TimeProviderWithUnit extends TimeProvider {
      */
     default Instant getInstant() {
         return getConverter().convertToInstant(getTime());
+    }
+
+    /**
+     * Implementation of {@link TimeProviderWithUnit} that always returns a fixed value for the current time. Intended
+     * for use in test-cases where the progression of time is not desired, but the code requires a time unit to be
+     * specified. This class still has a fully realised {@link TimeConverter}, which can be used to convert between
+     * primitive and object times.
+     */
+    class UnmodifiableTimeProviderWithUnit implements TimeProviderWithUnit {
+        private final TimeConverter converter;
+        private final double now;
+
+        UnmodifiableTimeProviderWithUnit(double now, TimeUnit unit) {
+            this.converter = new TimeConverter(unit);
+            this.now = now;
+        }
+
+        UnmodifiableTimeProviderWithUnit(TimeUnit unit) {
+            this(0d, unit);
+        }
+
+        @Override
+        public double getTime() {
+            return now;
+        }
+
+        @Override
+        public TimeConverter getConverter() {
+            return converter;
+        }
     }
 }
