@@ -15,7 +15,18 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+/**
+ * @deprecated - Calling cancel on a scheduler can have significant performance implications, as it requires
+ * iterating through all events in the queue to find the one to cancel. Consider calling Event::cancel,
+ * or writing your event such that it knows if it needs to run or not.
+ */
+@Deprecated
 public interface EventSchedulerWithCanceling extends EventScheduler {
-
+    /**
+     * @deprecated - Calling cancel on a scheduler can have significant performance implications, as it requires
+     * iterating through all events in the queue to find the one to cancel. Consider calling Event::cancel,
+     * or writing your event such that it knows if it needs to run or not.
+     */
+    @Deprecated
     void cancel(Event e);
 }

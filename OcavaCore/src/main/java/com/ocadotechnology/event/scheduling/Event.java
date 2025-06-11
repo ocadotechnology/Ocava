@@ -18,6 +18,8 @@ package com.ocadotechnology.event.scheduling;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.ocadotechnology.id.IdGenerator;
 
 public class Event implements Cancelable {
@@ -44,6 +46,8 @@ public class Event implements Cancelable {
     private final Runnable runnable;
     private final boolean isDaemon;
 
+    private boolean hasBeenCancelled = false;
+
     public Event(double time, String description, Runnable runnable, EventSchedulerWithCanceling eventScheduler, boolean isDaemon) {
         this.runnable = runnable;
         this.eventScheduler = eventScheduler;
@@ -53,12 +57,25 @@ public class Event implements Cancelable {
     }
 
     public final void execute() {
-        runnable.run();
+        if (!hasBeenCancelled) {
+            runnable.run();
+        }
     }
 
+    /**
+     * Cancel the event, by setting a flag that will short-circuit execution. This purposefully avoids going through
+     * the cancel method of the scheduler, which is O(N) on the number of events in the queue.
+     */
     @Override
+    @SuppressFBWarnings(value = "AT_STALE_THREAD_WRITE_OF_PRIMITIVE", justification = "Use of boolean with known thread-safety issues for performance reasons. We explicitly handle the thread safety issue in how we use it")
     public void cancel() {
-        eventScheduler.cancel(this);
+        if (Thread.currentThread().getId() == eventScheduler.getThreadId()) {
+            // No thread safety problem - setting a boolean flag is sufficient to stop the event from executing
+            hasBeenCancelled = true;
+        } else {
+            // If we are not on the scheduler thread (race condition), we need to cancel the event through the scheduler
+            eventScheduler.doNow(this::cancel);
+        }
     }
 
     @Override
@@ -88,6 +105,6 @@ public class Event implements Cancelable {
 
     @Override
     public String toString() {
-        return "event [id=" + id + ", time=" + time + ", desc=" + description + "]";
+        return "event [id=" + id + ", time=" + time + ", cancelled=" + hasBeenCancelled + ", desc=" + description + "]";
     }
 }
