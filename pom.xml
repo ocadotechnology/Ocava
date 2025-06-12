@@ -375,31 +375,33 @@
             </plugin>
 
             <plugin>
-                <!--http://code.mycila.com/license-maven-plugin/-->
+                <!--http://code.mycila.com/license-maven-plugin/ -->
                 <!--mvn license:format-->
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <version>${mycila-license-maven-plugin.version}</version>
                 <configuration>
-                    <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
-                    <mapping>
-                        <java>SLASHSTAR_STYLE</java>
-                    </mapping>
                     <properties>
                         <owner>Ocado</owner>
                         <email>Ocava</email>
                     </properties>
-                    <excludes>
-                        <exclude>**/*.js</exclude>
-                        <exclude>**/*.css</exclude>
-                        <exclude>**/*.repositories</exclude>
-                        <exclude>**/*.pom</exclude>
-                        <exclude>**/*.properties</exclude>
-                        <exclude>**/*.xml</exclude>
-                        <exclude>**/*.txt</exclude>
-                        <exclude>**/*.html</exclude>
-                        <exclude>**/package-info.java</exclude>
-                    </excludes>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
+                            <excludes>
+                                <exclude>**/*.csv</exclude>
+                                <exclude>**/*.js</exclude>
+                                <exclude>**/*.css</exclude>
+                                <exclude>**/*.repositories</exclude>
+                                <exclude>**/*.pom</exclude>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.html</exclude>
+                                <exclude>**/package-info.java</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
                 </configuration>
                 <executions>
                     <execution>
