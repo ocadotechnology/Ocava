@@ -45,7 +45,18 @@ public class TimeConverter implements Serializable {
     /**
      * It took me too long to figure which way up this should be:
      * <br>
-     * top / bottom = top/nanos * nanos/bottom = nanos/bottom / nanos/top
+     * TimeUnit.toNanos(1) returns the number of nanos in 1 unit of the TimeUnit. (nanos / unit)
+     * <br>
+     * To get the ratio top / bottom, we need to perform the calculation:
+     * <br>
+     * top / bottom = top/nanos * nanos/bottom
+     * <br>
+     * where top/nanos = 1 / (nanos/top), so:
+     * <br>
+     * top / bottom = (nanos/bottom) / (nanos/top)
+     * <br>
+     * A multiplication by 1.0 is added to convert the result into a floating point number, as the division
+     * may produce a value less than 1.
      */
     private static double getRatio(TimeUnit top, TimeUnit bottom) {
         return bottom.toNanos(1) * 1.0 / top.toNanos(1);
