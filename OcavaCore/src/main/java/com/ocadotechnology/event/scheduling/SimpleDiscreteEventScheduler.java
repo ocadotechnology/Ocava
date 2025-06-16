@@ -136,6 +136,15 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
         runUntilTime(getTimeProviderWithUnit().getConverter().convertFromInstant(endTime));
     }
 
+    /**
+     * Unpauses the scheduler and executes all events scheduled for the current time. This is equivalent to calling
+     * {@link #runForDuration(double)} with a duration of 0.
+     * @throws IllegalStateException if the scheduler is not paused.
+     */
+    public void executeImmediateEvents() {
+        runForDuration(0);
+    }
+
     private void unpauseUntil(double endTime, String methodName) {
         Preconditions.checkState(runState.isPaused(), "Method SimpleDiscreteEventScheduler#%s can only be called when the scheduler is paused", methodName);
         Preconditions.checkState(!runState.isRunningUnpauseUntil(), "Method SimpleDiscreteEventScheduler#%s cannot be called while still executing another similar method call", methodName);

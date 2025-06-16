@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -291,6 +292,24 @@ public class SimpleDiscreteEventSchedulerTest {
             scheduler.runUntilTime(Instant.ofEpochSecond(2));
 
             assertEquals(4, counter.get());
+        }
+
+        @Test
+        void executeImmediateEvents_whenEventsAreScheduled_thenRunsExpectedEvents() {
+            AtomicInteger counter = new AtomicInteger(0);
+
+            scheduler.pause();
+            scheduler.runUntilTime(1);
+
+            scheduler.doNow(counter::incrementAndGet);
+            scheduler.doAt(1, counter::incrementAndGet);
+            scheduler.doAt(1, counter::incrementAndGet);
+            scheduler.doAt(2, Assertions::fail);
+            scheduler.doAt(3, Assertions::fail);
+
+            scheduler.executeImmediateEvents();
+
+            assertEquals(3, counter.get());
         }
     }
 }
