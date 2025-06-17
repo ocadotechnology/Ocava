@@ -42,13 +42,13 @@ public class Event implements Cancelable {
     private final long id = idGenerator.getAndIncrement();
     public final double time;
     public final String description;
-    protected final EventSchedulerWithCanceling eventScheduler;
+    protected final EventScheduler eventScheduler;
     private final Runnable runnable;
     private final boolean isDaemon;
 
     private boolean hasBeenCancelled = false;
 
-    public Event(double time, String description, Runnable runnable, EventSchedulerWithCanceling eventScheduler, boolean isDaemon) {
+    public Event(double time, String description, Runnable runnable, EventScheduler eventScheduler, boolean isDaemon) {
         this.runnable = runnable;
         this.eventScheduler = eventScheduler;
         this.time = time;
