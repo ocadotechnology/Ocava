@@ -103,4 +103,32 @@ public class RepeatingRunnableTest {
 
         Assertions.assertEquals(10, executionCount.get());
     }
+
+    @Test
+    public void testStartIn_whenPeriodIsZero_thenThrowsException() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> RepeatingRunnable.startIn(0, 0, "Test Event", () -> {}, simpleDiscreteEventScheduler));
+    }
+
+    @Test
+    public void testStartIn_whenPeriodIsNegative_thenThrowsException() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> RepeatingRunnable.startIn(0, -1, "Test Event", () -> {}, simpleDiscreteEventScheduler));
+    }
+
+    @Test
+    public void testStartsAt_whenPeriodIsZero_thenThrowsException() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> RepeatingRunnable.startAt(0, 0, "Test Event", () -> {}, simpleDiscreteEventScheduler));
+    }
+
+    @Test
+    public void testStartsAt_whenPeriodIsNegative_thenThrowsException() {
+        Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> RepeatingRunnable.startAt(0, -1, "Test Event", () -> {}, simpleDiscreteEventScheduler));
+    }
 }

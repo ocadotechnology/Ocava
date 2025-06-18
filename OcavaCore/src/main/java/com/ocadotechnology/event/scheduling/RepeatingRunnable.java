@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import com.google.common.base.Preconditions;
 import com.ocadotechnology.time.TimeConverter;
 
 /**
@@ -45,6 +46,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startInWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startIn(double delay, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -62,6 +64,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startInWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startIn(Duration delay, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -69,6 +72,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveDelay = timeConverter.convertFromDuration(delay);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return startAt(eventScheduler.getTimeProvider().getTime() + primitiveDelay, primitivePeriod, description, wrappedAction, eventScheduler);
     }
 
@@ -82,6 +86,7 @@ public class RepeatingRunnable implements Runnable {
      * @param runnable the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startInWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startIn(double delay, double period, String description, Runnable runnable, EventScheduler eventScheduler) {
@@ -99,12 +104,14 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startInWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startIn(Duration delay, Duration period, String description, Runnable runnable, EventScheduler eventScheduler) {
         TimeConverter timeConverter = eventScheduler.getTimeProviderWithUnit().getConverter();
         double primitiveDelay = timeConverter.convertFromDuration(delay);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return startAt(eventScheduler.getTimeProvider().getTime() + primitiveDelay, primitivePeriod, description, runnable, eventScheduler);
     }
 
@@ -118,6 +125,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAtWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAt(double time, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -135,6 +143,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAtWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAt(Instant time, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -142,6 +151,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveTime = timeConverter.convertFromInstant(time);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return start(primitiveTime, primitivePeriod, description, wrappedAction, eventScheduler, false, false);
     }
 
@@ -155,6 +165,7 @@ public class RepeatingRunnable implements Runnable {
      * @param runnable the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAtWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAt(double time, double period, String description, Runnable runnable, EventScheduler eventScheduler) {
@@ -172,12 +183,14 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAtWithFixedDelay(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAt(Instant time, Duration period, String description, Runnable runnable, EventScheduler eventScheduler) {
         TimeConverter timeConverter = eventScheduler.getTimeProviderWithUnit().getConverter();
         double primitiveTime = timeConverter.convertFromInstant(time);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return start(primitiveTime, primitivePeriod, description, eventTime -> runnable.run(), eventScheduler, false, false);
     }
 
@@ -193,6 +206,7 @@ public class RepeatingRunnable implements Runnable {
      * @param r the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemon(double time, double period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -212,6 +226,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemon(Instant time, Duration period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -230,6 +245,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemon(double time, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -249,6 +265,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemon(Instant time, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -256,6 +273,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveTime = timeConverter.convertFromInstant(time);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return start(primitiveTime, primitivePeriod, description, wrappedAction, eventScheduler, true, false);
     }
 
@@ -271,6 +289,7 @@ public class RepeatingRunnable implements Runnable {
      * @param r the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemon(double delay, double period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -290,6 +309,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemon(Duration delay, Duration period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -308,6 +328,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemon(double delay, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -327,6 +348,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemon(Duration delay, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -334,6 +356,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveDelay = timeConverter.convertFromDuration(delay);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return startAtDaemon(eventScheduler.getTimeProvider().getTime() + primitiveDelay, primitivePeriod, description, wrappedAction, eventScheduler);
     }
 
@@ -347,6 +370,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInWithFixedDelay(double delay, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -364,6 +388,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInWithFixedDelay(Duration delay, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -371,6 +396,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveDelay = timeConverter.convertFromDuration(delay);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return startAtWithFixedDelay(eventScheduler.getTimeProvider().getTime() + primitiveDelay, primitivePeriod, description, wrappedAction, eventScheduler);
     }
 
@@ -384,6 +410,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtWithFixedDelay(double time, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -401,6 +428,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtWithFixedDelay(Instant time, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -408,6 +436,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveTime = timeConverter.convertFromInstant(time);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return start(primitiveTime, primitivePeriod, description, wrappedAction, eventScheduler, false, true);
     }
 
@@ -423,6 +452,7 @@ public class RepeatingRunnable implements Runnable {
      * @param r the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemonWithFixedDelay(double time, double period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -442,6 +472,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemonWithFixedDelay(Instant time, Duration period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -460,6 +491,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemonWithFixedDelay(double time, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -479,6 +511,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startAt(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startAtDaemonWithFixedDelay(Instant time, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -486,6 +519,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveTime = timeConverter.convertFromInstant(time);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return start(primitiveTime, primitivePeriod, description, wrappedAction, eventScheduler, true, true);
     }
 
@@ -501,6 +535,7 @@ public class RepeatingRunnable implements Runnable {
      * @param r the action to execute.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemonWithFixedDelay(double delay, double period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -520,6 +555,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemonWithFixedDelay(Duration delay, Duration period, String description, Runnable r, EventScheduler eventScheduler) {
@@ -538,6 +574,7 @@ public class RepeatingRunnable implements Runnable {
      * @param timeConsumingAction the action to execute, consuming the time the action executed at.
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemonWithFixedDelay(double delay, double period, String description, Consumer<Double> timeConsumingAction, EventScheduler eventScheduler) {
@@ -557,6 +594,7 @@ public class RepeatingRunnable implements Runnable {
      * @param eventScheduler the {@link EventScheduler} to perform the repeating action on.
      * @return a cancelable representing the repeating event.
      * @throws TimeUnitNotSpecifiedException if the {@link EventScheduler} was not initialised with a {@link com.ocadotechnology.time.TimeProviderWithUnit}.
+     * @throws IllegalArgumentException if passed a non-positive {@code period}.
      * @see RepeatingRunnable#startIn(double, double, String, Consumer, EventScheduler)
      */
     public static Cancelable startInDaemonWithFixedDelay(Duration delay, Duration period, String description, Consumer<Instant> timeConsumingAction, EventScheduler eventScheduler) {
@@ -564,6 +602,7 @@ public class RepeatingRunnable implements Runnable {
         Consumer<Double> wrappedAction = t -> timeConsumingAction.accept(timeConverter.convertToInstant(t));
         double primitiveDelay = timeConverter.convertFromDuration(delay);
         double primitivePeriod = timeConverter.convertFromDuration(period);
+        Preconditions.checkArgument(primitivePeriod > 0, "Repeating runnable passed period of %s. Period must be positive", period);
         return startAtDaemonWithFixedDelay(eventScheduler.getTimeProvider().getTime() + primitiveDelay, primitivePeriod, description, wrappedAction, eventScheduler);
     }
 
@@ -600,6 +639,7 @@ public class RepeatingRunnable implements Runnable {
             boolean isDaemon,
             AtomicBoolean canceled,
             boolean fixedDelay) {
+        Preconditions.checkArgument(period > 0, "Repeating runnable passed period of %s. Period must be positive", period);
 
         this.time = time;
         this.period = period;
