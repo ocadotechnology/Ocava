@@ -71,7 +71,7 @@
         <checkstyle-fail-on-violation>false</checkstyle-fail-on-violation>
         <checkstyle.version>10.25.1</checkstyle.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-        <license-maven-plugin.version>2.5.0</license-maven-plugin.version>
+        <license-maven-plugin.version>2.6.0</license-maven-plugin.version>
         <mycila-license-maven-plugin.version>5.0.0</mycila-license-maven-plugin.version>
 
         <!-- JavaDoc Plugin Version -->
