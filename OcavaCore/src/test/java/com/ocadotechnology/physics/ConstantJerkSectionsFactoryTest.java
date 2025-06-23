@@ -398,6 +398,20 @@ class ConstantJerkSectionsFactoryTest {
         assertThat(breakingTraversal.get(0).getSpeedAtTime(breakingTraversal.get(0).getDuration())).isCloseTo(0, within(1e-9));
     }
 
+    /**
+     * This is a regression test for a specific failure where we failed to generate a valid braking traversal
+     * when the vehicle can just barely brake to a halt by jerking down the deceleration as much as possible.
+     */
+    @Test
+    void testFindBrakingTraversal_whenBrakingToHaltJustAboutPossible_thenValidBrakingTraversalCreated() {
+        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(0.004, 2.0E-6, -2.0E-6, 0, 2.0E-8, -2.0E-8, -2.0E-8, 1.08E-9);
+        double u = 8.301293608657197E-4;
+        double a = -1.3390591545820352E-6;
+        ImmutableList<TraversalSection> traversalSections = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
+        assertThat(traversalSections).hasSize(1);
+        checkSections(u, a, traversalSections);
+    }
+
     @Test
     void testFindBrakingTraversal_oneSection_undershoot() {
         double u = 2E-3;
