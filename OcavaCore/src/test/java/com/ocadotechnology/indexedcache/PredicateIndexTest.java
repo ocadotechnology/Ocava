@@ -16,7 +16,9 @@
 package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
 import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Nested;
@@ -77,6 +79,23 @@ class PredicateIndexTest {
             cache.update(firstState, secondState);
             assertThat(index.stream()).isEmpty();
             assertThat(index.streamWhereNot()).first().isEqualTo(firstState);
+        }
+
+        @ParameterizedTest
+        @EnumSource(Hints.class)
+        void forEach_appliesConsumerToEach(Hints hint) {
+            initialise(hint);
+
+            cache.add(new TestState(Id.create(1), false, 0));
+            cache.add(new TestState(Id.create(2), true, 1));
+            cache.add(new TestState(Id.create(3), true, 2));
+
+            ArrayList<TestState> arrayList = new ArrayList<>();
+            index.forEach(arrayList::add);
+
+            assertEquals(2, arrayList.size());
+            assertEquals(2, arrayList.get(0).getId().id);
+            assertEquals(3, arrayList.get(1).getId().id);
         }
 
         @ParameterizedTest

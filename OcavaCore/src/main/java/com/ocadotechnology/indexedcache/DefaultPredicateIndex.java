@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -22,6 +23,9 @@ import javax.annotation.CheckForNull;
 
 import com.ocadotechnology.id.Identified;
 
+/**
+ * An index backed by a predicate, which can easily access index values which match and do not match the predicate.
+ */
 public final class DefaultPredicateIndex<C extends Identified<?>> extends AbstractIndex<C> implements PredicateIndex<C> {
     private final OneToManyIndex<Boolean, C> index;
 
@@ -67,5 +71,14 @@ public final class DefaultPredicateIndex<C extends Identified<?>> extends Abstra
     @Override
     public boolean isEmpty() {
         return index.isEmpty(true);
+    }
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    @Override
+    public void forEach(Consumer<C> consumer) {
+        // Apply the consumer on the underlying OneToManyIndex to each value matching true - i.e. matching the predicate.
+        index.forEach(true, consumer);
     }
 }

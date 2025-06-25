@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -125,5 +126,23 @@ public final class OptionalOneToManyIndex<R, C extends Identified<?>> extends Ab
             snapshot = builder.build();
         }
         return snapshot;
+    }
+
+    public void forEach(Consumer<C> consumer) {
+        for (Set<C> values : indexValues.values()) {
+            for (C value : values) {
+                consumer.accept(value);
+            }
+        }
+    }
+
+    public void forEach(R key, Consumer<C> consumer) {
+        Set<C> set = indexValues.get(key);
+        if (set == null) {
+            return;
+        }
+        for (C c : set) {
+            consumer.accept(c);
+        }
     }
 }

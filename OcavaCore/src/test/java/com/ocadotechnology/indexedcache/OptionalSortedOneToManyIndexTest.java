@@ -18,7 +18,9 @@ package com.ocadotechnology.indexedcache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Optional;
 
@@ -170,6 +172,20 @@ class OptionalSortedOneToManyIndexTest {
 
             ImmutableList<TestState> actual = index.asList(INDEXING_VALUE.get());
             assertThat(actual).isEqualTo(expected);
+        }
+
+        @Test
+        void forEachWithFilter_appliesConsumerToEach() {
+            TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, Optional.empty());
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
+
+            ArrayList<TestState> arrayList = new ArrayList<>();
+            index.forEach(INDEXING_VALUE.orElseThrow(), arrayList::add);
+
+            assertEquals(1, arrayList.size());
+            assertEquals(3, arrayList.get(0).getId().id);
         }
 
         @Test

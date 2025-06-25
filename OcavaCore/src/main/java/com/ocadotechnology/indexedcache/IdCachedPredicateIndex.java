@@ -17,6 +17,7 @@ package com.ocadotechnology.indexedcache;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import javax.annotation.CheckForNull;
@@ -54,5 +55,15 @@ public class IdCachedPredicateIndex<C extends Identified<? extends I>, I> extend
     @Override
     protected final Set<Identity<? extends I>> getIdsNotMatchingPredicate() {
         return objectIdsNotMatchingPredicate;
+    }
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    @Override
+    public void forEach(Consumer<C> consumer) {
+        for (Identity<? extends I> id : objectIdsMatchingPredicate) {
+            consumer.accept(get(id));
+        }
     }
 }

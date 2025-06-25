@@ -16,7 +16,9 @@
 package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -118,6 +120,35 @@ class OptionalOneToManyIndexTest {
                 cache.delete(stateOne.getId());
 
                 assertThat(index.snapshot().values()).containsOnly(stateTwo);
+            }
+
+            @Test
+            void forEach_appliesConsumerToEach() {
+                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateThree = new TestState(Id.create(3), Optional.empty());
+                cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
+
+                ArrayList<TestState> arrayList = new ArrayList<>();
+                index.forEach(arrayList::add);
+
+                assertEquals(2, arrayList.size());
+                assertEquals(1, arrayList.get(0).getId().id);
+                assertEquals(2, arrayList.get(1).getId().id);
+            }
+
+            @Test
+            void forEachWithFilter_appliesConsumerToEach() {
+                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateThree = new TestState(Id.create(3), Optional.empty());
+                cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
+
+                ArrayList<TestState> arrayList = new ArrayList<>();
+                index.forEach(CoordinateLikeTestObject.ORIGIN, arrayList::add);
+
+                assertEquals(1, arrayList.size());
+                assertEquals(2, arrayList.get(0).getId().id);
             }
         }
 

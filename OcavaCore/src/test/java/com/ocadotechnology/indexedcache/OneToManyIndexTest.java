@@ -17,7 +17,9 @@ package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -114,6 +116,22 @@ class OneToManyIndexTest {
 
                 cache.deleteAll(testStates.stream().map(TestState::getId).collect(ImmutableSet.toImmutableSet()));
                 assertThat(index.count(CoordinateLikeTestObject.ORIGIN)).isEqualTo(0);
+            }
+
+            @Test
+            void forEach_appliesConsumerToEach() {
+                ImmutableSet<TestState> testStates = ImmutableSet.of(
+                        new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN),
+                        new TestState(Id.create(2), CoordinateLikeTestObject.create(1, 2)),
+                        new TestState(Id.create(3), CoordinateLikeTestObject.ORIGIN));
+                cache.addAll(testStates);
+
+                ArrayList<TestState> arrayList = new ArrayList<>();
+                index.forEach(CoordinateLikeTestObject.ORIGIN, arrayList::add);
+
+                assertEquals(2, arrayList.size());
+                assertEquals(1, arrayList.get(0).getId().id);
+                assertEquals(3, arrayList.get(1).getId().id);
             }
 
             @Test

@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -70,5 +71,17 @@ public class UncachedPredicateIndex<C extends Identified<? extends I>, I> extend
     @Override
     protected final void updateAll(Iterable<Change<C>> iterable) {
         // nop
+    }
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    @Override
+    public void forEach(Consumer<C> consumer) {
+        backingCache.forEach(c -> {
+            if (predicate.test(c)) {
+                consumer.accept(c);
+            }
+        });
     }
 }

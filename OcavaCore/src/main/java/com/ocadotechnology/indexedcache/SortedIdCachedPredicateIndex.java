@@ -24,6 +24,7 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -161,6 +162,16 @@ public class SortedIdCachedPredicateIndex<C extends Identified<? extends I>, I> 
                 return get(idIterator.next());
             }
         };
+    }
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    @Override
+    public void forEach(Consumer<C> consumer) {
+        for (Identity<? extends I> id : objectIdsMatchingPredicate) {
+            consumer.accept(get(id));
+        }
     }
 
     private Comparator<? super Identity<? extends I>> wrapComparator(Comparator<? super C> comparator, BackingCacheWithLocalTemporaryChanges<C, I> backingCache) {

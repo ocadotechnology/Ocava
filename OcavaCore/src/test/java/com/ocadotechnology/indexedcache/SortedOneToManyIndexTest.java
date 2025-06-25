@@ -18,7 +18,10 @@ package com.ocadotechnology.indexedcache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.function.Function;
 
@@ -156,6 +159,52 @@ class SortedOneToManyIndexTest {
 
             ImmutableList<TestState> actual = ImmutableList.copyOf(index.iterator(INDEXING_VALUE));
             assertThat(actual).isEqualTo(expected);
+        }
+
+        @Test
+        void forEachWithFilter_appliesConsumerToEach() {
+            TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree));
+
+            ArrayList<TestState> arrayList = new ArrayList<>();
+            index.forEach(INDEXING_VALUE, arrayList::add);
+
+            assertEquals(2, arrayList.size());
+            assertEquals(2, arrayList.get(0).getId().id);
+            assertEquals(3, arrayList.get(1).getId().id);
+        }
+
+        @Test
+        void findFirstValueSatisfying_whenNothingMatchesPredicate_returnsNull() {
+            TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree));
+
+            assertNull(index.findFirstValueSatisfying(INDEXING_VALUE, testState -> testState.getId().id <= 1));
+        }
+
+        @Test
+        void findFirstValueSatisfying_whenNoKeyInIndex_returnsNull() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree));
+
+            assertNull(index.findFirstValueSatisfying(DIFFERENT_INDEXING_VALUE, testState -> testState.getId().id <= 1));
+        }
+
+        @Test
+        void findFirstValueSatisfying_whenValuesMatchPredicate_thenReturnFirst() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree));
+
+            TestState state = index.findFirstValueSatisfying(INDEXING_VALUE, testState -> testState.getId().id > 1);
+            assertEquals(stateTwo, state);
         }
 
         @Test

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -151,5 +152,15 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
             snapshot = builder.build();
         }
         return snapshot;
+    }
+
+    public void forEach(R key, Consumer<C> consumer) {
+        TreeSet<C> treeSet = indexValues.get(key);
+        if (treeSet == null) {
+            return;
+        }
+        for (C c : treeSet) {
+            consumer.accept(c);
+        }
     }
 }

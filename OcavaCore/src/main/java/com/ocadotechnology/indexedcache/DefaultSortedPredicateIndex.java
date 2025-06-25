@@ -17,6 +17,7 @@ package com.ocadotechnology.indexedcache;
 
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -105,5 +106,14 @@ public class DefaultSortedPredicateIndex<C extends Identified<?>> extends Abstra
     @Override
     public UnmodifiableIterator<C> iterator() {
         return index.iterator(true);
+    }
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    @Override
+    public void forEach(Consumer<C> consumer) {
+        // Apply the consumer on the underlying SortedOneToManyIndex to each value matching true - i.e. matching the predicate.
+        index.forEach(true, consumer);
     }
 }

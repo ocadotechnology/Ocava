@@ -23,7 +23,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
@@ -170,5 +172,30 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
             snapshot = builder.build();
         }
         return snapshot;
+    }
+
+    public void forEach(R key, Consumer<C> consumer) {
+        NavigableSet<C> set = indexValues.get(key);
+        if (set == null) {
+            return;
+        }
+        for (C c : set) {
+            consumer.accept(c);
+        }
+    }
+
+    public @CheckForNull C findFirstValueSatisfying(R key, Predicate<C> predicate) {
+        NavigableSet<C> set = indexValues.get(key);
+        if (set == null) {
+            return null;
+        }
+
+        for (C c : set) {
+            if (predicate.test(c)) {
+                return c;
+            }
+        }
+
+        return null;
     }
 }

@@ -16,6 +16,7 @@
 package com.ocadotechnology.indexedcache;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -89,5 +90,9 @@ public final class OneToManyIndex<R, C extends Identified<?>> extends AbstractIn
 
     public ImmutableMultimap<R, C> snapshot() {
         return optionalOneToManyIndex.snapshot();
+    }
+
+    public void forEach(R key, Consumer<C> consumer) {
+        optionalOneToManyIndex.forEach(key, consumer);
     }
 }

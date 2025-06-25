@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.ocadotechnology.id.Identified;
@@ -29,4 +30,9 @@ public interface PredicateIndex<C extends Identified<?>> {
     int countWhereNot();
 
     boolean isEmpty();
+
+    /**
+     * Applies the given consumer to each index value matching the predicate.
+     */
+    void forEach(Consumer<C> consumer);
 }
