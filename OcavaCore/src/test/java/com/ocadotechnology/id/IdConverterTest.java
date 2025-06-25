@@ -24,6 +24,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.provider.Arguments;
@@ -43,7 +44,7 @@ class IdConverterTest {
     @MethodSource("rawIdsAsLongs")
     void convertManually(long rawId) {
         String rawIdStr = String.valueOf(rawId);
-        Id<?> id = ID_CONVERTER.convert(rawIdStr, null);
+        Id<?> id = ID_CONVERTER.convert(rawIdStr, (ParameterContext) null);
         assertNotNull(id);
         assertEquals(rawId, id.id);
     }
@@ -76,7 +77,7 @@ class IdConverterTest {
     @MethodSource("invalidIds")
     void convertManually(Object invalidId) {
         String invalidIdStr = String.valueOf(invalidId);
-        assertThrows(ArgumentConversionException.class, () -> ID_CONVERTER.convert(invalidIdStr, null));
+        assertThrows(ArgumentConversionException.class, () -> ID_CONVERTER.convert(invalidIdStr, (ParameterContext) null));
     }
 
     private static Stream<Object> invalidIds() {

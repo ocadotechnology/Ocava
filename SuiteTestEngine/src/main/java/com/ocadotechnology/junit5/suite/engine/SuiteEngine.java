@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.engine.config.DefaultJupiterConfiguration;
 import org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor;
+import org.junit.jupiter.engine.descriptor.LauncherStoreFacade;
 import org.junit.jupiter.engine.discovery.DiscoverySelectorResolver;
 import org.junit.jupiter.engine.discovery.TestTemplateWrappingDiscoverySelectorResolver;
 import org.junit.jupiter.engine.execution.JupiterEngineExecutionContext;
@@ -108,7 +109,8 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     protected JupiterEngineExecutionContext createExecutionContext(ExecutionRequest request) {
         return new JupiterEngineExecutionContext(
                 request.getEngineExecutionListener(),
-                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryProvider()));
+                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryProvider()),
+                new LauncherStoreFacade(request.getStore()));
     }
 
     private void handleCandidate(JupiterEngineDescriptor engine, Class<?> candidate) throws InvocationTargetException, IllegalAccessException {

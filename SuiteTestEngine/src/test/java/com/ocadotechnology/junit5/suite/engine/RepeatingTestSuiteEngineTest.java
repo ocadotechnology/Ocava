@@ -37,6 +37,7 @@ import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.reporting.OutputDirectoryProvider;
+import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 import com.ocadotechnology.junit5.suite.engine.repeating.RepeatedTestTemplateInvocationContextWrapper;
 import com.ocadotechnology.junit5.suite.engine.repeating.RepetitionTestTemplateInvocationContext;
@@ -61,7 +62,8 @@ class RepeatingTestSuiteEngineTest {
                 testsDiscovered,
                 executionListener,
                 new TestConfigurationParameters(),
-                outputDirectoryProvider);
+                outputDirectoryProvider,
+                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)));
         engine.execute(executionRequest);
 
         assertEquals(26, executionListener.getExecutedTests().size(), ""

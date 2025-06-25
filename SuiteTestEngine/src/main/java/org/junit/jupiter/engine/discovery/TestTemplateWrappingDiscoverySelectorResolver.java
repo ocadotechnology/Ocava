@@ -16,7 +16,8 @@
 package org.junit.jupiter.engine.discovery;
 
 import org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor;
-import org.junit.jupiter.engine.discovery.predicates.IsTestClassWithTests;
+import org.junit.jupiter.engine.descriptor.Validatable;
+import org.junit.jupiter.engine.discovery.predicates.TestClassPredicates;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.support.discovery.EngineDiscoveryRequestResolver;
@@ -25,19 +26,31 @@ import org.junit.platform.engine.support.discovery.EngineDiscoveryRequestResolve
  * An extension of DiscoverySelectorResolver which will wrap all test methods into TestTemplateTestDescriptor.
  *
  * Adapted from org.junit.jupiter.engine.discovery.DiscoverySelectorResolver. The only difference between this
- * class and DiscoverySelectorResolver is replacing MethodSelectorResolver with TestTemplateWrappingMethodSelectorResolver junit-jupiter-engine-5.5.2
+ * class and DiscoverySelectorResolver is replacing MethodSelectorResolver with TestTemplateWrappingMethodSelectorResolver junit-jupiter-engine-5.13.1
  */
 public class TestTemplateWrappingDiscoverySelectorResolver extends DiscoverySelectorResolver {
 
     // @formatter:off
     private static final EngineDiscoveryRequestResolver<JupiterEngineDescriptor> resolver = EngineDiscoveryRequestResolver.<JupiterEngineDescriptor>builder()
-            .addClassContainerSelectorResolver(new IsTestClassWithTests())
-            .addSelectorResolver(context -> new ClassSelectorResolver(context.getClassNameFilter(), context.getEngineDescriptor().getConfiguration()))
+            .addClassContainerSelectorResolverWithContext(context -> new TestClassPredicates(
+                    context.getIssueReporter()).looksLikeNestedOrStandaloneTestClass)
+            .addSelectorResolver(context -> new ClassSelectorResolver(
+                    context.getClassNameFilter(),
+                    context.getEngineDescriptor().getConfiguration(),
+                    context.getIssueReporter()))
             // This line is the only different from DiscoverySelectorResolver.
             // Using TestTemplateWrappingMethodSelectorResolver instead of MethodSelectorResolver.
-            .addSelectorResolver(context -> new TestTemplateWrappingMethodSelectorResolver(context.getEngineDescriptor().getConfiguration()))
-            .addTestDescriptorVisitor(context -> new MethodOrderingVisitor(context.getEngineDescriptor().getConfiguration()))
-            .addTestDescriptorVisitor(context -> TestDescriptor::prune)
+            .addSelectorResolver(context -> new TestTemplateWrappingMethodSelectorResolver(
+                    context.getEngineDescriptor().getConfiguration(),
+                    context.getIssueReporter()))
+            .addTestDescriptorVisitor(context -> TestDescriptor.Visitor.composite(
+                    new ClassOrderingVisitor(context.getEngineDescriptor().getConfiguration(), context.getIssueReporter()),
+                    new MethodOrderingVisitor(context.getEngineDescriptor().getConfiguration(), context.getIssueReporter()),
+                    descriptor -> {
+                        if (descriptor instanceof Validatable) {
+                            ((Validatable) descriptor).validate(context.getIssueReporter());
+                        }
+                    }))
             .build();
     // @formatter:on
 
@@ -45,5 +58,4 @@ public class TestTemplateWrappingDiscoverySelectorResolver extends DiscoverySele
     public void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor) {
         resolver.resolve(request, engineDescriptor);
     }
-
 }

@@ -31,6 +31,7 @@ import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.reporting.OutputDirectoryProvider;
+import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 class SuiteEngineTest {
 
@@ -50,7 +51,8 @@ class SuiteEngineTest {
                 testsDiscovered,
                 executionListener,
                 new TestConfigurationParameters(),
-                outputDirectoryProvider);
+                outputDirectoryProvider,
+                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)));
         engine.execute(executionRequest);
 
         assertEquals(8, executionListener.getExecutedTests().size(), "1 engine + 2 classes + 2 regular test methods + 3 parameterized test templates expected to be discovered and executed");

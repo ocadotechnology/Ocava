@@ -37,9 +37,9 @@ import org.junit.jupiter.engine.descriptor.Filterable;
 import org.junit.jupiter.engine.descriptor.TestFactoryTestDescriptor;
 import org.junit.jupiter.engine.descriptor.TestTemplateModifiedTestDescriptor;
 import org.junit.jupiter.engine.descriptor.TestTemplateTestDescriptor;
-import org.junit.jupiter.engine.discovery.predicates.IsTestFactoryMethod;
-import org.junit.jupiter.engine.discovery.predicates.IsTestMethod;
-import org.junit.jupiter.engine.discovery.predicates.IsTestTemplateMethod;
+import org.junit.jupiter.engine.discovery.predicates.IsTestFactoryMethodPredicate;
+import org.junit.jupiter.engine.discovery.predicates.IsTestMethodPredicate;
+import org.junit.jupiter.engine.discovery.predicates.IsTestTemplateMethodPredicate;
 import org.junit.platform.commons.logging.Logger;
 import org.junit.platform.commons.logging.LoggerFactory;
 import org.junit.platform.commons.util.ClassUtils;
@@ -47,6 +47,7 @@ import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.MethodSelector;
+import org.junit.platform.engine.support.discovery.DiscoveryIssueReporter;
 
 /**
  * A MethodSelectorResolver which alters the behaviour of MethodType.
@@ -62,9 +63,11 @@ import org.junit.platform.engine.discovery.MethodSelector;
 public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodSelectorResolver.class);
+    private final JupiterConfiguration configuration;
 
-    TestTemplateWrappingMethodSelectorResolver(JupiterConfiguration configuration) {
-        super(configuration);
+    TestTemplateWrappingMethodSelectorResolver(JupiterConfiguration configuration, DiscoveryIssueReporter discoveryIssueReporter) {
+        super(configuration, discoveryIssueReporter);
+        this.configuration = configuration;
     }
 
     @Override
@@ -102,7 +105,7 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
 
     private enum MethodType {
 
-        TEST(new IsTestMethod(), TestTemplateTestDescriptor.SEGMENT_TYPE) {
+        TEST(new IsTestMethodPredicate(), TestTemplateTestDescriptor.SEGMENT_TYPE) {
             @Override
             protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
                 // Test method is wrapped in template descriptor
@@ -110,7 +113,7 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
             }
         },
 
-        TEST_FACTORY(new IsTestFactoryMethod(), TestFactoryTestDescriptor.SEGMENT_TYPE) {
+        TEST_FACTORY(new IsTestFactoryMethodPredicate(), TestFactoryTestDescriptor.SEGMENT_TYPE) {
             @Override
             protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
                 // Test factory remains mapped to factory descriptor
@@ -118,10 +121,9 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
             }
         },
 
-        TEST_TEMPLATE(new IsTestTemplateMethod(), TestTemplateModifiedTestDescriptor.SEGMENT_TYPE) {
+        TEST_TEMPLATE(new IsTestTemplateMethodPredicate(), TestTemplateModifiedTestDescriptor.SEGMENT_TYPE) {
             @Override
             protected TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration) {
-
                 // Test template mapped to TestTemplateModifiedTestDescriptor in order to modify any already templated tests
                 return new TestTemplateModifiedTestDescriptor(uniqueId, testClass, method, enclosingInstanceTypes, configuration);
             }
@@ -164,6 +166,5 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
         }
 
         protected abstract TestDescriptor createTestDescriptor(UniqueId uniqueId, Class<?> testClass, Method method, Supplier<List<Class<?>>> enclosingInstanceTypes, JupiterConfiguration configuration);
-
     }
 }
