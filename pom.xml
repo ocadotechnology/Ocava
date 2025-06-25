@@ -50,7 +50,7 @@
         <jcommander.version>1.82</jcommander.version>
 
         <slf4j-api.version>2.0.17</slf4j-api.version>
-        <junit-bom.version>5.13.1</junit-bom.version>
+        <junit-bom.version>5.13.2</junit-bom.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <assertj.version>3.27.3</assertj.version>
         <mockito.version>5.18.0</mockito.version>
