@@ -83,7 +83,7 @@
 
         <!-- Spotbugs versions -->
         <spotbugs.version>4.9.3</spotbugs.version>
-        <spotbugs-maven-plugin.version>4.9.3.0</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.9.3.1</spotbugs-maven-plugin.version>
         <spotbugs-annotations.version>4.9.3</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
