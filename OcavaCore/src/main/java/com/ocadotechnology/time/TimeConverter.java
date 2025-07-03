@@ -34,7 +34,7 @@ public class TimeConverter implements Serializable {
     private final double unitsPerNanoSecond;
     private final double nanoSecondsPerUnit;
 
-    protected TimeConverter(TimeUnit timeUnit) {
+    public TimeConverter(TimeUnit timeUnit) {
         this.timeUnit = timeUnit;
         this.unitsPerSecond = getRatio(timeUnit, TimeUnit.SECONDS);
         this.secondsPerUnit = getRatio(TimeUnit.SECONDS, timeUnit);
