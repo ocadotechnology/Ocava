@@ -15,7 +15,6 @@
  */
 package com.ocadotechnology.event;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -220,15 +219,18 @@ public class EventUtil {
     }
 
     public static String durationToString(double duration) {
-        Duration d = Duration.ofMillis((long) duration);
-        long seconds = d.getSeconds();
-        long absSeconds = Math.abs(seconds);
-        String positive = String.format(
-                "%02d:%02d:%02d.%03d",
-                absSeconds / 3600,
-                (absSeconds % 3600) / 60,
-                absSeconds % 60,
-                Math.abs(d.toMillis()) % 1000);
-        return seconds < 0 ? "-" + positive : positive;
+        long absMillis = TimeUnitConverter.toTimeUnitLong(Math.abs(duration), simulationTimeUnit, TimeUnit.MILLISECONDS);
+        long absSeconds = (absMillis / 1000) % 60;
+        long absMinutes = (absMillis / (1000 * 60)) % 60;
+        long absHours = (absMillis / (1000 * 60 * 60));
+
+        return String.format(
+                duration < 0
+                        ? "-%02d:%02d:%02d.%03d"
+                        : "%02d:%02d:%02d.%03d",
+                absHours,
+                absMinutes,
+                absSeconds,
+                absMillis % 1000);
     }
 }

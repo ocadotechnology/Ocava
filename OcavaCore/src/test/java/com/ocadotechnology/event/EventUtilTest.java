@@ -19,9 +19,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class EventUtilTest {
 
@@ -325,4 +329,29 @@ class EventUtilTest {
     }
     // endregion
 
+    //region durationToString(double duration)
+
+    static Stream<Arguments> getDurations() {
+        return Stream.of(
+                Arguments.of(TimeUnit.MILLISECONDS, 1, "00:00:00.001"),
+                Arguments.of(TimeUnit.MILLISECONDS, -1, "-00:00:00.001"),
+                Arguments.of(TimeUnit.SECONDS, 0.001, "00:00:00.001"),
+                Arguments.of(TimeUnit.SECONDS, -0.001, "-00:00:00.001"),
+                Arguments.of(TimeUnit.SECONDS, 3.2, "00:00:03.200"),
+                Arguments.of(TimeUnit.SECONDS, -3.2, "-00:00:03.200"),
+                Arguments.of(TimeUnit.MINUTES, 3.2, "00:03:12.000"),
+                Arguments.of(TimeUnit.MINUTES, -3.200333334, "-00:03:12.020"),
+                Arguments.of(TimeUnit.MINUTES, 903.2, "15:03:12.000"),
+                Arguments.of(TimeUnit.HOURS, 103.2, "103:12:00.000"),
+                Arguments.of(TimeUnit.NANOSECONDS, 999_999, "00:00:00.000") // output will truncate milliseconds
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getDurations")
+    void durationToString_withUnits(TimeUnit timeUnit, double duration, String expectedString) {
+        EventUtil.setSimulationTimeUnit(timeUnit);
+        assertEquals(expectedString, EventUtil.durationToString(duration));
+    }
+    //endregion
 }
