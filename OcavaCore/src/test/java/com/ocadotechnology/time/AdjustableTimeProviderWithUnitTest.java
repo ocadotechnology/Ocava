@@ -17,10 +17,12 @@ package com.ocadotechnology.time;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,7 +49,56 @@ class AdjustableTimeProviderWithUnitTest {
         assertEquals(instant, convertedInstant);
     }
 
+    @Test
+    void testInitialiseAtNonzero_double() {
+        double initialTime = 34.0;
+        AdjustableTimeProviderWithUnit timeProvider = new AdjustableTimeProviderWithUnit(initialTime, TimeUnit.MINUTES);
+        checkTime(timeProvider, initialTime, Instant.EPOCH.plus(Duration.ofMinutes((int)initialTime)));
+    }
+
+    @Test
+    void testInitialiseAtNonzero_Instant() {
+        Instant initialTime = Instant.EPOCH.plus(Duration.ofMinutes(34));
+        AdjustableTimeProviderWithUnit timeProvider = new AdjustableTimeProviderWithUnit(initialTime, TimeUnit.MINUTES);
+        checkTime(timeProvider, 34.0, initialTime);
+    }
+
+    @Test
+    void testAdvanceAndSetTime_withDoubles() {
+        AdjustableTimeProviderWithUnit timeProvider = createTimeProvider(TimeUnit.MINUTES);
+        timeProvider.getInstant(); // maybe cache the wrong answer
+
+        timeProvider.advanceTime(5);
+        checkTime(timeProvider, 5.0, Instant.EPOCH.plus(Duration.ofMinutes(5)));
+
+        timeProvider.setTime(7);
+        checkTime(timeProvider, 7.0, Instant.EPOCH.plus(Duration.ofMinutes(7)));
+
+        timeProvider.advanceTime(4.0);
+        checkTime(timeProvider, 11.0, Instant.EPOCH.plus(Duration.ofMinutes(11)));
+    }
+
+    @Test
+    void testAdvanceAndSetTime_withDurationsAndInstants() {
+        AdjustableTimeProviderWithUnit timeProvider = createTimeProvider(TimeUnit.MINUTES);
+        timeProvider.getInstant(); // maybe cache the wrong answer
+
+        timeProvider.advanceTime(Duration.ofMinutes(5));
+        checkTime(timeProvider, 5.0, Instant.EPOCH.plus(Duration.ofMinutes(5)));
+
+        timeProvider.setTime(Instant.EPOCH.plus(Duration.ofMinutes(7)));
+        checkTime(timeProvider, 7.0, Instant.EPOCH.plus(Duration.ofMinutes(7)));
+
+        timeProvider.advanceTime(Duration.ofMinutes(4));
+        checkTime(timeProvider, 11.0, Instant.EPOCH.plus(Duration.ofMinutes(11)));
+    }
+
     private static AdjustableTimeProviderWithUnit createTimeProvider(TimeUnit timeUnit) {
-        return new AdjustableTimeProviderWithUnit(0, timeUnit);
+        return new AdjustableTimeProviderWithUnit(0.0, timeUnit);
+    }
+
+    private static void checkTime(TimeProviderWithUnit timeProvider, double expectedTimeAsDouble, Instant expectedInstant) {
+        assertEquals(expectedTimeAsDouble, timeProvider.getTime());
+        assertEquals(expectedInstant, timeProvider.getInstant());
     }
 }

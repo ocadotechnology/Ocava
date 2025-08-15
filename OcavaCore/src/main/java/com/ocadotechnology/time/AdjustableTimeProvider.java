@@ -33,7 +33,7 @@ public class AdjustableTimeProvider implements ModifiableTimeProvider {
     }
 
     @Override
-    public void advanceTime(double periodMs) {
-        this.currTime += periodMs;
+    public void advanceTime(double period) {
+        setTime(this.currTime + period);
     }
 }

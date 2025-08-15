@@ -15,27 +15,43 @@
  */
 package com.ocadotechnology.time;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
 
+@ParametersAreNonnullByDefault
 public class AdjustableTimeProviderWithUnit extends AdjustableTimeProvider implements TimeProviderWithUnit {
-    private final TimeConverter converter;
+    private final @Nonnull TimeConverter converter;
     private @CheckForNull Instant cachedInstant;
 
-    public AdjustableTimeProviderWithUnit(double initialTime, TimeUnit timeUnit) {
+    public AdjustableTimeProviderWithUnit(double initialTime, TimeConverter converter) {
         super(initialTime);
-        this.converter = new TimeConverter(timeUnit);
+        this.converter = converter;
+    }
+
+    public AdjustableTimeProviderWithUnit(Instant initialTime, TimeConverter converter) {
+        this(converter.convertFromInstant(initialTime), converter);
+    }
+
+    public AdjustableTimeProviderWithUnit(Instant initialTime, TimeUnit timeUnit) {
+        this(initialTime, new TimeConverter(timeUnit));
+    }
+
+    public AdjustableTimeProviderWithUnit(double initialTime, TimeUnit timeUnit) {
+        this(initialTime, new TimeConverter(timeUnit));
     }
 
     @Override
-    public TimeConverter getConverter() {
+    public @Nonnull TimeConverter getConverter() {
         return converter;
     }
 
     @Override
-    public Instant getInstant() {
+    public @Nonnull Instant getInstant() {
         if (cachedInstant == null) {
             cachedInstant = TimeProviderWithUnit.super.getInstant();
         }
@@ -46,7 +62,15 @@ public class AdjustableTimeProviderWithUnit extends AdjustableTimeProvider imple
     public void setTime(double time) {
         if (time != getTime()) {
             cachedInstant = null;
+            super.setTime(time);
         }
-        super.setTime(time);
+    }
+
+    public void setTime(Instant time) {
+        setTime(getConverter().convertFromInstant(time));
+    }
+
+    public void advanceTime(Duration period) {
+        advanceTime(getConverter().convertFromDuration(period));
     }
 }
