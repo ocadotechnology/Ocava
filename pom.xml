@@ -74,7 +74,7 @@
         <mycila-license-maven-plugin.version>5.0.0</mycila-license-maven-plugin.version>
 
         <!-- JavaDoc Plugin Version -->
-        <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>3.11.3</maven-javadoc-plugin.version>
         <reports-plugin.version>3.8.0</reports-plugin.version>
         <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <wagon-webdav-jackrabbit.version>3.5.3</wagon-webdav-jackrabbit.version>
