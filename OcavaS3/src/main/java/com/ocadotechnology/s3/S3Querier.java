@@ -18,11 +18,11 @@ package com.ocadotechnology.s3;
 import java.io.File;
 import java.io.Serializable;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
 import com.google.common.collect.ImmutableList;
 
 class S3Querier implements Serializable {
@@ -44,7 +44,7 @@ class S3Querier implements Serializable {
      * @return All (up to Integer.MAX_VALUE) keys in the bucket
      */
     ImmutableList<String> getAllKeys(String fullyQualifiedBucket) {
-        ListObjectsRequest request = new ListObjectsRequest().withBucketName(fullyQualifiedBucket).withMaxKeys(Integer.MAX_VALUE);
+        ListObjectsRequest request = ListObjectsRequest.builder().bucket(fullyQualifiedBucket).maxKeys(Integer.MAX_VALUE).build();
         return getAllKeys(request);
     }
 
@@ -54,25 +54,25 @@ class S3Querier implements Serializable {
      * @return All (up to Integer.MAX_VALUE) keys in the bucket which match the given prefix
      */
     ImmutableList<String> getAllKeys(String fullyQualifiedBucket, String keyPrefix) {
-        ListObjectsRequest request = new ListObjectsRequest().withBucketName(fullyQualifiedBucket).withPrefix(keyPrefix).withMaxKeys(Integer.MAX_VALUE);
+        ListObjectsRequest request = ListObjectsRequest.builder().bucket(fullyQualifiedBucket).prefix(keyPrefix).maxKeys(Integer.MAX_VALUE).build();
         return getAllKeys(request);
     }
 
     private ImmutableList<String> getAllKeys(ListObjectsRequest request) {
         return s3Client.getS3Client().listObjects(request)
-                .getObjectSummaries()
+                .contents()
                 .stream()
-                .map(S3ObjectSummary::getKey)
+                .map(S3Object::key)
                 .collect(ImmutableList.toImmutableList());
     }
 
     /**
      * @param fullyQualifiedBucket the bucket to query
      * @param key the key to locate
-     * @return the {@link ObjectMetadata#getContentLength()} result for this key
+     * @return the {@link software.amazon.awssdk.services.s3.model.HeadObjectResponse#contentLength()} result for this key
      */
-    long getContentLength(String fullyQualifiedBucket, String key) throws AmazonClientException {
-        return s3Client.getS3Client().getObjectMetadata(fullyQualifiedBucket, key).getContentLength();
+    long getContentLength(String fullyQualifiedBucket, String key) {
+        return s3Client.getS3Client().headObject(HeadObjectRequest.builder().bucket(fullyQualifiedBucket).key(key).build()).contentLength();
     }
 
     /**
@@ -80,7 +80,7 @@ class S3Querier implements Serializable {
      * @param key the key to locate
      * @param destinationFile the file location to write the contents of this object to
      */
-    void writeObjectToFile(String fullyQualifiedBucket, String key, File destinationFile) throws AmazonClientException {
-        s3Client.getS3Client().getObject(new GetObjectRequest(fullyQualifiedBucket, key), destinationFile);
+    void writeObjectToFile(String fullyQualifiedBucket, String key, File destinationFile) {
+        s3Client.getS3Client().getObject(GetObjectRequest.builder().bucket(fullyQualifiedBucket).key(key).build(), destinationFile.toPath());
     }
 }

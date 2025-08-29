@@ -20,8 +20,8 @@ import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.http.IdleConnectionReaper;
+import software.amazon.awssdk.core.exception.SdkException;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.config.Config;
@@ -50,7 +50,7 @@ public class S3FileManager extends FileManager {
                 setupFileCache(s3Config),
                 new S3Querier(new SerializableS3Client(s3Config)),
                 s3Config.getIfKeyAndValueDefined(S3Config.BUCKET_PREFIX).asString().orElse(""));
-        logger.info("S3 client initialised for endpoint {} with signer override {}", endpoint, SerializableS3Client.signerType);
+        logger.info("S3 client initialised for endpoint {}", endpoint);
     }
 
     @VisibleForTesting
@@ -130,7 +130,7 @@ public class S3FileManager extends FileManager {
                 long remoteSizeInBytes = s3Querier.getContentLength(fullyQualifiedBucket, key);
                 long localSizeInBytes = cachedFileHandle.length();
                 return remoteSizeInBytes == localSizeInBytes;
-            } catch (AmazonClientException e) {
+            } catch (SdkException e) {
                 logger.warn("S3 File Fetch attempt {} failed: {}", retry, e.getMessage());
                 try {
                     Thread.sleep(RETRY_WAIT_PERIOD * 1000);
@@ -148,7 +148,7 @@ public class S3FileManager extends FileManager {
             try {
                 s3Querier.writeObjectToFile(fullyQualifiedBucket, key, writableFileHandle);
                 return;
-            } catch (AmazonClientException e) {
+            } catch (SdkException e) {
                 logger.warn("S3 File Fetch attempt {} failed: {}", retry, e.getMessage());
                 try {
                     Thread.sleep(RETRY_WAIT_PERIOD * 1000);
@@ -158,9 +158,5 @@ public class S3FileManager extends FileManager {
             }
         }
         throw Failer.fail("Failed to download %s:%s from S3 after %s attempts", fullyQualifiedBucket, key, MAX_RETRY_ATTEMPTS);
-    }
-
-    public void close() {
-        IdleConnectionReaper.shutdown();
     }
 }

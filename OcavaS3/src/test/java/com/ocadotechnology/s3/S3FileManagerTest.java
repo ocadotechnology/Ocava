@@ -27,7 +27,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.amazonaws.AmazonClientException;
+import software.amazon.awssdk.core.exception.SdkException;
+
 import com.google.common.collect.ImmutableList;
 import com.ocadotechnology.fileaccess.FileCache;
 import com.ocadotechnology.fileaccess.FileCacheTestUtils;
@@ -189,7 +190,7 @@ public class S3FileManagerTest {
 
         String fileName = "file_name";
 
-        Mockito.doThrow(new AmazonClientException("Test Exception")) //First call
+        Mockito.doThrow(SdkException.create("Test exception", null)) //First call
                 .doNothing() // Second call
                 .when(s3Querier).writeObjectToFile(Mockito.eq(BUCKET_PREFIX + BUCKET), Mockito.eq(fileName), Mockito.any(File.class)); //Method definition
 
@@ -206,7 +207,7 @@ public class S3FileManagerTest {
 
         String fileName = "file_name";
 
-        Mockito.doThrow(new AmazonClientException("Test Exception"))
+        Mockito.doThrow(SdkException.create("Test Exception", null))
                 .when(s3Querier).writeObjectToFile(Mockito.eq(BUCKET_PREFIX + BUCKET), Mockito.eq(fileName), Mockito.any(File.class));
 
         assertThatThrownBy(() -> fileManager.getS3File(BUCKET, fileName, false)).isInstanceOf(IllegalStateException.class);

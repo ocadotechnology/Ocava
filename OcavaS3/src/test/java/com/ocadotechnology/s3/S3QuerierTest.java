@@ -30,12 +30,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
 import com.google.common.collect.ImmutableList;
 
 @ExtendWith(MockitoExtension.class)
@@ -113,9 +115,9 @@ public class S3QuerierTest {
         String key = "test_key";
         File testFile = new File("./test_file.csv");
 
-        AmazonS3Client mockClient = Mockito.mock(AmazonS3Client.class);
+        S3Client mockClient = Mockito.mock(S3Client.class);
         Mockito.when(s3Client.getS3Client()).thenReturn(mockClient);
-        Mockito.when(mockClient.getObject(getObjectRequestCaptor.capture(), Mockito.eq(testFile))).thenReturn(null);
+        Mockito.when(mockClient.getObject(getObjectRequestCaptor.capture(), Mockito.eq(testFile.toPath()))).thenReturn(null);
 
         s3Querier.writeObjectToFile(bucket, key, testFile);
 
@@ -128,29 +130,30 @@ public class S3QuerierTest {
         String key = "test_key";
         long fileSize = 10101;
 
-        AmazonS3Client mockClient = Mockito.mock(AmazonS3Client.class);
-        ObjectMetadata mockMetadata = Mockito.mock(ObjectMetadata.class);
+        S3Client mockClient = Mockito.mock(S3Client.class);
+        HeadObjectResponse mockHeadObjectResponse = Mockito.mock(HeadObjectResponse.class);
         Mockito.when(s3Client.getS3Client()).thenReturn(mockClient);
-        Mockito.when(mockClient.getObjectMetadata(Mockito.eq(bucket), Mockito.eq(key))).thenReturn(mockMetadata);
-        Mockito.when(mockMetadata.getContentLength()).thenReturn(fileSize);
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder().bucket(bucket).key(key).build();
+        Mockito.when(mockClient.headObject(Mockito.eq(headObjectRequest))).thenReturn(mockHeadObjectResponse);
+        Mockito.when(mockHeadObjectResponse.contentLength()).thenReturn(fileSize);
 
         assertThat(s3Querier.getContentLength(bucket, key)).isEqualTo(fileSize);
     }
 
     private void setupListFilesMocks(ImmutableList<String> keys) {
-        AmazonS3Client mockClient = Mockito.mock(AmazonS3Client.class);
-        ObjectListing mockObjectListing = Mockito.mock(ObjectListing.class);
-        List<S3ObjectSummary> mockObjectSummaries = keys.stream()
+        S3Client mockClient = Mockito.mock(S3Client.class);
+        ListObjectsResponse mockObjectListing = Mockito.mock(ListObjectsResponse.class);
+        List<S3Object> mockObjectSummaries = keys.stream()
                 .map(key -> {
-                    S3ObjectSummary summary = Mockito.mock(S3ObjectSummary.class);
-                    Mockito.when(summary.getKey()).thenReturn(key);
+                    S3Object summary = Mockito.mock(S3Object.class);
+                    Mockito.when(summary.key()).thenReturn(key);
                     return summary;
                 })
                 .collect(Collectors.toList());
 
         Mockito.when(s3Client.getS3Client()).thenReturn(mockClient);
         Mockito.when(mockClient.listObjects(listObjectsRequestCaptor.capture())).thenReturn(mockObjectListing);
-        Mockito.when(mockObjectListing.getObjectSummaries()).thenReturn(mockObjectSummaries);
+        Mockito.when(mockObjectListing.contents()).thenReturn(mockObjectSummaries);
     }
 
     private void verifyListObjectsRequest(String bucket) {
@@ -159,14 +162,14 @@ public class S3QuerierTest {
 
     private void verifyListObjectsRequest(String bucket, String keyPrefix) {
         ListObjectsRequest request = listObjectsRequestCaptor.getValue();
-        assertThat(request.getBucketName()).isEqualTo(bucket);
-        assertThat(request.getPrefix()).isEqualTo(keyPrefix);
-        assertThat(request.getMaxKeys()).isEqualTo(Integer.MAX_VALUE);
+        assertThat(request.bucket()).isEqualTo(bucket);
+        assertThat(request.prefix()).isEqualTo(keyPrefix);
+        assertThat(request.maxKeys()).isEqualTo(Integer.MAX_VALUE);
     }
 
     private void verifyGetObjectRequest(String bucket, String fileName) {
         GetObjectRequest request = getObjectRequestCaptor.getValue();
-        assertThat(request.getBucketName()).isEqualTo(bucket);
-        assertThat(request.getKey()).isEqualTo(fileName);
+        assertThat(request.bucket()).isEqualTo(bucket);
+        assertThat(request.key()).isEqualTo(fileName);
     }
 }

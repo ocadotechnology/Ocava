@@ -16,12 +16,16 @@
 package com.ocadotechnology.s3;
 
 import java.io.Serializable;
+import java.net.URI;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
+import javax.annotation.CheckForNull;
+
+import joptsimple.internal.Strings;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
 import com.ocadotechnology.config.Config;
 
 /**
@@ -29,9 +33,10 @@ import com.ocadotechnology.config.Config;
  */
 public class SerializableS3Client implements Serializable {
     private static final long serialVersionUID = 1L;
-    public static final String signerType = "S3SignerType";
 
-    private transient AmazonS3Client amazonS3Client;
+    @CheckForNull
+    private static final String AWS_REGION = System.getenv("aws_region");
+    private transient S3Client amazonS3Client;
 
     private final String endpoint, accessKey, secretKey;
 
@@ -42,14 +47,18 @@ public class SerializableS3Client implements Serializable {
         this.secretKey = s3Credentials.getSecretKey();
     }
 
-    public synchronized AmazonS3Client getS3Client() {
+    public synchronized S3Client getS3Client() {
         if (amazonS3Client == null) {
-            ClientConfiguration clientConfiguration = new ClientConfiguration();
-            clientConfiguration.setSignerOverride(signerType);
-            AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
-            amazonS3Client = new AmazonS3Client(credentials, clientConfiguration);
-            amazonS3Client.setEndpoint(endpoint);
-            amazonS3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+            var credentials = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+            var builder = S3Client.builder();
+            if (!Strings.isNullOrEmpty(AWS_REGION)) {
+                builder = builder.region(Region.of(AWS_REGION));
+            }
+            amazonS3Client = builder
+                    .credentialsProvider(credentials)
+                    .endpointOverride(URI.create(endpoint))
+                    .forcePathStyle(true)
+                    .build();
         }
         return amazonS3Client;
     }
