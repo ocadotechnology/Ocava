@@ -51,7 +51,7 @@
 
         <slf4j-api.version>2.0.17</slf4j-api.version>
         <junit-bom.version>5.13.4</junit-bom.version>
-        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <assertj.version>3.27.4</assertj.version>
         <mockito.version>5.19.0</mockito.version>
         <jfreechart.version>1.5.6</jfreechart.version>
