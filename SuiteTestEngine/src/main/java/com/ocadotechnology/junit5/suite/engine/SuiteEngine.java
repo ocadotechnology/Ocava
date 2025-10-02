@@ -31,10 +31,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.engine.config.DefaultJupiterConfiguration;
 import org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor;
-import org.junit.jupiter.engine.descriptor.LauncherStoreFacade;
 import org.junit.jupiter.engine.discovery.DiscoverySelectorResolver;
 import org.junit.jupiter.engine.discovery.TestTemplateWrappingDiscoverySelectorResolver;
 import org.junit.jupiter.engine.execution.JupiterEngineExecutionContext;
+import org.junit.jupiter.engine.execution.LauncherStoreFacade;
 import org.junit.platform.commons.support.scanning.ClassFilter;
 import org.junit.platform.engine.DiscoveryFilter;
 import org.junit.platform.engine.EngineDiscoveryRequest;
@@ -65,7 +65,7 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         JupiterEngineDescriptor engine = new JupiterEngineDescriptor(
                 uniqueId,
-                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryProvider()));
+                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryCreator()));
 
         List<DiscoveryFilter<String>> filters = new ArrayList<>();
         filters.addAll(discoveryRequest.getFiltersByType(ClassNameFilter.class));
@@ -109,7 +109,7 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     protected JupiterEngineExecutionContext createExecutionContext(ExecutionRequest request) {
         return new JupiterEngineExecutionContext(
                 request.getEngineExecutionListener(),
-                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryProvider()),
+                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryCreator()),
                 new LauncherStoreFacade(request.getStore()));
     }
 
@@ -158,7 +158,7 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
         }
 
         // check if the class is annotated with @ExtendsWIth(...)
-        ExtendWith extendWith = (ExtendWith)clazz.getAnnotation(ExtendWith.class);
+        ExtendWith extendWith = (ExtendWith) clazz.getAnnotation(ExtendWith.class);
         if (extendWith == null) {
             return new DiscoverySelectorResolver();
         }
