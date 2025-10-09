@@ -18,7 +18,6 @@ package com.ocadotechnology.junit5.suite.engine;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.junit.platform.engine.ConfigurationParameters;
 
@@ -32,16 +31,6 @@ class TestConfigurationParameters implements ConfigurationParameters {
     @Override
     public Optional<Boolean> getBoolean(String key) {
         return Optional.empty();
-    }
-
-    @Override
-    public <T> Optional<T> get(String key, Function<String, T> transformer) {
-        return ConfigurationParameters.super.get(key, transformer);
-    }
-
-    @Override
-    public int size() {
-        return 0;
     }
 
     @Override

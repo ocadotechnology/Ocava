@@ -20,15 +20,16 @@ import org.junit.jupiter.engine.descriptor.Validatable;
 import org.junit.jupiter.engine.discovery.predicates.TestClassPredicates;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.TestDescriptor;
+import org.junit.platform.engine.support.discovery.DiscoveryIssueReporter;
 import org.junit.platform.engine.support.discovery.EngineDiscoveryRequestResolver;
 
 /**
- * An extension of DiscoverySelectorResolver which will wrap all test methods into TestTemplateTestDescriptor.
- *
+ * An alternative to DiscoverySelectorResolver which will wrap all test methods into TestTemplateTestDescriptor.
+ * <p>
  * Adapted from org.junit.jupiter.engine.discovery.DiscoverySelectorResolver. The only difference between this
  * class and DiscoverySelectorResolver is replacing MethodSelectorResolver with TestTemplateWrappingMethodSelectorResolver junit-jupiter-engine-5.13.1
  */
-public class TestTemplateWrappingDiscoverySelectorResolver extends DiscoverySelectorResolver {
+public class TestTemplateWrappingDiscoverySelectorResolver {
 
     // @formatter:off
     private static final EngineDiscoveryRequestResolver<JupiterEngineDescriptor> resolver = EngineDiscoveryRequestResolver.<JupiterEngineDescriptor>builder()
@@ -54,8 +55,7 @@ public class TestTemplateWrappingDiscoverySelectorResolver extends DiscoverySele
             .build();
     // @formatter:on
 
-    @Override
-    public void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor) {
-        resolver.resolve(request, engineDescriptor);
+    public static void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor, DiscoveryIssueReporter issueReporter) {
+        resolver.resolve(request, engineDescriptor, issueReporter);
     }
 }

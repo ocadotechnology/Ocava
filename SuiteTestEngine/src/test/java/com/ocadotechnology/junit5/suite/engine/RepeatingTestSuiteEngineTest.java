@@ -32,11 +32,12 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.engine.CancellationToken;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
+import org.junit.platform.engine.OutputDirectoryCreator;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
-import org.junit.platform.engine.reporting.OutputDirectoryProvider;
 import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 import com.ocadotechnology.junit5.suite.engine.repeating.RepeatedTestTemplateInvocationContextWrapper;
@@ -46,14 +47,14 @@ import com.ocadotechnology.junit5.suite.engine.repeating.TestTemplateInvocationC
 class RepeatingTestSuiteEngineTest {
 
     private final SuiteEngine engine = new SuiteEngine();
-    private final OutputDirectoryProvider outputDirectoryProvider = new TestOutputDirectoryProvider();
+    private final OutputDirectoryCreator outputDirectoryCreator = new TestOutputDirectoryCreator();
 
     @Test
     void testEngine() {
         EngineDiscoveryRequest discoveryRequest = request()
                 .selectors(selectClass(RepeatingDynamicTestSuite.class))
                 .configurationParameter("com.ocadotechnology.junit5.suite.engine.templateAllTests", "true")
-                .outputDirectoryProvider(outputDirectoryProvider)
+                .outputDirectoryCreator(outputDirectoryCreator)
                 .build();
         TestDescriptor testsDiscovered = engine.discover(discoveryRequest, UniqueId.forEngine(engine.getId()));
 
@@ -62,8 +63,9 @@ class RepeatingTestSuiteEngineTest {
                 testsDiscovered,
                 executionListener,
                 new TestConfigurationParameters(),
-                outputDirectoryProvider,
-                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)));
+                outputDirectoryCreator,
+                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)),
+                CancellationToken.create());
         engine.execute(executionRequest);
 
         assertEquals(26, executionListener.getExecutedTests().size(), ""

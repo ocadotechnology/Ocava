@@ -19,13 +19,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.junit.platform.engine.OutputDirectoryCreator;
 import org.junit.platform.engine.TestDescriptor;
-import org.junit.platform.engine.reporting.OutputDirectoryProvider;
 
-public class TestOutputDirectoryProvider implements OutputDirectoryProvider {
+public class TestOutputDirectoryCreator implements OutputDirectoryCreator {
     private static final Path DUMMY_PATH = Paths.get("dummy");
 
-    public TestOutputDirectoryProvider() {}
+    public TestOutputDirectoryCreator() {}
 
     @Override
     public Path getRootDirectory() {

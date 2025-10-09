@@ -45,6 +45,7 @@ import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.ClassNameFilter;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.discovery.PackageNameFilter;
+import org.junit.platform.engine.support.discovery.DiscoveryIssueReporter;
 import org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -63,9 +64,10 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
     @SuppressFBWarnings(value = "DM_EXIT", justification = "We do expect to exit here")
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
+        DiscoveryIssueReporter issueReporter = DiscoveryIssueReporter.forwarding(discoveryRequest.getDiscoveryListener(), uniqueId);
         JupiterEngineDescriptor engine = new JupiterEngineDescriptor(
                 uniqueId,
-                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryCreator()));
+                new DefaultJupiterConfiguration(discoveryRequest.getConfigurationParameters(), discoveryRequest.getOutputDirectoryCreator(), issueReporter));
 
         List<DiscoveryFilter<String>> filters = new ArrayList<>();
         filters.addAll(discoveryRequest.getFiltersByType(ClassNameFilter.class));
@@ -107,9 +109,13 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
 
     @Override
     protected JupiterEngineExecutionContext createExecutionContext(ExecutionRequest request) {
+        // I'm fairly sure we shouldn't get here and the "forwarding" reporter isn't obvious to construct in an execution context
+        DiscoveryIssueReporter issueReporter = DiscoveryIssueReporter.consuming(issue -> {
+            throw new IllegalStateException(issue.message());
+        });
         return new JupiterEngineExecutionContext(
                 request.getEngineExecutionListener(),
-                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryCreator()),
+                new DefaultJupiterConfiguration(request.getConfigurationParameters(), request.getOutputDirectoryCreator(), issueReporter),
                 new LauncherStoreFacade(request.getStore()));
     }
 
@@ -140,8 +146,9 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
         returnedObject
                 .forEach(clazz -> {
                     EngineDiscoveryRequest discoveryRequest = request().selectors(selectClass(clazz)).build();
-                    DiscoverySelectorResolver discoverySelectorResolver = getDiscoverySelectorResolver(clazz, useTestTemplateWrappingDiscoverySelectorForAllTests);
-                    discoverySelectorResolver.resolveSelectors(discoveryRequest, engine);
+                    DiscoveryIssueReporter issueReporter = DiscoveryIssueReporter.forwarding(discoveryRequest.getDiscoveryListener(), engine.getUniqueId());
+                    getDiscoverySelectorResolver(clazz, useTestTemplateWrappingDiscoverySelectorForAllTests)
+                            .resolveSelectors(discoveryRequest, engine, issueReporter);
                 });
     }
 
@@ -152,15 +159,15 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
      * it returns TestTemplateWrappingDiscoverySelectorResolver.
      * Otherwise it returns the default DiscoverySelectorResolver.
      */
-    private DiscoverySelectorResolver getDiscoverySelectorResolver(Class clazz, boolean useTestTemplateWrappingDiscoverySelectorForAllTests) {
+    private DiscoverySelectorResolverMethod getDiscoverySelectorResolver(Class clazz, boolean useTestTemplateWrappingDiscoverySelectorForAllTests) {
         if (useTestTemplateWrappingDiscoverySelectorForAllTests) {
-            return new TestTemplateWrappingDiscoverySelectorResolver();
+            return TestTemplateWrappingDiscoverySelectorResolver::resolveSelectors;
         }
 
         // check if the class is annotated with @ExtendsWIth(...)
         ExtendWith extendWith = (ExtendWith) clazz.getAnnotation(ExtendWith.class);
         if (extendWith == null) {
-            return new DiscoverySelectorResolver();
+            return DiscoverySelectorResolver::resolveSelectors;
         }
 
         Class<? extends Extension>[] extensionClasses = extendWith.value();
@@ -171,8 +178,13 @@ public class SuiteEngine extends HierarchicalTestEngine<JupiterEngineExecutionCo
                                 .anyMatch(i -> i.isAssignableFrom(TestSuiteTemplateExtension.class)));
 
         return classHasTestSuiteTemplateExtension
-                ? new TestTemplateWrappingDiscoverySelectorResolver()
-                : new DiscoverySelectorResolver();
+                ? TestTemplateWrappingDiscoverySelectorResolver::resolveSelectors
+                : DiscoverySelectorResolver::resolveSelectors;
+    }
+
+    @FunctionalInterface
+    private interface DiscoverySelectorResolverMethod {
+        void resolveSelectors(EngineDiscoveryRequest request, JupiterEngineDescriptor engineDescriptor, DiscoveryIssueReporter issueReporter);
     }
 
     private Stream<Class> convertToClasses(Method suite) throws InvocationTargetException, IllegalAccessException {

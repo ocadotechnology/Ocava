@@ -26,23 +26,24 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.engine.CancellationToken;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
+import org.junit.platform.engine.OutputDirectoryCreator;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
-import org.junit.platform.engine.reporting.OutputDirectoryProvider;
 import org.junit.platform.engine.support.store.NamespacedHierarchicalStore;
 
 class SuiteEngineTest {
 
     private final SuiteEngine engine = new SuiteEngine();
-    private final OutputDirectoryProvider outputDirectoryProvider = new TestOutputDirectoryProvider();
+    private final OutputDirectoryCreator outputDirectoryCreator = new TestOutputDirectoryCreator();
 
     @Test
     void testEngine() {
         EngineDiscoveryRequest discoveryRequest = request()
                 .selectors(selectClass(SomeDynamicTestSuite.class))
-                .outputDirectoryProvider(outputDirectoryProvider)
+                .outputDirectoryCreator(outputDirectoryCreator)
                 .build();
         TestDescriptor testsDiscovered = engine.discover(discoveryRequest, UniqueId.forEngine(engine.getId()));
 
@@ -51,8 +52,9 @@ class SuiteEngineTest {
                 testsDiscovered,
                 executionListener,
                 new TestConfigurationParameters(),
-                outputDirectoryProvider,
-                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)));
+                outputDirectoryCreator,
+                new NamespacedHierarchicalStore<>(new NamespacedHierarchicalStore<>(null)),
+                CancellationToken.create());
         engine.execute(executionRequest);
 
         assertEquals(8, executionListener.getExecutedTests().size(), "1 engine + 2 classes + 2 regular test methods + 3 parameterized test templates expected to be discovered and executed");
