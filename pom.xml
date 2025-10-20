@@ -81,9 +81,9 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <!-- Spotbugs versions -->
-        <spotbugs.version>4.9.7</spotbugs.version>
+        <spotbugs.version>4.9.8</spotbugs.version>
         <spotbugs-maven-plugin.version>4.9.8.0</spotbugs-maven-plugin.version>
-        <spotbugs-annotations.version>4.9.7</spotbugs-annotations.version>
+        <spotbugs-annotations.version>4.9.8</spotbugs-annotations.version>
 
         <!-- OSSRH release plugins -->
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
