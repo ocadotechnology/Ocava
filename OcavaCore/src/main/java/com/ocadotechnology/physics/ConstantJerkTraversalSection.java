@@ -33,7 +33,7 @@ import com.ocadotechnology.maths.PolynomialRootUtils;
  */
 public class ConstantJerkTraversalSection implements TraversalSection {
     private static final double ROUNDING_ERROR_FRACTION = 1E-9;
-
+    private static final double ABS_EPSILON = 1E-12;
     final double duration;
     final double distance;
     final double initialSpeed;
@@ -55,32 +55,38 @@ public class ConstantJerkTraversalSection implements TraversalSection {
             double finalAcceleration,
             double jerk) {
 
-        if (duration < 0) {
-            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with a negative duration: " + duration);
+        // --- Non-negativity checks (fuzzy) ---
+        if (DoubleMath.fuzzyCompare(duration, 0.0, getTolerance(duration)) < 0) {
+            throw new TraversalCalculationException(
+                    "Cannot have a ConstantJerkTraversalSection with a negative duration: " + duration);
         }
-        if (distance < 0) {
-            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with a negative distance: " + distance);
+        if (DoubleMath.fuzzyCompare(distance, 0.0, getTolerance(distance)) < 0) {
+            throw new TraversalCalculationException(
+                    "Cannot have a ConstantJerkTraversalSection with a negative distance: " + distance);
         }
-        if (initialSpeed < 0) {
-            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with a negative initialSpeed: " + initialSpeed);
+        if (DoubleMath.fuzzyCompare(initialSpeed, 0.0, getTolerance(initialSpeed)) < 0) {
+            throw new TraversalCalculationException(
+                    "Cannot have a ConstantJerkTraversalSection with a negative initialSpeed: " + initialSpeed);
         }
-        if (finalSpeed < 0) {
-            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with a negative finalSpeed: " + finalSpeed);
+        if (DoubleMath.fuzzyCompare(finalSpeed, 0.0, getTolerance(finalSpeed)) < 0) {
+            throw new TraversalCalculationException(
+                    "Cannot have a ConstantJerkTraversalSection with a negative finalSpeed: " + finalSpeed);
         }
-        if (jerk == 0) {
+        // Jerk must be nonzero (fuzzy)
+        if (DoubleMath.fuzzyEquals(jerk, 0.0, getTolerance(jerk))) {
             throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with zero jerk");
         }
 
         if (!DoubleMath.fuzzyEquals(initialAcceleration + (duration * jerk), finalAcceleration, Math.max(Math.abs(initialAcceleration), Math.abs(finalAcceleration)) * ROUNDING_ERROR_FRACTION)) {
-            throw new TraversalCalculationException("Cannot have a ConstantAccelerationTraversalSection with initialAcceleration + jerk * time != finalAcceleration");
+            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with initialAcceleration + jerk * time != finalAcceleration");
         }
 
-        if (!DoubleMath.fuzzyEquals(initialSpeed + (initialAcceleration * duration) + (0.5 * jerk * Math.pow(duration, 2)), finalSpeed, Math.max(initialSpeed, finalSpeed) * ROUNDING_ERROR_FRACTION)) {
-            throw new TraversalCalculationException("Cannot have a ConstantAccelerationTraversalSection with initialSpeed + initialAcceleration * time + 0.5 * jerk * time^2 != finalSpeed");
+        if (!DoubleMath.fuzzyEquals(initialSpeed + (initialAcceleration * duration) + (0.5 * jerk * Math.pow(duration, 2)), finalSpeed, getTolerance(Math.max(initialSpeed, finalSpeed)))) {
+            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with initialSpeed + initialAcceleration * time + 0.5 * jerk * time^2 != finalSpeed");
         }
 
-        if (!DoubleMath.fuzzyEquals(initialSpeed * duration + (0.5 * initialAcceleration * Math.pow(duration, 2)) + (1/6d * jerk * Math.pow(duration, 3)), distance, distance * ROUNDING_ERROR_FRACTION)) {
-            throw new TraversalCalculationException("Cannot have a ConstantAccelerationTraversalSection with initialSpeed * duration + 0.5 * initialAcceleration * duration^2 + 1/6 * jerk * duration^3 != distance");
+        if (!DoubleMath.fuzzyEquals(initialSpeed * duration + (0.5 * initialAcceleration * Math.pow(duration, 2)) + (1/6d * jerk * Math.pow(duration, 3)), distance, getTolerance(distance))) {
+            throw new TraversalCalculationException("Cannot have a ConstantJerkTraversalSection with initialSpeed * duration + 0.5 * initialAcceleration * duration^2 + 1/6 * jerk * duration^3 != distance");
         }
 
         this.duration = duration;
@@ -90,6 +96,10 @@ public class ConstantJerkTraversalSection implements TraversalSection {
         this.initialAcceleration = initialAcceleration;
         this.finalAcceleration = finalAcceleration;
         this.jerk = jerk;
+    }
+
+    private static double getTolerance(double magnitude) {
+        return Math.max(ABS_EPSILON, Math.abs(magnitude) * ROUNDING_ERROR_FRACTION);
     }
 
     @Override
@@ -233,7 +243,7 @@ public class ConstantJerkTraversalSection implements TraversalSection {
 
     @Override
     public String toString() {
-        return String.format("ConstantJerkTraversalSection(t=%.3f, s=%.3f, u=%.3f, v=%.3f, a.=%.3f, a=%.3f, j=%.3f)",
+        return String.format("ConstantJerkTraversalSection(t=%.3g, s=%.3g, u=%.3g, v=%.3g, a.=%.3g, a=%.3g, j=%.3g)",
                 duration, distance, initialSpeed, finalSpeed, initialAcceleration, finalAcceleration, jerk);
     }
 

@@ -21,7 +21,14 @@ package com.ocadotechnology.physics;
 public interface TraversalCalculator {
 
     /**
-     * @throws TraversalCalculationException
+     * @param length how far to traverse
+     * @param initialSpeed initial speed
+     * @param initialAcceleration initial acceleration
+     * @param vehicleProperties vehicles physical properties
+     * @return A traversal that will cover length, starting from the specified speed and acceleration and ending with
+     * the vehicle at rest. If the length is shorter than the minimal braking traversal, then this braking traversal is
+     * instead returned.
+     * @throws TraversalCalculationException if the traversal is physically impossible.
      */
     Traversal create(
             double length,
@@ -29,12 +36,23 @@ public interface TraversalCalculator {
             double initialAcceleration,
             VehicleMotionProperties vehicleProperties);
 
+    /**
+     * @param initialSpeed initial speed
+     * @param initialAcceleration initial acceleration
+     * @param vehicleProperties vehicle properties
+     * @return a traversal that will bring the vehicle to rest as quickly as possible.
+     */
     Traversal getBrakingTraversal(
             double initialSpeed,
             double initialAcceleration,
             VehicleMotionProperties vehicleProperties);
 
     /**
+     * @param fullTraversal original traversal
+     * @param distanceAlongTraversal initial acceleration
+     * @param vehicleProperties vehicle properties
+     * @return a traversal that brings the bot to rest as quickly as possible given it has already travelled distanceAlongTraversal
+     * along the traversal specified by fullTraversal
      * @throws TraversalCalculationException
      */
     default Traversal getBrakingTraversal(Traversal fullTraversal, double distanceAlongTraversal, VehicleMotionProperties vehicleProperties) {

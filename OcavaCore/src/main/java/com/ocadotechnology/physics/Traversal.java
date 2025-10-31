@@ -248,4 +248,9 @@ public class Traversal implements Serializable {
     private double getDurationAt(Predicate<TraversalSection> condition) {
         return sections.stream().filter(condition).mapToDouble(TraversalSection::getDuration).sum();
     }
+
+    @Override
+    public String toString() {
+        return "Traversal[" + String.join(", ", sections.stream().map(Object::toString).toList()) + "]";
+    }
 }

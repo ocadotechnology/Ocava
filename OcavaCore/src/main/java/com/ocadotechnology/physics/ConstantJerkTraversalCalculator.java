@@ -15,112 +15,71 @@
  */
 package com.ocadotechnology.physics;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.DoubleFunction;
 import java.util.function.ToDoubleFunction;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.math.DoubleMath;
 import com.ocadotechnology.physics.utils.BinarySearch;
 
-public class ConstantJerkTraversalCalculator implements TraversalCalculator {
+/**
+ * Builds an optimal jerk-limited S-curve traversal using ConstantJerk/ConstantAcceleration/ConstantSpeed sections.
+ * The resulting traversals will end at rest, that is both acceleration and velocity will be 0.
+ */
+public final class ConstantJerkTraversalCalculator implements TraversalCalculator {
     private static final double ROUNDING_ERROR_MARGIN = 1E-9;
     public static final ConstantJerkTraversalCalculator INSTANCE = new ConstantJerkTraversalCalculator();
 
     private ConstantJerkTraversalCalculator() {
     }
 
+    /**
+     * @param distance          distance to traverse
+     * @param vehicleProperties vehicle properties
+     * @return Traversal that starts and ends with speed and acceleration equal to zero and traverses the distance.
+     * If the distance is less than the braking distance, then the braking traversal will instead be returned.
+     */
     public Traversal create(double distance, VehicleMotionProperties vehicleProperties) {
-        if (DoubleMath.fuzzyEquals(distance, 0d, getDistanceToReachMaxSpeed(vehicleProperties) * ROUNDING_ERROR_MARGIN)) {
-            return Traversal.EMPTY_TRAVERSAL;
-        }
-
-        ImmutableList<TraversalSection> sections =
-                ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(distance, vehicleProperties)
-                        .or(() -> ConstantJerkSectionsFactory.maxSpeedReached(distance, vehicleProperties))
-                        .or(() -> ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(distance, vehicleProperties))
-                        .orElseGet(() -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(distance, vehicleProperties));
-
-        return new Traversal(sections);
+        return create(distance, 0, 0, vehicleProperties);
     }
 
     /**
-     * @throws TraversalCalculationException
+     * @param distance            distance to traverse
+     * @param initialSpeed        initial speed
+     * @param initialAcceleration initial acceleration
+     * @param vehicleProperties   vehicle properties
+     * @return Traversal that starts with the given speed and acceleration and ends at rest after traversing distance.
+     * If the distance is less than the braking distance, then the braking traversal will instead be returned.
      */
-    @Override
     public Traversal create(double distance, double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
-        if (DoubleMath.fuzzyEquals(distance, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
-            return Traversal.EMPTY_TRAVERSAL;
-        }
-
-        if (DoubleMath.fuzzyEquals(initialSpeed, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
-            return create(distance, vehicleProperties);
-        }
-
-        initialSpeed = Math.min(vehicleProperties.maxSpeed, initialSpeed);
-
+        validateInputs(distance, initialSpeed, initialAcceleration, vehicleProperties);
         Traversal brakingTraversal = getBrakingTraversal(initialSpeed, initialAcceleration, vehicleProperties);
-        double brakingDistance = brakingTraversal.getTotalDistance();
-        if (brakingDistance >= distance) {
+        double minimalDistanceToBrake = brakingTraversal.getTotalDistance();
+        int comparisonResult = DoubleMath.fuzzyCompare(minimalDistanceToBrake, distance, ROUNDING_ERROR_MARGIN * distance);
+        if (comparisonResult >= 0) {
+            // If the target distance is smaller than the minimal braking distance, then we simply return the braking traversal
             return brakingTraversal;
         }
-
-        if (brakingTraversal.getAccelerationAtDistance(brakingDistance) < 0) {
-            Traversal traversalAfterBraking = create(distance - brakingDistance, vehicleProperties);
-
-            ImmutableList<TraversalSection> sections = ImmutableList.<TraversalSection>builder()
-                    .addAll(brakingTraversal.getSections())
-                    .addAll(traversalAfterBraking.getSections()).build();
-
-            return new Traversal(sections);
+        DoubleFunction<Traversal> speedToTraversalCalculator = (vPeak) -> maxSpeedToTraversal(initialSpeed, initialAcceleration, vPeak, distance, vehicleProperties);
+        // First try if reaching the max speed works as this is often the solution.
+        Traversal traversalReachingMaxSpeed = speedToTraversalCalculator.apply(vehicleProperties.maxSpeed);
+        if (DoubleMath.fuzzyEquals(traversalReachingMaxSpeed.getTotalDistance(), distance, ROUNDING_ERROR_MARGIN * distance)) {
+            return traversalReachingMaxSpeed;
         }
 
-        if (initialAcceleration < vehicleProperties.acceleration) {
-            ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.jerkUpToAmaxConstrainedByVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
-            Traversal traversal = new Traversal(sections);
-            if (traversal.getTotalDistance() > distance) {
-                return BinarySearch.find(
-                        calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(initialSpeed, initialAcceleration, vehicleProperties),
-                        getDistanceComp(distance),
-                        0,
-                        sections.get(0).getDuration());
-            }
-        }
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxThenBrake(initialSpeed, initialAcceleration, vehicleProperties);
-        Traversal traversal = new Traversal(sections);
-        if (traversal.getTotalDistance() > distance) {
-            if (sections.stream().anyMatch(s -> s.getAccelerationAtTime(0) >= vehicleProperties.acceleration)) {
-                return BinarySearch.find(
-                        getTraversalForAmaxT(initialSpeed, initialAcceleration, vehicleProperties),
-                        getDistanceComp(distance),
-                        0,
-                        getConstantAccelerationTime(sections));
-            }
-
-            return BinarySearch.find(
-                    getTraversalForInitialAT(initialSpeed, initialAcceleration, vehicleProperties),
-                    getDistanceComp(distance),
-                    0,
-                    getConstantAccelerationTime(sections));
-        }
-
-        return new Traversal(ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(distance, initialSpeed, initialAcceleration, vehicleProperties));
-    }
-
-    private double getConstantAccelerationTime(ImmutableList<TraversalSection> sections) {
-        return sections.stream()
-                .filter(s -> !s.isConstantSpeed() && s.isConstantAcceleration())
-                .findFirst()
-                .map(TraversalSection::getDuration)
-                .orElse(0d);
-    }
-
-    @Override
-    public Traversal getBrakingTraversal(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
-        if (DoubleMath.fuzzyEquals(initialSpeed, 0d, vehicleProperties.maxSpeed * ROUNDING_ERROR_MARGIN)) {
-            return Traversal.EMPTY_TRAVERSAL;
-        }
-        return new Traversal(ConstantJerkSectionsFactory.findBrakingTraversal(initialSpeed, initialAcceleration, vehicleProperties));
+        // For the following function, the distance of the traversal increases monotonically with the speed reached
+        // after the first section so we can binary search within the range to find the correct max speed.
+        return BinarySearch.find(
+                speedToTraversalCalculator,
+                getDistanceComp(distance),
+                lowerBoundSpeedReachedAfterFirstHalf(initialAcceleration, initialSpeed, vehicleProperties),
+                vehicleProperties.maxSpeed
+        );
     }
 
     private ToDoubleFunction<Traversal> getDistanceComp(double distance) {
@@ -128,43 +87,149 @@ public class ConstantJerkTraversalCalculator implements TraversalCalculator {
             if (DoubleMath.fuzzyEquals(t.getTotalDistance(), distance, distance * ROUNDING_ERROR_MARGIN)) {
                 return 0;
             }
-
             return t.getTotalDistance() - distance;
         };
     }
 
-    private double getDistanceToReachMaxSpeed(VehicleMotionProperties vehicleProperties) {
-        double maxSpeed = vehicleProperties.maxSpeed;
-        double maxAcc = vehicleProperties.acceleration;
-        double jerk = vehicleProperties.jerkAccelerationUp;
-        // Assuming vehicle starts from rest
-        // a = jt
-        // v = (1/2) jt^2
-        // s = (1/6) jt^3
-        double timeToReachMaxSpeedIfJerkConstant = Math.sqrt(2 * maxSpeed / jerk);
-        double impliedAccelerationWhenMaxSpeedReached = timeToReachMaxSpeedIfJerkConstant * jerk;
-        if (impliedAccelerationWhenMaxSpeedReached <= maxAcc) {
-            return 1/6 * jerk * Math.pow(timeToReachMaxSpeedIfJerkConstant, 3);
+    /**
+     * Sometimes we can find a better lower bound that 0 for the speed reached after the first half for the purpose of
+     * the binary search. This is a small optimisation that reduces the initial search range. In the cases where we can't
+     * we can simply use 0 as the lower bound.
+     */
+    private double lowerBoundSpeedReachedAfterFirstHalf(double initialAcceleration, double initialSpeed, VehicleMotionProperties vehicleProperties) {
+        if (willInevitablyExceedMaxSpeed(initialSpeed, initialAcceleration, vehicleProperties)) {
+            return 0.0;
+        }
+        double jerk = initialAcceleration < 0 ? vehicleProperties.jerkDecelerationDown : vehicleProperties.jerkAccelerationDown;
+        double timeToReachZeroAcc = -initialAcceleration / jerk;
+        return Math.min(vehicleProperties.maxSpeed, JerkKinematics.getFinalVelocity(initialSpeed, initialAcceleration, jerk, timeToReachZeroAcc));
+    }
+
+    /**
+     * It's possible to exceed the max speed if the initial speed was already higher than the maximum or if
+     * the initial speed and initial acceleration are both high enough that we would exceed the max speed even if we
+     * jerked down as fast as possible.
+     */
+    private boolean willInevitablyExceedMaxSpeed(
+            double initialSpeed,
+            double initialAcceleration,
+            VehicleMotionProperties props) {
+        final double vMax = props.maxSpeed;
+        if (DoubleMath.fuzzyCompare(initialAcceleration, 0.0, props.accelerationAbsoluteTolerance) <= 0) {
+            return DoubleMath.fuzzyCompare(initialSpeed, vMax, ROUNDING_ERROR_MARGIN * vMax) > 0;
+        }
+        final double jDownAcc = props.jerkAccelerationDown;
+        final double jMag = Math.abs(jDownAcc);
+
+        final double dvMin = (initialAcceleration * initialAcceleration) / (2.0 * jMag);
+        final double vPeakMin = initialSpeed + dvMin;
+
+        return DoubleMath.fuzzyCompare(vPeakMin, vMax, ROUNDING_ERROR_MARGIN * vMax) > 0;
+    }
+
+    /**
+     * @param initialSpeed        initial speed
+     * @param initialAcceleration initial acceleration
+     * @param vehicleProperties   vehicle properties
+     * @return the minimal distance traversal to come to rest
+     * @throws TraversalCalculationException if the speed would go negative.
+     */
+    public Traversal getBrakingTraversal(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
+        validateInputs(0, initialSpeed, initialAcceleration, vehicleProperties);
+        List<TraversalSection> sections = new ArrayList<>();
+        double jerkAccelerationDown = vehicleProperties.jerkAccelerationDown;
+        int comparisonResult = DoubleMath.fuzzyCompare(initialAcceleration, 0, ROUNDING_ERROR_MARGIN * vehicleProperties.acceleration);
+        if (comparisonResult == -1) {
+            // Acceleration is already negative, so continue to brake
+            return new Traversal(ImmutableList.copyOf(ConstantJerkSectionsFactory.solveTriangleOrTrapezoidSections(initialSpeed, initialAcceleration, 0, vehicleProperties)));
+        } else if (comparisonResult == 1) {
+            // Slow to zero acc as fast as possible.
+            // a_t = initialAcceleration + jt = 0
+            // t = -initialAcceleration / j
+            double timeToReachZeroAcc = -initialAcceleration / jerkAccelerationDown;
+            double distanceToReachZeroAcc = JerkKinematics.getDisplacement(initialSpeed, initialAcceleration, jerkAccelerationDown, timeToReachZeroAcc);
+            double speedReachedAtZeroAcc = JerkKinematics.getFinalVelocity(initialSpeed, initialAcceleration, jerkAccelerationDown, timeToReachZeroAcc);
+            sections.add(new ConstantJerkTraversalSection(timeToReachZeroAcc, distanceToReachZeroAcc, initialSpeed, speedReachedAtZeroAcc, initialAcceleration, 0, jerkAccelerationDown));
+            sections.addAll(ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(speedReachedAtZeroAcc, vehicleProperties));
         } else {
-            // Max acceleration is reached before max speed
-            double timeToReachMaxAcceleration = maxAcc / jerk;
-            double speedReachedAtPointOfReachingMaxAcceleration = 1/2d * jerk * Math.pow(timeToReachMaxAcceleration, 2);
-            double distanceTraveledAtPointOfReachingMaxAcceleration = 1/6d * jerk * Math.pow(timeToReachMaxAcceleration, 3);
-            // constant acceleration so s = (v^2 - u^2) / 2a
-            double distanceNeededToReachMaxSpeed = (Math.pow(maxSpeed, 2) - Math.pow(speedReachedAtPointOfReachingMaxAcceleration, 2)) / (2 * maxAcc);
-            return distanceTraveledAtPointOfReachingMaxAcceleration + distanceNeededToReachMaxSpeed;
+            // Acceleration is already 0
+            sections.addAll(ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(initialSpeed, vehicleProperties));
+        }
+        return new Traversal(ImmutableList.copyOf(sections));
+    }
+
+    /**
+     * @param initialSpeed                initial speed
+     * @param initialAcceleration                initial acceleration
+     * @param vTarget           target max speed
+     * @param distanceTarget    target distance for traversal
+     * @param vehicleProperties vehicle properties
+     * @return Traversal that reaches vTarget as its max speed. It will only add a constant accelerations section
+     * if that speed happens to correspond to the vehicle's max speed. The distance of traversal increases monotonically with
+     * vTarget within valid bounds.
+     */
+    @VisibleForTesting
+    Traversal maxSpeedToTraversal(double initialSpeed, double initialAcceleration, double vTarget, double distanceTarget, VehicleMotionProperties vehicleProperties) {
+        Builder<TraversalSection> traversalSectionBuilder = ImmutableList.builder();
+        List<TraversalSection> firstHalfSections = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(initialAcceleration, initialSpeed, vTarget, vehicleProperties);
+        List<TraversalSection> secondHalfSections = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(vTarget, vehicleProperties);
+
+        traversalSectionBuilder.addAll(firstHalfSections);
+        double distanceBothSections = firstHalfSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum()
+                + secondHalfSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum();
+        // If we have reached the max speed then we can add a cruise section.
+        if (DoubleMath.fuzzyEquals(vTarget, vehicleProperties.maxSpeed, ROUNDING_ERROR_MARGIN * vehicleProperties.maxSpeed)
+                && distanceBothSections < distanceTarget) {
+            double distanceDelta = distanceTarget - distanceBothSections;
+            double timeAtConstantSpeed = distanceDelta / vTarget;
+            ConstantSpeedTraversalSection cruiseSection = new ConstantSpeedTraversalSection(distanceDelta, vTarget, timeAtConstantSpeed);
+            traversalSectionBuilder.add(cruiseSection);
+        }
+
+        ImmutableList<TraversalSection> sections = traversalSectionBuilder
+                .addAll(secondHalfSections)
+                .build();
+        return new Traversal(ImmutableList.copyOf(sections));
+    }
+
+    private void validateInputs(double distance, double initialSpeed, double initialAcceleration, VehicleMotionProperties props) throws TraversalCalculationException {
+        Preconditions.checkArgument(distance >= 0.0, "Distance must be non-negative");
+        Preconditions.checkArgument(props.acceleration > 0.0, "Max acceleration must be > 0");
+        Preconditions.checkArgument(props.deceleration < 0.0, "Max deceleration must be < 0 (expects negative)");
+        Preconditions.checkArgument(props.maxSpeed > 0.0, "Max speed must be > 0");
+        Preconditions.checkArgument(props.jerkAccelerationUp > 0.0, "jerkAccelerationUp must be > 0");
+        Preconditions.checkArgument(props.jerkAccelerationDown < 0.0, "jerkAccelerationDown must be < 0");
+        Preconditions.checkArgument(props.jerkDecelerationUp < 0.0, "jerkDecelerationUp must be < 0");
+        Preconditions.checkArgument(props.jerkDecelerationDown > 0.0, "jerkDecelerationDown must be > 0");
+        Preconditions.checkArgument(
+                DoubleMath.fuzzyCompare(initialSpeed, 0.0, ROUNDING_ERROR_MARGIN * props.maxSpeed) >= 0,
+                "Initial speed cannot be negative (no reverse)"
+        );
+        Preconditions.checkArgument(
+                DoubleMath.fuzzyCompare(initialAcceleration, props.acceleration, ROUNDING_ERROR_MARGIN * props.acceleration) <= 0,
+                "Initial acceleration exceeds max acceleration"
+        );
+        Preconditions.checkArgument(
+                DoubleMath.fuzzyCompare(initialAcceleration, props.deceleration, Math.abs(ROUNDING_ERROR_MARGIN * props.deceleration)) >= 0,
+                "Initial acceleration below max braking bound"
+        );
+        if (willSpeedGoNegative(initialSpeed, initialAcceleration, props)) {
+            String errorMsg = String.format("Speed would eventually go negative given the initial acceleration %s and initial speed %s, given the vehicle properties: %s", initialAcceleration, initialSpeed, props);
+            throw new TraversalCalculationException(errorMsg);
         }
     }
 
-    private DoubleFunction<Traversal> calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(t, u, a, vehicleProperties));
-    }
-
-    private DoubleFunction<Traversal> getTraversalForAmaxT(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
-    }
-
-    private DoubleFunction<Traversal> getTraversalForInitialAT(double u, double a, VehicleMotionProperties vehicleProperties) {
-        return (double t) -> new Traversal(ConstantJerkSectionsFactory.calculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection(t, u, a, vehicleProperties));
+    /**
+     * @return true if the initial conditions would result in the speed going negative due to initial acceleration being
+     * too negative. Returns false, otherwise
+     */
+    private boolean willSpeedGoNegative(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
+        if (initialAcceleration >= 0) {
+            return false;
+        }
+        double jerkDecelerationDown = vehicleProperties.jerkDecelerationDown;
+        double timeToReachZeroAcc = -initialAcceleration / jerkDecelerationDown;
+        double speedReached = JerkKinematics.getFinalVelocity(initialSpeed, initialAcceleration, jerkDecelerationDown, timeToReachZeroAcc);
+        return DoubleMath.fuzzyCompare(speedReached, 0, ROUNDING_ERROR_MARGIN * vehicleProperties.maxSpeed) < 0;
     }
 }

@@ -15,656 +15,368 @@
  */
 package com.ocadotechnology.physics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.UnmodifiableIterator;
-import com.ocadotechnology.physics.units.LengthUnit;
-import com.ocadotechnology.physics.units.ValuesInSIUnits;
-import com.ocadotechnology.validation.Failer;
+import com.google.common.math.DoubleMath;
 
-@DisplayName("ConstantJerkSectionsFactory test")
 class ConstantJerkSectionsFactoryTest {
-    private static final double EPSILON = 0.01;
-
-    private final double acceleration = 2.5E-6;
-    private final double deceleration = -2E-6;
-    private final double maxSpeed = 8E-3;
-
-    private final double jerkAccelerationUp = 1E-9;
-    private final double jerkAccelerationDown = -1E-9;
-    private final double jerkDecelerationUp = -1E-9;
-    private final double jerkDecelerationDown = 1E-9;
-
-    private final VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(maxSpeed, acceleration, deceleration, 0, jerkAccelerationUp, jerkAccelerationDown, jerkDecelerationUp, jerkDecelerationDown);
-
-    @Test
-    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenMaxSpeedExceeded_thenReturnEmptyOptional() {
-        double jerk = 1;
-        double acc = 1E9;
-        double velocity = 2;
-        VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
-                velocity,
-                acc,
-                -acc,
-                0,
-                jerk,
-                -jerk,
-                -jerk,
-                jerk
-        );
-        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(30, scratchVehicle);
-        assertThat(sections).isEmpty();
-    }
+    private static final double ROUNDING_ERROR_TOLERANCE = 1e-9;
+    private static final VehicleMotionProperties propsDefault = new VehicleMotionProperties(
+            /*acceleration*/                2.5,
+            /*accelerationAbsoluteTolerance*/1e-9,
+            /*deceleration*/               -2.0,
+            /*decelerationAbsoluteTolerance*/1e-9,
+            /*maxSpeed*/                    8.0,
+            /*maxSpeedAbsoluteTolerance*/   1e-9,
+            /*jerkAccelerationUp*/          3.6,
+            /*jerkAccelerationDown*/       -3.4,
+            /*jerkDecelerationUp*/         -2.2,
+            /*jerkDecelerationDown*/        1.2
+    );
 
     @Test
-    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceTooLongForThisCase_thenReturnEmptyOptional() {
-        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(16.1d, vehicleMotionProperties);
-        assertThat(sections).isEmpty();
+    void firstHalf_whenAccNegative_thenOneSegmentRelaxToZeroAccel() {
+        double a0 = -1.0; // already braking mildly
+        double v0 = 2.0;
+        // Choose vTarget == v_N (speed after relaxing a→0 only). We can estimate it here,
+        // but the test only checks that exactly one segment is returned.
+        // To be robust, pick a small delta so the solver lands on the 1-segment branch.
+        double vTarget = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown); // v_N
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertEquals(1, secs.size(), "Expected a single jerk segment to neutralize acceleration");
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
     }
 
     @Test
-    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase_thenReturnFourSections() {
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(1d, vehicleMotionProperties);
-        assertThat(result).hasValueSatisfying(sections -> assertThat(sections).hasSize(4));
-    }
+    void firstHalf_whenAccNegative_thenThreeSegmentsTriangularPositiveAccel() {
+        double a0 = -1.5;
+        double v0 = 1.0;
 
-    @DisplayName("when neither max acceleration or deceleration is reached")
-    @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
-    @MethodSource("traversalSectionsForNotTooLongCase")
-    void testNeitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached_whenTotalDistanceNotTooLongForCase(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(1d, vehicleMotionProperties);
-        assertThat(result).hasValueSatisfying(sections -> {
-            TraversalSection section = sections.get(index);
-            verifyTraversalSection(section, totalDistance, duration, initialSpeed, finalSpeed, initialAcceleration, finalAcceleration, jerk);
-        });
-    }
+        // Pick vTarget modestly above v_N so we need a triangular +accel bump (no a_max plateau)
+        double vN = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown);
+        double vTarget = vN + 0.2; // small extra Δv
 
-    private static Stream<Arguments> traversalSectionsForNotTooLongCase() {
-        return Stream.of(
-                // Index; Total Distance; Duration; Initial Speed; Final Speed; Initial Acceleration; Final Acceleration; Jerk
-                Arguments.of(0, 1 / 12d, Math.cbrt(1 / 2d), 0d, 0.31498, 0d, 1 / Math.cbrt(2d), 1d),
-                Arguments.of(1, 5 / 12d, Math.cbrt(1 / 2d), 0.31498, 0.6299, Math.cbrt(1 / 2d), 0d, -1d),
-                Arguments.of(2, 5 / 12d, Math.cbrt(1 / 2d), 0.6299, 0.31498, 0d, -Math.cbrt(1 / 2d), -1d),
-                Arguments.of(3, 1 / 12d, Math.cbrt(1 / 2d), 0.31498, 0d, -Math.cbrt(1 / 2d), 0d, 1d)
-        );
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertEquals(3, secs.size(), "Expected 3 segments: dec-down → acc-up → acc-down");
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
     }
 
     @Test
-    void testMaxSpeedReached_whenMaxSpeedNotReached_thenReturnEmptyOptional() {
-        double jerk = 1;
-        double acc = 2;
-        double velocity = 10;
-        VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
-                velocity,
-                acc,
-                -acc,
-                0,
-                jerk,
-                -jerk,
-                -jerk,
-                jerk
-        );
-        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.maxSpeedReached(30, scratchVehicle);
-        assertThat(sections).isEmpty();
+    void firstHalf_whenAccNegative_thenFourSegmentsTrapezoidWithAccelPlateau() {
+        double a0 = -0.8;
+        double v0 = 1.5;
+
+        // Push vTarget high enough to require hitting a_max and holding a plateau
+        double vN = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown);
+        double vTarget = vN + 2.0; // large Δv → plateau likely
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertTrue(
+                secs.size() == 4,
+                "Expected 4 segments, got: " + secs.size());
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
     }
 
     @Test
-    void testMaxSpeedReached_whenMaxSpeedReached_thenReturnSections() {
-        double jerk = 1;
-        double acc = 2;
-        double velocity = 2;
-        VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
-                velocity,
-                acc,
-                -acc,
-                0,
-                jerk,
-                -jerk,
-                -jerk,
-                jerk
-        );
+    void firstHalf_whenNegativeAccelerationAndVelocityReachesZeroBeforeZeroAcc_thenThrows() {
+        double a0 = -2.0; // strong braking
+        double v0 = 0.5;  // small speed; v(t) can hit 0 before a→0
+        double vN = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown);
+        double vTarget = Math.max(0.1, vN + 0.05);
+        Assertions.assertThrows(Exception.class, () -> ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault));
+    }
 
-        //Total Distance; Duration (s); Initial Speed; Final Speed; Initial Acceleration; Final Acceleration; Jerk
-        List<Double[]> expectedValues = List.of(
-                new Double[] {0.471d, Math.sqrt(2)*1E-3, 0d, 1E3, 0d, Math.sqrt(2)*1E6, 1E9},
-                new Double[] {2.357d, Math.sqrt(2)*1E-3, 1E3, 2E3, Math.sqrt(2)*1E6, 0d, -1E9},
-                new Double[] {24.343d, 12.171E-3, 2E3, 2E3, 0d, 0d, 0d},
-                new Double[] {2.357d, Math.sqrt(2)*1E-3, 2E3, 1E3, 0d, -Math.sqrt(2)*1E6, -1E9},
-                new Double[] {0.471d, Math.sqrt(2)*1E-3, 1E3, 0d, -Math.sqrt(2)*1E6, 0d, 1E9}
-        );
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(30, scratchVehicle);
+    // --------------------------------------------------------------------------------------------
+    // TESTS — a0 ≥ 0 (already in positive-accel regime)
+    // --------------------------------------------------------------------------------------------
 
-        assertThat(result).hasValueSatisfying(sections -> assertThat(sections).hasSize(5));
-        for (int i = 0; i < expectedValues.size(); i ++) {
-            TraversalSection section = result.get().get(i);
-            Double[] e = expectedValues.get(i);
-            verifyTraversalSection(section, e[0], e[1], e[2], e[3], e[4], e[5], e[6]);
+    @Test
+    void firstHalf_whenAccPositive_thenOneSegmentRampDownToZeroAccel() {
+        double a0 = 1.2;
+        double v0 = 3.0;
+
+        // v_D after ramping down to a=0 using jAccDown<0
+        double vTarget = v0 + a0 * (a0 / -propsDefault.jerkAccelerationDown) + 0.5 * propsDefault.jerkAccelerationDown * Math.pow(a0 / -propsDefault.jerkAccelerationDown, 2);
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertEquals(1, secs.size(), "Expected a single jerk-down segment to a=0");
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
+    }
+
+    @Test
+    void firstHalf_whenAccPositive_thenTwoSegmentsTriangularThenDown() {
+        double a0 = 0.3;
+        double v0 = 2.0;
+
+        // Slightly above v_D so we need an up-then-down triangular bump, but not a_max
+        double tDown = a0 / -propsDefault.jerkAccelerationDown;
+        double vD = v0 + a0 * tDown + 0.5 * propsDefault.jerkAccelerationDown * tDown * tDown;
+        double vTarget = vD + 0.2;
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertEquals(2, secs.size(), "Expected 2 segments: acc-up then acc-down");
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
+    }
+
+    @Test
+    void firstHalf_whenAccPositive_thenThreeSegmentsTrapezoidWithPlateau() {
+        double a0 = 0.1;
+        double v0 = 2.0;
+
+        // Push vTarget high to require hitting a_max and holding
+        double tDown = a0 / -propsDefault.jerkAccelerationDown;
+        double vD = v0 + a0 * tDown + 0.5 * propsDefault.jerkAccelerationDown * tDown * tDown;
+        double vTarget = vD + 2.0;
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertTrue(
+                secs.size() == 3,
+                "Expected 3 segments, got: " + secs.size());
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, vTarget);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // TESTS — end-state & impossible requests
+    // --------------------------------------------------------------------------------------------
+
+    @Test
+    void firstHalf_whenEndStateIsAccZeroAndVTarget() {
+        double a0 = -0.6;
+        double v0 = 1.8;
+        double vN = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown);
+        double vTarget = vN + 0.35;
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+
+        assertEndsAt(secs, vTarget);
+        assertSmoothConnected(secs);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
+    }
+
+    @Test
+    void firstHalf_whenTargetSpeedLessThanSpeedReachedOnceZeroAccReached_thenHandles() {
+        double a0 = -1.2;
+        double v0 = 1.0;
+
+        // Minimal feasible apex at a=0 occurs at vN after relaxing braking.
+        double vN = v0 - (a0 * a0) / (2.0 * propsDefault.jerkDecelerationDown);
+
+        double vTarget = vN - 1e-2; // slightly *below* feasible
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(a0, v0, vTarget, propsDefault);
+        assertEndsAt(secs, vTarget);
+        assertSmoothConnected(secs);
+        assertRespectsConstraints(asTraversal(secs), propsDefault);
+    }
+
+    @Test
+    void secondHalf_whenZeroSpeed_thenReturnsEmptyOrZeroDuration() {
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(0.0, propsDefault);
+
+        Traversal tr = asTraversal(secs);
+        assertTrue(
+                secs.isEmpty() || DoubleMath.fuzzyEquals(tr.getTotalDuration(), 0.0, ROUNDING_ERROR_TOLERANCE),
+                "Zero v0 should produce no movement");
+        if (!secs.isEmpty()) {
+            assertSmoothConnected(secs);
+            assertEndsAt(secs, 0);
+            assertRespectsBrakeConstraints(tr, propsDefault);
         }
     }
 
     @Test
-    void testMaxSpeedReached_whenDistanceTooShortForCase_thenReturnEmptyOptional() {
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(25d, vehicleMotionProperties);
-        assertThat(result).isEmpty();
+    void secondHalf_whenSmallSpeed_thenTriangularTwoJerkSegments() {
+        // Pick a small v0 so we won't need an a_min plateau
+        double v0 = 0.6;
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(v0, propsDefault);
+
+        // Typical triangular decel: jMoreDecel (<0) then jLessDecel (>0)
+        assertTrue(
+                secs.size() == 2,
+                "Expected 2 jerk segments, got " + secs.size());
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, 0);
+        assertRespectsBrakeConstraints(asTraversal(secs), propsDefault);
     }
 
     @Test
-    void testMaxSpeedReached_whenDistanceNotTooShortForCase_thenReturnSevenSections() {
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(100d, vehicleMotionProperties);
-        assertThat(result).hasValueSatisfying(sections -> assertThat(sections).hasSize(7));
+    void secondHalf_whenLargerSpeed_thenTrapezoidWithAccMinPlateau() {
+        // Choose a bigger v0 so we likely hit a_min and hold (3 segments)
+        double v0 = 3.5;
+
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(v0, propsDefault);
+
+        // Expect: jerk to aMin, constant-accel at aMin, jerk back up to zero accel (3 segments)
+        // Allow 2 segments if the plateau collapses (edge of regime).
+        assertTrue(
+                secs.size() == 3,
+                "Expected 3 segments, got " + secs.size());
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, 0);
+        assertRespectsBrakeConstraints(asTraversal(secs), propsDefault);
     }
 
     @Test
-    void testMaxSpeedReached_whenDistanceNotTooShortForCase_thenFirstSectionHasCorrectValues() {
-        Optional<ImmutableList<TraversalSection>> result = ConstantJerkSectionsFactory.maxSpeedReached(100d, vehicleMotionProperties);
-        assertThat(result).hasValueSatisfying(sections -> {
-            TraversalSection firstSection = sections.get(0);
+    void secondHalf_whenTotalDeltaVMatchesV0_thenOk() {
+        double v0 = 1.75;
 
-            verifyTraversalSection(firstSection, 2.6042, 2.5, 0d, 3.125, 0d, 2.5, 1d);
-        });
-    }
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(v0, propsDefault);
+        Traversal tr = asTraversal(secs);
 
-    // TODO: more sections for maxAccelerationDecelerationAndSpeedReached
-    @Test
-    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenDistanceTooLongForCase_thenReturnEmptyOptional() {
-        Assertions.assertThrows(TraversalCalculationException.class,
-                () -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(100d, vehicleMotionProperties));
-    }
+        // v0 should be shed entirely
+        double vEnd = tr.getSpeedAtTime(tr.getTotalDuration());
+        assertEquals(0, DoubleMath.fuzzyCompare(vEnd, 0.0, ROUNDING_ERROR_TOLERANCE), "Did not fully shed speed");
 
-    @Test
-    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenDistanceTooShortForCase_thenReturnEmptyOptional() {
-        Assertions.assertThrows(TraversalCalculationException.class,
-                () -> ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(20d, vehicleMotionProperties));
-
-    }
-
-    @DisplayName("when max acceleration and deceleration is reached but not max speed")
-    @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
-    @MethodSource("traversalSectionsWhenMaxAccelerationReachedButNotMaxSpeed")
-    void testMaxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached_whenCalledValidly_thenReturnsCorrectTraversals(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
-        ImmutableList<TraversalSection> result = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(37.8, vehicleMotionProperties);
-        verifyTraversalSection(result.get(index),  totalDistance, duration, initialSpeed, finalSpeed, initialAcceleration, finalAcceleration, jerk);
-    }
-
-    private static Stream<Arguments> traversalSectionsWhenMaxAccelerationReachedButNotMaxSpeed() {
-        return Stream.of(
-                // Index; Total Distance; Duration; Initial Speed; Final Speed; Initial Acceleration; Final Acceleration; Jerk
-                Arguments.of(0, 2.6042, 2.5, 0d, 3.125, 0d, 2.5, 1d),
-                Arguments.of(1, 1.05, 0.3, 3.125, 3.875, 2.5, 2.5, 0d),
-                Arguments.of(2, 14.895833, 2.5, 3.875, 7d, 2.5, 0d, -1d),
-                Arguments.of(3, 12.66666666, 2d, 7d, 5d, 0d, -2d, -1d),
-                Arguments.of(4, 5.25, 1.5, 5d, 2d, -2d, -2d, 0d),
-                Arguments.of(5, 1.3333333, 1.999982, 2d, 0d, -2d, 0d, 1d)
-        );
-    }
-
-    @DisplayName("when one max acceleration is reached but not the other")
-    @ParameterizedTest(name = "Section {index} should have: distance={1}; duration={2}; initialSpeed={3}; finalSpeed={4}; initialAcceleration={5}; finalAcceleration={6}; jerk={7}")
-    @MethodSource("traversalSectionsWhenOneMaxAccelerationReached")
-    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenCalledValidly_thenReturnsCorrectTraversals(int index, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, vehicleMotionProperties).get();
-        TraversalSection section = sections.get(index);
-
-        verifyTraversalSection(section, totalDistance, duration, initialSpeed, finalSpeed, initialAcceleration, finalAcceleration, jerk);
-    }
-
-    private static Stream<Arguments> traversalSectionsWhenOneMaxAccelerationReached() {
-        return Stream.of(
-                // Index; Total Distance; Duration; Initial Speed; Final Speed; Initial Acceleration; Final Acceleration; Jerk
-                Arguments.of(0, 2.02783, 2.3, 0d, 2.645, 0d, 2.3, 1d),
-                Arguments.of(1, 10.13916, 2.3, 2.645, 5.29, 2.3, 0d, -1d),
-                Arguments.of(2, 9.2466, 2d, 5.29, 3.29, 0d, -2d, -1d),
-                Arguments.of(3, 1.706025, 0.645, 3.29, 2d, -2d, -2d, 0d),
-                Arguments.of(4, 1.3333, 2d, 2d, 0d, -2d, 0d, 1d)
-        );
-    }
-
-    @Test
-    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenMaxSpeedExceeded_thenReturnEmptyOptional() {
-        double jerk = 1E-9;
-        double acceleration = 2.5E-6;
-        double deceleration = -2E-6;
-        double speed = 4E-3;
-        VehicleMotionProperties scratchVehicle = new VehicleMotionProperties(
-                speed,
-                acceleration,
-                deceleration,
-                0, // tolerance
-                jerk, //jerk accel up
-                -jerk, //jerk accel down
-                -jerk, //jerk decel up
-                jerk //jerk decel down
-        );
-        Optional<ImmutableList<TraversalSection>> sections = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, scratchVehicle);
-        assertThat(sections).isEmpty();
-    }
-
-    @Test
-    void testOneMaxAccelReachedButNotOtherAndMaxSpeedNotReached_whenSymmetricallyEqualForSymmetricallyEqualVehicleProperties_thenTraversalFlipped() {
-        ImmutableList<TraversalSection> sections1 = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, vehicleMotionProperties).get();
-        int numSections = sections1.size();
-        Traversal traversal1 = new Traversal(sections1);
-
-        VehicleMotionProperties symetricallyFlippedVehicleProperties = new VehicleMotionProperties(maxSpeed,
-                -deceleration,
-                -acceleration,
-                0,
-                -jerkDecelerationUp,
-                -jerkDecelerationDown,
-                -jerkAccelerationUp,
-                -jerkAccelerationDown
-                );
-
-        ImmutableList<TraversalSection> sections2 = ConstantJerkSectionsFactory.oneMaxAccelReachedButNotOtherAndMaxSpeedNotReached(24.452915, symetricallyFlippedVehicleProperties).get();
-        Traversal traversal2 = new Traversal(sections2);
-
-        assertThat(sections2).hasSize(numSections);
-        assertThat(traversal1.getTotalDistance()).isCloseTo(traversal2.getTotalDistance(), within(EPSILON));
-        assertThat(traversal1.getTotalDuration()).isCloseTo(traversal2.getTotalDuration(), within(EPSILON));
-
-        for (int i = 0; i < numSections; i++) {
-            assertFlipped(sections1.get(i), sections2.get(numSections - (i + 1)));
+        // Sampling check: speed never exceeds initial v0
+        int samples = 200;
+        for (int i = 0; i <= samples; i++) {
+            double t = tr.getTotalDuration() * i / samples;
+            double v = tr.getSpeedAtTime(t);
+            assertTrue(
+                    DoubleMath.fuzzyCompare(v, v0, tol(propsDefault.maxSpeed)) <= 0,
+                    "Speed exceeded initial v0 during braking");
         }
     }
 
     @Test
-    void testCalculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed_whenCalled_thenReturnSectionWithTheCorrectValues() {
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.neitherMaxAccelerationNorMaxDecelerationNorMaxSpeedReached(10d, vehicleMotionProperties).orElseThrow(Failer::valueExpected);
+    void secondHalf_testConstraintsHoldEvenWithHighV0() {
+        // v0 below vMax but high enough to exercise bounds
+        double v0 = 7.5;
 
-        ImmutableList<TraversalSection> sectionsStartingFromMoving =
-                ConstantJerkSectionsFactory.calculateTraversalGivenFixedJerkUpTimeAssumingNeitherConstantAccelerationOrSpeed(0.371110046512358E3, 0.896280949311433E-3, 1.338865900164339E-6, vehicleMotionProperties);
+        List<TraversalSection> secs = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(v0, propsDefault);
+        Traversal tr = asTraversal(secs);
 
-        TraversalSection firstSection = sectionsStartingFromMoving.get(0);
-        getAccelerationInSIUnit(firstSection.getDuration());
-        assertThat(getAccelerationInSIUnit(firstSection.getAccelerationAtTime(0))).isCloseTo(1.338865900164339, within(EPSILON));
-        assertThat(getSpeedInSIUnit(firstSection.getSpeedAtTime(0))).isCloseTo(0.896280949311433, within(EPSILON));
-
-        for (int i = 1; i < sections.size(); i++) {
-            assertThat(sectionsStartingFromMoving.get(i)).isEqualTo(sections.get(i));
-        }
-    }
-
-    @Test
-    void testCalculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtLessThanMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(39d, vehicleMotionProperties);
-        ImmutableList<TraversalSection> sectionsStartingFromMoving = ConstantJerkSectionsFactory.calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(
-                0.35573166424566766E3,
-                1.040041911525952E-3,
-                1.4422495703074083E-6,
-                vehicleMotionProperties);
-
-        TraversalSection firstSection = sectionsStartingFromMoving.get(0);
-        assertThat(getAccelerationInSIUnit(firstSection.getAccelerationAtTime(0))).isCloseTo(1.4422495703074083, within(EPSILON));
-        assertThat(getSpeedInSIUnit(firstSection.getSpeedAtTime(0))).isCloseTo(1.040041911525952, within(EPSILON));
-
-        for (int i = 1; i < sections.size(); i++) {
-            assertThat(sectionsStartingFromMoving.get(i)).as("Expect sections " + i).isEqualTo(sections.get(i));
-        }
-    }
-
-    @Test
-    void testCalculateTraversalGivenFixedConstantAccelerationTimeAssumingNoMaximumSpeedSection_whenStartingAtMaximumAcceleration_thenReturnSectionWithTheCorrectValues() {
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.maxAccelerationAndMaxDecelerationReachedButMaxSpeedNotReached(39d, vehicleMotionProperties);
-        ImmutableList<TraversalSection> sectionsStartingFromMoving = ConstantJerkSectionsFactory.
-                calculateTraversalGivenFixedMaximumAccelerationTimeAssumingNoMaximumSpeedSection(0.234904663247122E3, 3.427067502496364E-3, 2.5E-6, vehicleMotionProperties);
-
-        TraversalSection firstSection = sectionsStartingFromMoving.get(0);
-        assertThat(getAccelerationInSIUnit(firstSection.getAccelerationAtTime(0))).isCloseTo(2.5, within(EPSILON));
-        assertThat(getSpeedInSIUnit(firstSection.getSpeedAtTime(0))).isCloseTo(3.427067502496364, within(EPSILON));
-
-        for (int i = 1; i < sectionsStartingFromMoving.size(); i++) {
-            assertThat(sectionsStartingFromMoving.get(i)).isEqualTo(sections.get(i + 1));
-        }
-    }
-
-    //TODO: make some assertions about the times and lengths of the below solutions
-
-    @Test
-    void testFindBrakingTraversal_fourSections() {
-        double u = 5E-3;
-        double a = 0.2E-6;
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(4);
-        checkSections(u, a, breakingTraversal);
-    }
-    @Test
-    void testFindBrakingTraversal_threeSections() {
-        double u = 5E-3;
-        double a = -0.2E-6;
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(3);
-        checkSections(u, a, breakingTraversal);
-    }
-
-    @Test
-    void testFindBrakingTraversal_twoSections() {
-        double u = 3E-3;
-        double a = -0.2E-6;
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(2);
-        checkSections(u, a, breakingTraversal);
-    }
-
-    @Test
-    void testFindBrakingTraversal_oneSection() {
-        ImmutableList<TraversalSection> twoSections = ConstantJerkSectionsFactory.findBrakingTraversal(3E-3, -0.2E-6, vehicleMotionProperties);
-
-        Traversal traversal = new Traversal(twoSections);
-
-        double time = 2.5E3;
-        double a = traversal.getAccelerationAtDistance(traversal.getDistanceAtTime(time));
-        double u = traversal.getSpeedAtTime(time);
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(1);
-        checkSections(u, a, breakingTraversal);
-    }
-
-    @Test
-    void testFindBrakingTraversal_oneSection_overshoot() {
-        double u = 0.5E-3;
-        double a = -2E-6;
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(1);
-
-        checkFirstSection(u, a, breakingTraversal.get(breakingTraversal.size() - 1));
-
-        assertThat(getJerk(breakingTraversal.get(0))).isPositive();
-        assertThat(breakingTraversal.get(0).getAccelerationAtTime(0)).isNegative();
-        assertThat(breakingTraversal.get(0).getSpeedAtTime(0)).isPositive();
-        assertThat(breakingTraversal.get(0).getSpeedAtTime(breakingTraversal.get(0).getDuration())).isCloseTo(0, within(1e-9));
+        assertSmoothConnected(secs);
+        assertEndsAt(secs, 0);
+        assertRespectsBrakeConstraints(tr, propsDefault);
     }
 
     /**
-     * This is a regression test for a specific failure where we failed to generate a valid braking traversal
-     * when the vehicle can just barely brake to a halt by jerking down the deceleration as much as possible.
+     * Asserts adjacent sections join smoothly in v and a, and all durations positive.
      */
-    @Test
-    void testFindBrakingTraversal_whenBrakingToHaltJustAboutPossible_thenValidBrakingTraversalCreated() {
-        VehicleMotionProperties vehicleMotionProperties = new VehicleMotionProperties(0.004, 2.0E-6, -2.0E-6, 0, 2.0E-8, -2.0E-8, -2.0E-8, 1.08E-9);
-        double u = 8.301293608657197E-4;
-        double a = -1.3390591545820352E-6;
-        ImmutableList<TraversalSection> traversalSections = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-        assertThat(traversalSections).hasSize(1);
-        checkSections(u, a, traversalSections);
-    }
+    public static void assertSmoothConnected(List<TraversalSection> secs) {
+        assertFalse(secs.isEmpty(), "No sections produced");
+        for (TraversalSection s : secs) {
+            assertTrue(
+                    DoubleMath.fuzzyCompare(s.getDuration(), 0.0, tol(0.0)) > 0,
+                    "Non-positive duration in section");
+        }
+        for (int i = 0; i + 1 < secs.size(); i++) {
+            TraversalSection a = secs.get(i);
+            TraversalSection b = secs.get(i + 1);
+            double aEnd = a.getAccelerationAtTime(a.getDuration());
+            double bStart = b.getAccelerationAtTime(0.0);
+            double vaEnd = a.getSpeedAtTime(a.getDuration());
+            double vbStart = b.getSpeedAtTime(0.0);
 
-    @Test
-    void testFindBrakingTraversal_oneSection_undershoot() {
-        double u = 2E-3;
-        double a = -0.2E-6;
-
-        ImmutableList<TraversalSection> breakingTraversal = ConstantJerkSectionsFactory.findBrakingTraversal(u, a, vehicleMotionProperties);
-
-        assertThat(breakingTraversal).hasSize(2);
-        checkSections(u, a, breakingTraversal);
-    }
-
-    @Test
-    void testJerkUpToAmaxConstrainedByVmaxThenBrake_fromZero() {
-        double u = 0;
-        double a = 0;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.jerkUpToAmaxConstrainedByVmaxThenBrake(u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(5);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxThenBrake_fromZero() {
-        double u = 0;
-        double a = 0;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxThenBrake(u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(6);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_fromZero() {
-        double u = 0;
-        double a = 0;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(100d, u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(7);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testJerkUpToAmaxConstrainedByVmaxThenBrake_firstSection() {
-        double u = 0.1E-3;
-        double a = 0.1E-6;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.jerkUpToAmaxConstrainedByVmaxThenBrake(u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(5);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxThenBrake_firstSection() {
-        double u = 0.1E-3;
-        double a = 0.1E-6;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxThenBrake(u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(6);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_firstSection() {
-        double u = 0.1E-3;
-        double a = 0.1E-6;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(100, u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(7);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxThenBrake_midSection() {
-        double u = vehicleMotionProperties.maxSpeed / 2d;
-        double a = vehicleMotionProperties.acceleration;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxThenBrake(
-                u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(5);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_midSection() {
-        double u = vehicleMotionProperties.maxSpeed / 2d;
-        double a = vehicleMotionProperties.acceleration;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(
-                100, u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(6);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_lastSection() {
-        ImmutableList<TraversalSection> sections1 = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(
-                100, vehicleMotionProperties.maxSpeed / 2d, vehicleMotionProperties.acceleration, vehicleMotionProperties);
-
-        Traversal traversal = new Traversal(sections1);
-
-        double time = 2E3;
-        double a = traversal.getAccelerationAtDistance(traversal.getDistanceAtTime(time));
-        double u = traversal.getSpeedAtTime(time);
-
-        ImmutableList<TraversalSection> sections2 = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(
-                100, u, a, vehicleMotionProperties);
-
-        assertThat(sections2).hasSize(5);
-
-        checkSections(u, a, sections2);
-
-        assertThat(getJerk(sections2.get(0))).isNegative();
-
-        assertThat(sections2.get(1).getAccelerationAtTime(0)).isCloseTo(0, within(EPSILON));
-        assertThat(sections2.get(1).getAccelerationAtTime(sections2.get(1).getDuration())).isCloseTo(0, within(EPSILON));
-
-        assertThat(sections2.get(2)).isEqualTo(sections1.get(3));
-        assertThat(sections2.get(3)).isEqualTo(sections1.get(4));
-        assertThat(sections2.get(4)).isEqualTo(sections1.get(5));
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_lastSectionUndershoot() {
-        double u = vehicleMotionProperties.maxSpeed - 0.5E-3;
-        double a = 0.5E-6;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(
-                100, u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(6);
-        checkSections(u, a, sections);
-    }
-
-    @Test
-    void testGetToVmaxAndStayAtVMaxToReachD_lastSectionOvershoot() {
-        double u = vehicleMotionProperties.maxSpeed - 0.5E-3;
-        double a = 2.3E-6;
-
-        ImmutableList<TraversalSection> sections = ConstantJerkSectionsFactory.getToVmaxAndStayAtVMaxToReachDistance(
-                500, u, a, vehicleMotionProperties);
-
-        assertThat(sections).hasSize(5);
-        checkFirstSection(u, a, sections.get(0));
-        checkLastSection(sections.get(sections.size() - 1));
-    }
-
-    private static void verifyTraversalSection(TraversalSection section, double totalDistance, double duration, double initialSpeed, double finalSpeed, double initialAcceleration, double finalAcceleration, double jerk) {
-        assertThat(section.getTotalDistance()).isCloseTo(totalDistance, within(EPSILON));
-        assertThat(getDurationInSIUnit(section.getDuration())).isCloseTo(duration, within(EPSILON));
-        assertThat(getSpeedInSIUnit(section.getSpeedAtTime(0))).isCloseTo(initialSpeed, within(EPSILON));
-        assertThat(getSpeedInSIUnit(section.getSpeedAtTime(section.getDuration()))).isCloseTo(finalSpeed, within(EPSILON));
-        assertThat(getAccelerationInSIUnit(section.getAccelerationAtTime(0))).isCloseTo(initialAcceleration, within(EPSILON));
-        assertThat(getAccelerationInSIUnit(section.getAccelerationAtTime(section.getDuration()))).isCloseTo(finalAcceleration, within(EPSILON));
-        assertThat(getJerkInSIUnit(getJerk(section))).isCloseTo(jerk, within(EPSILON));
-    }
-
-    private static void assertFlipped(TraversalSection s1, TraversalSection s2) {
-        assertThat(getDurationInSIUnit(s1.getDuration())).isCloseTo(getDurationInSIUnit(s2.getDuration()), within(EPSILON));
-        assertThat(s1.getTotalDistance()).isCloseTo(s2.getTotalDistance(), within(EPSILON));
-        assertThat(getAccelerationInSIUnit(-s1.getAccelerationAtTime(0))).isCloseTo(getAccelerationInSIUnit(s2.getAccelerationAtTime(s2.getDuration())), within(EPSILON));
-        assertThat(getAccelerationInSIUnit(-s1.getAccelerationAtTime(s1.getDuration()))).isCloseTo(getAccelerationInSIUnit(s2.getAccelerationAtTime(0)), within(EPSILON));
-        assertThat(getSpeedInSIUnit(s1.getSpeedAtTime(0))).isCloseTo(getSpeedInSIUnit(s2.getSpeedAtTime(s2.getDuration())), within(EPSILON));
-        assertThat(getSpeedInSIUnit(s1.getSpeedAtTime(s1.getDuration()))).isCloseTo(getSpeedInSIUnit(s2.getSpeedAtTime(0)), within(EPSILON));
-        assertThat(getJerkInSIUnit(getJerk(s1))).isCloseTo(getJerkInSIUnit(getJerk(s2)), within(EPSILON));
-    }
-
-    private static void checkSections(double u, double a, ImmutableList<TraversalSection> sections) {
-        checkFirstSection(u, a, sections.get(0));
-        checkJoinedUp(sections);
-        checkLastSection(sections.get(sections.size() - 1));
-    }
-
-    private static void checkFirstSection(double u, double a, TraversalSection section) {
-        assertThat(section.getSpeedAtTime(0)).isCloseTo(u, within(EPSILON));
-        assertThat(section.getAccelerationAtTime(0)).isCloseTo(a, within(EPSILON));
-    }
-
-    private static void checkJoinedUp(ImmutableList<TraversalSection> sections) {
-        checkJoinedUp("", sections);
-    }
-
-    static void checkJoinedUp(String message, ImmutableList<TraversalSection> sections) {
-        UnmodifiableIterator<TraversalSection> it = sections.iterator();
-
-        TraversalSection prevSection = null;
-
-        while (it.hasNext()) {
-            TraversalSection section = it.next();
-
-            if (prevSection != null) {
-                assertThat(section.getSpeedAtTime(0))
-                        .as(message)
-                        .isCloseTo(prevSection.getSpeedAtTime(prevSection.getDuration()), within(EPSILON));
-                assertThat(section.getAccelerationAtTime(0))
-                        .as(message)
-                        .isCloseTo(prevSection.getAccelerationAtTime(prevSection.getDuration()), within(EPSILON));
-            }
-
-            prevSection = section;
+            assertEquals(0, DoubleMath.fuzzyCompare(aEnd, bStart, tol(Math.max(Math.abs(aEnd), Math.abs(bStart)))),
+                    "Acceleration discontinuity between sections " + i + " and " + (i + 1));
+            assertEquals(0, DoubleMath.fuzzyCompare(vaEnd, vbStart, tol(Math.max(Math.abs(vaEnd), Math.abs(vbStart)))),
+                    "Speed discontinuity between sections " + i + " and " + (i + 1));
         }
     }
 
-    static void checkJoinedUpVelocities(String message, ImmutableList<TraversalSection> sections) {
-        assertThat(sections).as(message).isNotEmpty();
+    /**
+     * End state must be (v≈vTarget, a≈0).
+     */
+    private static void assertEndsAt(List<TraversalSection> secs, double vTarget) {
+        TraversalSection last = secs.get(secs.size() - 1);
+        double aEnd = last.getAccelerationAtTime(last.getDuration());
+        double vEnd = last.getSpeedAtTime(last.getDuration());
+        assertEquals(0, DoubleMath.fuzzyCompare(aEnd, 0.0, ROUNDING_ERROR_TOLERANCE * propsDefault.acceleration), "Final acceleration not ~0");
+        assertEquals(0, DoubleMath.fuzzyCompare(vEnd, vTarget, ROUNDING_ERROR_TOLERANCE * propsDefault.maxSpeed),
+                "Final speed not ~vTarget; got " + vEnd + " target " + vTarget);
+    }
 
-        UnmodifiableIterator<TraversalSection> it = sections.iterator();
+    private static Traversal asTraversal(List<TraversalSection> sections) {
+        return new Traversal(ImmutableList.copyOf(sections));
+    }
 
-        TraversalSection prevSection = null;
+    /**
+     * Asserts constraints v∈[0,vmax], a∈[aMin,aMax] sampled across time.
+     */
+    private static void assertRespectsConstraints(Traversal tr, VehicleMotionProperties propsDefault) {
+        double aMax = propsDefault.acceleration;
+        double aMin = propsDefault.deceleration; // negative
+        double vMax = propsDefault.maxSpeed;
 
-        while (it.hasNext()) {
-            TraversalSection section = it.next();
-            if (prevSection != null) {
-                assertThat(section.getSpeedAtTime(0))
-                        .as(message)
-                        .isCloseTo(prevSection.getSpeedAtTime(prevSection.getDuration()), within(EPSILON));
-            }
-            prevSection = section;
+        int samples = 200;
+        double dt = tr.getTotalDuration() / samples;
+        double t = 0.0;
+        for (int i = 0; i <= samples; i++, t += dt) {
+            double v = tr.getSpeedAtTime(Math.min(t, tr.getTotalDuration()));
+            double a = tr.getAccelerationAtTime(Math.min(t, tr.getTotalDuration()));
+            assertTrue(
+                    DoubleMath.fuzzyCompare(v, 0.0, tol(v)) >= 0,
+                    "Speed went negative at t=" + t + " v=" + v);
+            assertTrue(
+                    DoubleMath.fuzzyCompare(v, vMax, tol(vMax)) <= 0,
+                    "Speed exceeded max at t=" + t + " v=" + v);
+            assertTrue(
+                    DoubleMath.fuzzyCompare(a, aMin, tol(Math.abs(aMin))) >= 0,
+                    "Acceleration below min at t=" + t + " a=" + a + " < " + aMin);
+            assertTrue(
+                    DoubleMath.fuzzyCompare(a, aMax, tol(aMax)) <= 0,
+                    "Acceleration above max at t=" + t + " a=" + a + " > " + aMax);
         }
     }
 
-    private static void checkLastSection(TraversalSection s) {
-        assertThat(getJerk(s)).isPositive();
-        assertThat(s.getAccelerationAtTime(0)).isNegative();
-        assertThat(s.getSpeedAtTime(0)).isPositive();
-        assertThat(s.getAccelerationAtTime(s.getDuration())).isZero();
-        assertThat(s.getSpeedAtTime(s.getDuration())).isZero();
+    private static void assertRespectsBrakeConstraints(Traversal tr, VehicleMotionProperties propsDefault) {
+        double aMax = propsDefault.acceleration;
+        double aMin = propsDefault.deceleration; // negative
+        double vMax = propsDefault.maxSpeed;
+
+        int samples = 240;
+        double dt = tr.getTotalDuration() / samples;
+        double prevV = Double.POSITIVE_INFINITY;
+
+        for (int i = 0; i <= samples; i++) {
+            double t = Math.min(tr.getTotalDuration(), i * dt);
+            double v = tr.getSpeedAtTime(t);
+            double a = tr.getAccelerationAtTime(t);
+
+            assertTrue(DoubleMath.fuzzyCompare(v, 0.0, tol(v)) >= 0, "v<0 at t=" + t + " v=" + v);
+            assertTrue(DoubleMath.fuzzyCompare(v, vMax, tol(vMax)) <= 0, "v>vMax at t=" + t + " v=" + v);
+            assertTrue(DoubleMath.fuzzyCompare(a, aMin, tol(Math.abs(aMin))) >= 0, "a<aMin at t=" + t + " a=" + a);
+            assertTrue(DoubleMath.fuzzyCompare(a, aMax, tol(aMax)) <= 0, "a>aMax at t=" + t + " a=" + a);
+
+            assertTrue(
+                    DoubleMath.fuzzyCompare(v, prevV, tol(propsDefault.maxSpeed)) <= 0,
+                    "Speed increased during braking at t=" + t + " v=" + v + " prev=" + prevV);
+
+            prevV = v;
+        }
     }
 
-    private static double getJerk(TraversalSection s) {
-        return s instanceof ConstantJerkTraversalSection ? ((ConstantJerkTraversalSection) s).jerk : 0;
-    }
-
-    private static double getDurationInSIUnit(double duration) {
-        return ValuesInSIUnits.convertDuration(duration, TimeUnit.MILLISECONDS);
-    }
-
-    private static double getSpeedInSIUnit(double speed) {
-        return ValuesInSIUnits.convertSpeed(speed, LengthUnit.METERS, TimeUnit.MILLISECONDS);
-    }
-
-    private static double getAccelerationInSIUnit(double acceleration) {
-        return ValuesInSIUnits.convertAcceleration(acceleration, LengthUnit.METERS, TimeUnit.MILLISECONDS);
-    }
-
-    private static double getJerkInSIUnit(double jerk) {
-        return ValuesInSIUnits.convertJerk(jerk, LengthUnit.METERS, TimeUnit.MILLISECONDS);
+    private static double tol(double x) {
+        return Math.abs(x) * ROUNDING_ERROR_TOLERANCE;
     }
 }
