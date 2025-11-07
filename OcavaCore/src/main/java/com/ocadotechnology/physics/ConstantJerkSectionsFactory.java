@@ -17,6 +17,7 @@ package com.ocadotechnology.physics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -189,6 +190,30 @@ public class ConstantJerkSectionsFactory {
             return new ArrayList<>();
         }
         return solveTriangleOrTrapezoidSections(v0, 0, 0, vehicleProperties);
+    }
+
+    /**
+     * If the vehicle's acceleration starts outside its constraints, we must bring it back within the vehicle's constraints
+     * as fast as possible. Returns Optional.empty() if the vehicle begins within its constraints
+     */
+    static Optional<TraversalSection> buildSectionToBringAccelerationWithinBounds(double a0, double v0, VehicleMotionProperties vehicleMotionProperties) {
+        double maxAcceleration = vehicleMotionProperties.acceleration;
+        double maxDeceleration = vehicleMotionProperties.deceleration;
+        double jerkAccelerationDown = vehicleMotionProperties.jerkAccelerationDown;
+        double jerkDecelerationDown = vehicleMotionProperties.jerkDecelerationDown;
+        if (DoubleMath.fuzzyCompare(a0, maxAcceleration, ROUNDING_ERROR_MARGIN * maxAcceleration) > 0) {
+            double duration = (maxAcceleration - a0) / jerkAccelerationDown;
+            double speedReached = JerkKinematics.getFinalVelocity(v0, a0, jerkAccelerationDown, duration);
+            double distanceTravelled = JerkKinematics.getDisplacement(v0, a0, jerkAccelerationDown, duration);
+            return Optional.of(new ConstantJerkTraversalSection(duration, distanceTravelled, v0, speedReached, a0, maxAcceleration, jerkAccelerationDown));
+        }
+        if (DoubleMath.fuzzyCompare(a0, maxDeceleration, Math.abs(ROUNDING_ERROR_MARGIN * maxDeceleration)) < 0) {
+            double duration = (maxDeceleration - a0) / jerkDecelerationDown;
+            double speedReached = JerkKinematics.getFinalVelocity(v0, a0, jerkDecelerationDown, duration);
+            double distanceTravelled = JerkKinematics.getDisplacement(v0, a0, jerkDecelerationDown, duration);
+            return Optional.of(new ConstantJerkTraversalSection(duration, distanceTravelled, v0, speedReached, a0, maxDeceleration, jerkDecelerationDown));
+        }
+        return Optional.empty();
     }
 
     /**

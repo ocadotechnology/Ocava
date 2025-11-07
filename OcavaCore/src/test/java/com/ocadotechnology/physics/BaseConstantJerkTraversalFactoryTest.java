@@ -292,6 +292,7 @@ class BaseConstantJerkTraversalFactoryTest {
     void create_whenRequiredDistanceIsZero_thenFindsBreakingDistance() {
         double d = 0d, a = 0d, u = 2d;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
+        assertStartsAt(traversal, u, a, vehicleMotionProperties);
         ConstantJerkSectionsFactoryTest.assertSmoothConnected(traversal.getSections());
     }
 
@@ -299,6 +300,7 @@ class BaseConstantJerkTraversalFactoryTest {
     void create_whenStartingWithNegativeDecelerationWithASubstantialDistanceToGo() {
         double d = 100d, a = -2d, u = 6d;
         Traversal traversal = factory.create(d, u, a, vehicleMotionProperties);
+        assertStartsAt(traversal, u, a, vehicleMotionProperties);
         ConstantJerkSectionsFactoryTest.assertSmoothConnected(traversal.getSections());
     }
 
@@ -322,6 +324,7 @@ class BaseConstantJerkTraversalFactoryTest {
         assertFalse(hasCruise, "Cruise section should not be present when vTarget < vMax");
 
         // Global checks
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -352,6 +355,7 @@ class BaseConstantJerkTraversalFactoryTest {
                     "Cruise speed should be vMax");
         }
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -383,6 +387,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.maxSpeedToTraversal(v0, a0, vTarget, distanceTarget, vehicleMotionProperties);
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -423,10 +428,60 @@ class BaseConstantJerkTraversalFactoryTest {
             assertTrue(cruiseDist <= 0.5, "Cruise distance should be tiny near the boundary");
         }
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertRespectsConstraints(tr, vehicleMotionProperties);
         assertEquals(0, DoubleMath.fuzzyCompare(tr.getTotalDistance(), distanceTarget, tol(distanceTarget)));
+    }
+
+    @Test
+    void maxSpeedToTraversal_whenInitialAccelerationGreaterThanMax_thenCalculatesTraversal() {
+        double v0 = 0.002652198367028834;
+        double a0 = uniformJerk.acceleration * 1.5;
+        double distance = 10;
+
+        Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.maxSpeedToTraversal(v0, a0, uniformJerk.maxSpeed, distance, uniformJerk);
+
+        assertStartsAt(tr, v0, a0, uniformJerk);
+        assertEndsAtRest(tr, uniformJerk);
+        assertSmoothConnected(tr);
+    }
+
+    @Test
+    void maxSpeedToTraversal_whenInitialDecelerationGreaterThanMaxDeceleration_thenCalculatesTraversal() {
+        double v0 = 0.002652198367028834;
+        double a0 = uniformJerk.deceleration * 1.1;
+        double distance = 10;
+
+        Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.maxSpeedToTraversal(v0, a0, uniformJerk.maxSpeed, distance, uniformJerk);
+
+        assertStartsAt(tr, v0, a0, uniformJerk);
+        assertEndsAtRest(tr, uniformJerk);
+        assertSmoothConnected(tr);
+    }
+
+    @Test
+    void braking_whenInitialAccelerationGreaterThanMax_thenCalculatesBrakingTraversal() {
+        double v0 = 0.002652198367028834;
+        double a0 = uniformJerk.acceleration * 1.5;
+
+        Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, uniformJerk);
+
+        assertStartsAt(tr, v0, a0, uniformJerk);
+        assertEndsAtRest(tr, uniformJerk);
+        assertSmoothConnected(tr);
+    }
+
+    @Test
+    void braking_whenInitialDecelerationGreaterThanMaxDeceleration_thenCalculatesBrakingTraversal() {
+        double v0 = 0.0029880849186670355;
+        double a0 = uniformJerk.deceleration * 1.1;
+        Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, uniformJerk);
+
+        assertStartsAt(tr, v0, a0, uniformJerk);
+        assertEndsAtRest(tr, uniformJerk);
+        assertSmoothConnected(tr);
     }
 
     @Test
@@ -436,6 +491,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, vehicleMotionProperties);
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsBoundsAndMonotone(tr, vehicleMotionProperties);
@@ -455,6 +511,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, vehicleMotionProperties);
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsBoundsAndMonotone(tr, vehicleMotionProperties);
@@ -470,6 +527,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double a0 = 0.7;
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, vehicleMotionProperties);
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
     }
@@ -510,16 +568,6 @@ class BaseConstantJerkTraversalFactoryTest {
     }
 
     @Test
-    void getBrakingTraversal_whenInitialAccelerationOutOfBounds_thenThrows() {
-        double v0 = 0.05;
-        double a0 = vehicleMotionProperties.deceleration - 0.5; // more negative than allowed
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> ConstantJerkTraversalCalculator.INSTANCE.getBrakingTraversal(v0, a0, vehicleMotionProperties));
-    }
-
-    @Test
     void whenZeroDistanceAndAtRest_thenReturnsEmptyTraversal() {
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.create(0.0, 0.0, 0.0, vehicleMotionProperties);
 
@@ -533,6 +581,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double v0 = 0.8, a0 = 0.0;
         Traversal traversal = ConstantJerkTraversalCalculator.INSTANCE.create(0.0, v0, a0, vehicleMotionProperties);
         // Create with distance=0 → should return minimal stopping traversal (non-zero distance)
+        assertStartsAt(traversal, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(traversal, vehicleMotionProperties);
         assertSmoothConnected(traversal);
         assertRespectsConstraints(traversal, vehicleMotionProperties);
@@ -545,6 +594,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double tooShort = Math.max(0.0, minStop.getTotalDistance() - 1E-7);
 
         Traversal traversal = ConstantJerkTraversalCalculator.INSTANCE.create(tooShort, v0, a0, vehicleMotionProperties);
+        assertStartsAt(traversal, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(traversal, vehicleMotionProperties);
         assertSmoothConnected(traversal);
         assertRespectsConstraints(traversal, vehicleMotionProperties);
@@ -561,6 +611,7 @@ class BaseConstantJerkTraversalFactoryTest {
         boolean hasCruise = tr.getSections().stream().anyMatch(s -> s instanceof ConstantSpeedTraversalSection);
         assertFalse(hasCruise, "Did not expect a constant-speed (cruise) section for this distance");
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -587,6 +638,7 @@ class BaseConstantJerkTraversalFactoryTest {
                     "Cruise section must be at v_max");
         }
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -601,6 +653,7 @@ class BaseConstantJerkTraversalFactoryTest {
         double distance = 5.053382813000001;
         Traversal traversal = ConstantJerkTraversalCalculator.INSTANCE.create(distance, u, a, uniformJerk);
         assertEquals(0, DoubleMath.fuzzyCompare(traversal.getTotalDistance(), distance, ROUNDING_ERROR_TOLERANCE * distance));
+        assertStartsAt(traversal, u, a, vehicleMotionProperties);
         assertEndsAtRest(traversal, vehicleMotionProperties);
         assertSmoothConnected(traversal);
     }
@@ -620,6 +673,7 @@ class BaseConstantJerkTraversalFactoryTest {
         assertTrue(
                 DoubleMath.fuzzyCompare(cruiseDist, 0.5, 0.5) <= 0,
                 "At the boundary, cruise (if present) should be ~0");
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -633,6 +687,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.create(distance, v0, a0, vehicleMotionProperties);
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -654,6 +709,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.create(distance, v0, a0, vehicleMotionProperties);
 
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertRespectsConstraints(tr, vehicleMotionProperties);
@@ -690,6 +746,7 @@ class BaseConstantJerkTraversalFactoryTest {
         Optional<TraversalSection> maybeConstantSpeedTraversalSection = tr.getSections().stream().filter(t -> t instanceof ConstantSpeedTraversalSection).findFirst();
         assertTrue(maybeConstantSpeedTraversalSection.isPresent());
         assertEquals(maybeConstantSpeedTraversalSection.get().getSpeedAtTime(0), props.maxSpeed);
+        assertStartsAt(tr, v0, a0, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertEquals(0, DoubleMath.fuzzyCompare(tr.getTotalDistance(), distance, distance * ROUNDING_ERROR_TOLERANCE));
@@ -703,14 +760,16 @@ class BaseConstantJerkTraversalFactoryTest {
                 1E-9,
                 0
         );
-
+        double u = 0.002;
+        double a = 1.6589958605140875E-6;
         double distance = 12.176;
         Traversal tr = ConstantJerkTraversalCalculator.INSTANCE.create(
                 distance,
-                0.002,
-                1.6589958605140875E-6,
+                u,
+                a,
                 props
         );
+        assertStartsAt(tr, u, a, vehicleMotionProperties);
         assertEndsAtRest(tr, vehicleMotionProperties);
         assertSmoothConnected(tr);
         assertTrue(DoubleMath.fuzzyEquals(tr.getTotalDistance(), distance, distance * ROUNDING_ERROR_TOLERANCE));
@@ -1107,7 +1166,7 @@ class BaseConstantJerkTraversalFactoryTest {
         assertThat(section.getSpeedAtTime(0)).isCloseTo(u, within(EPSILON));
         assertThat(section.getAccelerationAtTime(0)).isCloseTo(a, within(EPSILON));
     }
-    
+
     static void checkJoinedUp(ImmutableList<TraversalSection> sections) {
         UnmodifiableIterator<TraversalSection> it = sections.iterator();
 
@@ -1220,10 +1279,15 @@ class BaseConstantJerkTraversalFactoryTest {
         assertEquals(0, DoubleMath.fuzzyCompare(aEnd, 0.0, ROUNDING_ERROR_TOLERANCE * props.acceleration), "Final acceleration not ~0");
     }
 
-    private static void assertRespectsBoundsAndMonotone(Traversal tr, VehicleMotionProperties p) {
-        double aMax = p.acceleration;
-        double aMin = p.deceleration; // negative
-        double vMax = p.maxSpeed;
+    private static void assertStartsAt(Traversal tr, double initialSpeed, double initialAcceleration, VehicleMotionProperties props) {
+        assertEquals(initialAcceleration, tr.getAccelerationAtTime(0), ROUNDING_ERROR_TOLERANCE * props.acceleration);
+        assertEquals(initialSpeed, tr.getSpeedAtTime(0), ROUNDING_ERROR_TOLERANCE * props.maxSpeed);
+    }
+
+    private static void assertRespectsBoundsAndMonotone(Traversal tr, VehicleMotionProperties props) {
+        double aMax = props.acceleration;
+        double aMin = props.deceleration; // negative
+        double vMax = props.maxSpeed;
 
         int samples = 300;
         double dt = tr.getTotalDuration() / Math.max(1, samples);
@@ -1241,7 +1305,7 @@ class BaseConstantJerkTraversalFactoryTest {
 
             // Non-increasing speed during braking (allow tiny numeric rise)
             assertTrue(
-                    DoubleMath.fuzzyCompare(v, prevV, ROUNDING_ERROR_TOLERANCE * p.maxSpeed) <= 0,
+                    DoubleMath.fuzzyCompare(v, prevV, ROUNDING_ERROR_TOLERANCE * props.maxSpeed) <= 0,
                     "Speed increased during braking at t=" + t + " v=" + v + " prev=" + prevV);
             prevV = v;
         }

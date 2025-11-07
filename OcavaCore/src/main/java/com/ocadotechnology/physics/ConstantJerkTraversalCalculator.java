@@ -17,6 +17,7 @@ package com.ocadotechnology.physics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleFunction;
 import java.util.function.ToDoubleFunction;
 
@@ -137,11 +138,21 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
     public Traversal getBrakingTraversal(double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
         validateInputs(0, initialSpeed, initialAcceleration, vehicleProperties);
         List<TraversalSection> sections = new ArrayList<>();
+
+        // Add a correcting section if the bot begins outside of its acceleration constraints.
+        Optional<TraversalSection> maybeInitialCorrectingSection = ConstantJerkSectionsFactory.buildSectionToBringAccelerationWithinBounds(initialAcceleration, initialSpeed, vehicleProperties);
+        if (maybeInitialCorrectingSection.isPresent()) {
+            TraversalSection section = maybeInitialCorrectingSection.get();
+            sections.add(section);
+            initialSpeed = section.getSpeedAtTime(section.getDuration());
+            initialAcceleration = section.getAccelerationAtTime(section.getDuration());
+        }
+
         double jerkAccelerationDown = vehicleProperties.jerkAccelerationDown;
         int comparisonResult = DoubleMath.fuzzyCompare(initialAcceleration, 0, ROUNDING_ERROR_MARGIN * vehicleProperties.acceleration);
         if (comparisonResult == -1) {
             // Acceleration is already negative, so continue to brake
-            return new Traversal(ImmutableList.copyOf(ConstantJerkSectionsFactory.solveTriangleOrTrapezoidSections(initialSpeed, initialAcceleration, 0, vehicleProperties)));
+            sections.addAll(ConstantJerkSectionsFactory.solveTriangleOrTrapezoidSections(initialSpeed, initialAcceleration, 0, vehicleProperties));
         } else if (comparisonResult == 1) {
             // Slow to zero acc as fast as possible.
             // a_t = initialAcceleration + jt = 0
@@ -171,23 +182,36 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
     @VisibleForTesting
     Traversal maxSpeedToTraversal(double initialSpeed, double initialAcceleration, double vTarget, double distanceTarget, VehicleMotionProperties vehicleProperties) {
         Builder<TraversalSection> traversalSectionBuilder = ImmutableList.builder();
-        List<TraversalSection> firstHalfSections = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(initialAcceleration, initialSpeed, vTarget, vehicleProperties);
-        List<TraversalSection> secondHalfSections = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(vTarget, vehicleProperties);
+        double currentSpeed = initialSpeed;
+        double currentAcceleration = initialAcceleration;
+        // Add a correcting section if the vehicle begins out of its acceleration bounds.
+        Optional<TraversalSection> maybeInitialCorrectingSection = ConstantJerkSectionsFactory.buildSectionToBringAccelerationWithinBounds(currentAcceleration, currentSpeed, vehicleProperties);
+        if (maybeInitialCorrectingSection.isPresent()) {
+            TraversalSection section = maybeInitialCorrectingSection.get();
+            traversalSectionBuilder.add(section);
+            currentSpeed = section.getSpeedAtTime(section.getDuration());
+            currentAcceleration = section.getAccelerationAtTime(section.getDuration());
+        }
 
-        traversalSectionBuilder.addAll(firstHalfSections);
-        double distanceBothSections = firstHalfSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum()
-                + secondHalfSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum();
+        List<TraversalSection> acceleratingPhaseSections = ConstantJerkSectionsFactory.buildAcceleratingPhaseOfTraversal(currentAcceleration, currentSpeed, vTarget, vehicleProperties);
+        currentSpeed = vTarget;
+        List<TraversalSection> deceleratingPhaseSections = ConstantJerkSectionsFactory.buildDeceleratingPhaseOfTraversal(currentSpeed, vehicleProperties);
+
+        traversalSectionBuilder.addAll(acceleratingPhaseSections);
+        double distanceSoFar = maybeInitialCorrectingSection.stream().mapToDouble(TraversalSection::getTotalDistance).sum()
+                + acceleratingPhaseSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum()
+                + deceleratingPhaseSections.stream().mapToDouble(TraversalSection::getTotalDistance).sum();
         // If we have reached the max speed then we can add a cruise section.
         if (DoubleMath.fuzzyEquals(vTarget, vehicleProperties.maxSpeed, ROUNDING_ERROR_MARGIN * vehicleProperties.maxSpeed)
-                && distanceBothSections < distanceTarget) {
-            double distanceDelta = distanceTarget - distanceBothSections;
+                && distanceSoFar < distanceTarget) {
+            double distanceDelta = distanceTarget - distanceSoFar;
             double timeAtConstantSpeed = distanceDelta / vTarget;
             ConstantSpeedTraversalSection cruiseSection = new ConstantSpeedTraversalSection(distanceDelta, vTarget, timeAtConstantSpeed);
             traversalSectionBuilder.add(cruiseSection);
         }
 
         ImmutableList<TraversalSection> sections = traversalSectionBuilder
-                .addAll(secondHalfSections)
+                .addAll(deceleratingPhaseSections)
                 .build();
         return new Traversal(ImmutableList.copyOf(sections));
     }
@@ -204,14 +228,6 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
         Preconditions.checkArgument(
                 DoubleMath.fuzzyCompare(initialSpeed, 0.0, ROUNDING_ERROR_MARGIN * props.maxSpeed) >= 0,
                 "Initial speed cannot be negative (no reverse)"
-        );
-        Preconditions.checkArgument(
-                DoubleMath.fuzzyCompare(initialAcceleration, props.acceleration, ROUNDING_ERROR_MARGIN * props.acceleration) <= 0,
-                "Initial acceleration exceeds max acceleration"
-        );
-        Preconditions.checkArgument(
-                DoubleMath.fuzzyCompare(initialAcceleration, props.deceleration, Math.abs(ROUNDING_ERROR_MARGIN * props.deceleration)) >= 0,
-                "Initial acceleration below max braking bound"
         );
         if (willSpeedGoNegative(initialSpeed, initialAcceleration, props)) {
             String errorMsg = String.format("Speed would eventually go negative given the initial acceleration %s and initial speed %s, given the vehicle properties: %s", initialAcceleration, initialSpeed, props);
