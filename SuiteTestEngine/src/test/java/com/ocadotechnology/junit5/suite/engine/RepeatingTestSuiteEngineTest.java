@@ -21,7 +21,9 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass
 import static org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder.request;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -51,6 +53,10 @@ class RepeatingTestSuiteEngineTest {
 
     @Test
     void testEngine() {
+        TestCounter counter = new TestCounter();
+        FirstRepeatingTestClass.TEST_COUNTER = counter;
+        SecondRepeatingTestClass.TEST_COUNTER = counter;
+
         EngineDiscoveryRequest discoveryRequest = request()
                 .selectors(selectClass(RepeatingDynamicTestSuite.class))
                 .configurationParameter("com.ocadotechnology.junit5.suite.engine.templateAllTests", "true")
@@ -68,6 +74,10 @@ class RepeatingTestSuiteEngineTest {
                 CancellationToken.create());
         engine.execute(executionRequest);
 
+        Map<String, Integer> counts = counter.getCounts();
+        assertEquals(4, counts.size(), "4 distinct tests should have been executed: " + counts);
+        assertTrue(counts.values().stream().allMatch(count -> count == RepeatingTestRandomSeedScenarioExtension.NUMBER_OF_REPETITIONS),
+                "Each test should have been executed " + RepeatingTestRandomSeedScenarioExtension.NUMBER_OF_REPETITIONS + " times: " + counts);
         assertEquals(26, executionListener.getExecutedTests().size(), ""
                 + "1 engine "
                 + "+ 2 classes "
@@ -90,24 +100,28 @@ class RepeatingDynamicTestSuite {
 
 @ExtendWith(RepeatingTestRandomSeedScenarioExtension.class)
 class FirstRepeatingTestClass {
+    static TestCounter TEST_COUNTER;
 
     @Test
     void aTest() {
+        TEST_COUNTER.testExecuted("FirstRepeatingTestClass.aTest");
         assertTrue(true);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
     void parameterizedTest(int num) {
+        TEST_COUNTER.testExecuted("FirstRepeatingTestClass.parameterizedTest(" + num + ")");
         assertTrue(true);
     }
 }
 
 @ExtendWith(RepeatingTestRandomSeedScenarioExtension.class)
 class SecondRepeatingTestClass {
-
+    static TestCounter TEST_COUNTER;
     @Test
     void bTest() {
+        TEST_COUNTER.testExecuted("SecondRepeatingTestClass.bTest");
         assertTrue(true);
     }
 }
@@ -117,7 +131,7 @@ class RepeatingTestRandomSeedScenarioExtension implements
         TestTemplateInvocationContextModifierExtension,
         TestSuiteTemplateExtension {
 
-    private static final int NUMBER_OF_REPETITIONS = 5;
+    static final int NUMBER_OF_REPETITIONS = 5;
 
     public RepeatingTestRandomSeedScenarioExtension() {
     }
@@ -139,5 +153,17 @@ class RepeatingTestRandomSeedScenarioExtension implements
         int numberOfRepetitions = NUMBER_OF_REPETITIONS;
         return IntStream.range(1, numberOfRepetitions + 1)
                 .mapToObj(i -> new RepeatedTestTemplateInvocationContextWrapper(parameterizedContext, new RepetitionTestTemplateInvocationContext(i, numberOfRepetitions)));
+    }
+}
+
+class TestCounter {
+    private final Map<String, Integer> counts = new LinkedHashMap<>();
+
+    public void testExecuted(String testName) {
+        counts.put(testName, counts.getOrDefault(testName, 0) + 1);
+    }
+
+    public Map<String, Integer> getCounts() {
+        return counts;
     }
 }

@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -47,6 +48,7 @@ import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.MethodSelector;
+import org.junit.platform.engine.discovery.NestedMethodSelector;
 import org.junit.platform.engine.support.discovery.DiscoveryIssueReporter;
 
 /**
@@ -71,16 +73,38 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
     }
 
     @Override
+    public Resolution resolve(NestedMethodSelector selector, Context context) {
+        return resolve(context, selector.getNestedClass(), selector::getMethod);
+    }
+
+    @Override
+    public Resolution resolve(DiscoverySelector selector, Context context) {
+        if (selector instanceof DeclaredMethodSelector methodSelector) {
+            var testClasses = methodSelector.testClasses();
+            if (testClasses.size() == 1) {
+                return resolve(context, testClasses.get(0), methodSelector::method);
+            }
+            int lastIndex = testClasses.size() - 1;
+            return resolve(context, testClasses.get(lastIndex), methodSelector::method);
+        }
+        return unresolved();
+    }
+
+    @Override
     public Resolution resolve(MethodSelector selector, Context context) {
+        return resolve(context, selector.getJavaClass(), selector::getJavaMethod);
+    }
+
+    private Resolution resolve(Context context, Class<?> testClass, Supplier<Method> methodSupplier) {
+        Method method = methodSupplier.get();
+        BiFunction<TestDescriptor, Supplier<Set<? extends DiscoverySelector>>, Match> matchFactory = Match::exact;
         // @formatter:off
         Set<Match> matches = Arrays.stream(MethodType.values())
-                .map(methodType -> methodType.resolveMethodSelector(selector, context, configuration))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(testDescriptor -> Match.exact(testDescriptor, expansionCallback(testDescriptor)))
+                .map(methodType -> methodType.resolveMethod( testClass, method, context, configuration))
+                .flatMap(Optional::stream)
+                .map(testDescriptor -> matchFactory.apply(testDescriptor, expansionCallback(testDescriptor)))
                 .collect(toSet());
-        //@formatter:on
-
+        // @formatter:on
         if (matches.size() > 1) {
             logger.warn(() -> {
                 Stream<TestDescriptor> testDescriptors = matches.stream().map(Match::getTestDescriptor);
@@ -88,7 +112,7 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
                         "Possible configuration error: method [%s] resulted in multiple TestDescriptors %s. "
                                 + "This is typically the result of annotating a method with multiple competing annotations "
                                 + "such as @Test, @RepeatedTest, @ParameterizedTest, @TestFactory, etc.",
-                        selector.getJavaMethod(), testDescriptors.map(d -> d.getClass().getName()).collect(toList()));
+                        method.toGenericString(), testDescriptors.map(d -> d.getClass().getName()).collect(toList()));
             });
         }
         return matches.isEmpty() ? unresolved() : matches(matches);
@@ -137,12 +161,10 @@ public class TestTemplateWrappingMethodSelectorResolver extends MethodSelectorRe
             this.segmentType = segmentType;
         }
 
-        private Optional<TestDescriptor> resolveMethodSelector(MethodSelector selector, Context resolver, JupiterConfiguration configuration) {
-            if (!methodPredicate.test(selector.getJavaMethod())) {
+        private Optional<TestDescriptor> resolveMethod(Class<?> testClass, Method method, Context resolver, JupiterConfiguration configuration) {
+            if (!methodPredicate.test(method)) {
                 return Optional.empty();
             }
-            Class<?> testClass = selector.getJavaClass();
-            Method method = selector.getJavaMethod();
             return resolver.addToParent(
                     () -> selectClass(testClass),
                     parent -> createMaybeTestDescriptor(parent, testClass, method, configuration));
