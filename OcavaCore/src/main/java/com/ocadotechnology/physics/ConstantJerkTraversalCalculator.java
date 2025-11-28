@@ -66,21 +66,32 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
             // If the target distance is smaller than the minimal braking distance, then we simply return the braking traversal
             return brakingTraversal;
         }
-        DoubleFunction<Traversal> speedToTraversalCalculator = (vPeak) -> maxSpeedToTraversal(initialSpeed, initialAcceleration, vPeak, distance, vehicleProperties);
-        // First try if reaching the max speed works as this is often the solution.
-        Traversal traversalReachingMaxSpeed = speedToTraversalCalculator.apply(vehicleProperties.maxSpeed);
-        if (DoubleMath.fuzzyEquals(traversalReachingMaxSpeed.getTotalDistance(), distance, ROUNDING_ERROR_MARGIN * distance)) {
-            return traversalReachingMaxSpeed;
-        }
 
-        // For the following function, the distance of the traversal increases monotonically with the speed reached
-        // after the first section so we can binary search within the range to find the correct max speed.
-        return BinarySearch.find(
-                speedToTraversalCalculator,
-                getDistanceComp(distance),
-                lowerBoundSpeedReachedAfterFirstHalf(initialAcceleration, initialSpeed, vehicleProperties),
-                vehicleProperties.maxSpeed
-        );
+        if (willAccelerationBeNegativeForEntireTraversal(distance, initialSpeed, initialAcceleration, vehicleProperties)) {
+            DoubleFunction<Traversal> accelerationToTraversalCalculator = (acc) -> accelerationAfterFirstSectionToDeceleratingOnlyTraversal(initialSpeed, initialAcceleration, acc, vehicleProperties);
+            // For the following function, the distance of the traversal increases monotonically with the acceleration reached
+            // after the first section, so we can binary search within the range to find a traversal with the desired distance
+            return BinarySearch.find(
+                    accelerationToTraversalCalculator,
+                    getDistanceComp(distance),
+                    initialAcceleration,
+                    0);
+        } else {
+            DoubleFunction<Traversal> speedToTraversalCalculator = (vPeak) -> maxSpeedToStandardTraversal(initialSpeed, initialAcceleration, vPeak, distance, vehicleProperties);
+            // First try if reaching the max speed works as this is often the solution.
+            Traversal traversalReachingMaxSpeed = speedToTraversalCalculator.apply(vehicleProperties.maxSpeed);
+            if (DoubleMath.fuzzyEquals(traversalReachingMaxSpeed.getTotalDistance(), distance, ROUNDING_ERROR_MARGIN * distance)) {
+                return traversalReachingMaxSpeed;
+            }
+            // For the following function, the distance of the traversal increases monotonically with the speed reached
+            // after the first phase, so we can binary search within the range to find a traversal with the desired distance
+            return BinarySearch.find(
+                    speedToTraversalCalculator,
+                    getDistanceComp(distance),
+                    lowerBoundSpeedReachedAfterAcceleratingPhaseForStandardTraversal(initialAcceleration, initialSpeed, vehicleProperties),
+                    vehicleProperties.maxSpeed
+            );
+        }
     }
 
     private ToDoubleFunction<Traversal> getDistanceComp(double distance) {
@@ -93,11 +104,52 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
     }
 
     /**
+     * If the initial acceleration is negative and the distance is only slightly above the braking distance, then the optimal
+     * traversal may be one where the acceleration initially increases but then decreases again before it reaches positive,
+     * and then finally increases until the vehicle is at rest. Thus, the acceleration for this kind of traversal is always negative.
+     * This method returns true iff we need to generate this kind of traversal.
+     */
+    boolean willAccelerationBeNegativeForEntireTraversal(double targetDistance, double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleMotionProperties) {
+        if (initialAcceleration >= 0) {
+            return false;
+        }
+        Traversal traversalReachingZeroAccelerationInMiddle = accelerationAfterFirstSectionToDeceleratingOnlyTraversal(initialSpeed, initialAcceleration, 0, vehicleMotionProperties);
+        double totalDistance = traversalReachingZeroAccelerationInMiddle.getTotalDistance();
+        return totalDistance > targetDistance;
+    }
+
+    /**
+     * The distance of traversal returned increases monotonically with aTarget within valid bounds.
+     * In this case, the aTarget is the acceleration reached after the first section.
+     * This is a relatively uncommon acceleration profile where the acceleration increases at certain points but never goes positive
+     * at any point. Such a profile looks like:
+     * <pre>
+     *      ^
+     *      |_________________________
+     *      |                   /
+     *      |  aTarget         /
+     *   a  | /\              /
+     *      |/  \            /
+     *      |    \__________/
+     *      |
+     * </pre>
+     */
+    private Traversal accelerationAfterFirstSectionToDeceleratingOnlyTraversal(double initialSpeed, double initialAcceleration, double aTarget, VehicleMotionProperties vehicleMotionProperties) {
+        Builder<TraversalSection> builder = ImmutableList.builder();
+        double timeToReachTargetAcc = (aTarget - initialAcceleration) / vehicleMotionProperties.jerkDecelerationDown;
+        double speedReached = JerkKinematics.getFinalVelocity(initialSpeed, initialAcceleration, vehicleMotionProperties.jerkDecelerationDown, timeToReachTargetAcc);
+        double distanceTraversed = JerkKinematics.getDisplacement(initialSpeed, initialAcceleration, vehicleMotionProperties.jerkDecelerationDown, timeToReachTargetAcc);
+        builder.add(new ConstantJerkTraversalSection(timeToReachTargetAcc, distanceTraversed, initialSpeed, speedReached, initialAcceleration, aTarget, vehicleMotionProperties.jerkDecelerationDown));
+        builder.addAll(ConstantJerkSectionsFactory.solveTriangleOrTrapezoidSections(speedReached, aTarget, 0, vehicleMotionProperties));
+        return new Traversal(builder.build());
+    }
+
+    /**
      * Sometimes we can find a better lower bound that 0 for the speed reached after the first half for the purpose of
      * the binary search. This is a small optimisation that reduces the initial search range. In the cases where we can't
      * we can simply use 0 as the lower bound.
      */
-    private double lowerBoundSpeedReachedAfterFirstHalf(double initialAcceleration, double initialSpeed, VehicleMotionProperties vehicleProperties) {
+    private double lowerBoundSpeedReachedAfterAcceleratingPhaseForStandardTraversal(double initialAcceleration, double initialSpeed, VehicleMotionProperties vehicleProperties) {
         if (willInevitablyExceedMaxSpeed(initialSpeed, initialAcceleration, vehicleProperties)) {
             return 0.0;
         }
@@ -139,7 +191,7 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
         validateInputs(0, initialSpeed, initialAcceleration, vehicleProperties);
         List<TraversalSection> sections = new ArrayList<>();
 
-        // Add a correcting section if the bot begins outside of its acceleration constraints.
+        // Add a correcting section if the vehicle begins outside of its acceleration constraints.
         Optional<TraversalSection> maybeInitialCorrectingSection = ConstantJerkSectionsFactory.buildSectionToBringAccelerationWithinBounds(initialAcceleration, initialSpeed, vehicleProperties);
         if (maybeInitialCorrectingSection.isPresent()) {
             TraversalSection section = maybeInitialCorrectingSection.get();
@@ -170,17 +222,18 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
     }
 
     /**
-     * @param initialSpeed                initial speed
-     * @param initialAcceleration                initial acceleration
-     * @param vTarget           target max speed
-     * @param distanceTarget    target distance for traversal
-     * @param vehicleProperties vehicle properties
+     * @param initialSpeed        initial speed
+     * @param initialAcceleration initial acceleration
+     * @param vTarget             target max speed
+     * @param distanceTarget      target distance for traversal
+     * @param vehicleProperties   vehicle properties
      * @return Traversal that reaches vTarget as its max speed. It will only add a constant accelerations section
      * if that speed happens to correspond to the vehicle's max speed. The distance of traversal increases monotonically with
-     * vTarget within valid bounds.
+     * vTarget within valid bounds. We call this kind of traversal "standard" because it's the most common kind of profile,
+     * and includes an accelerating phase,potentially a max speed phase, and then a decelerating phase.
      */
     @VisibleForTesting
-    Traversal maxSpeedToTraversal(double initialSpeed, double initialAcceleration, double vTarget, double distanceTarget, VehicleMotionProperties vehicleProperties) {
+    Traversal maxSpeedToStandardTraversal(double initialSpeed, double initialAcceleration, double vTarget, double distanceTarget, VehicleMotionProperties vehicleProperties) {
         Builder<TraversalSection> traversalSectionBuilder = ImmutableList.builder();
         double currentSpeed = initialSpeed;
         double currentAcceleration = initialAcceleration;
