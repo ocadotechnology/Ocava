@@ -382,6 +382,24 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addIndex(counter);
     }
 
+    public <R> OneToManyCountValue<R, C> addOneToManyCount(Function<? super C, R> function) {
+        return addOneToManyCount(null, function);
+    }
+
+    public <R> OneToManyCountValue<R, C> addOneToManyCount(@CheckForNull String name, Function<? super C, R> function) {
+        OneToManyCountValue<R, C> counter = new OneToManyCountValue<>(name, function);
+        return addIndex(counter);
+    }
+
+    public <R> OptionalOneToManyCountValue<R, C> addOptionalOneToManyCount(Function<? super C, Optional<R>> function) {
+        return addOptionalOneToManyCount(null, function);
+    }
+
+    public <R> OptionalOneToManyCountValue<R, C> addOptionalOneToManyCount(@CheckForNull String name, Function<? super C, Optional<R>> function) {
+        OptionalOneToManyCountValue<R, C> counter = new OptionalOneToManyCountValue<>(name, function);
+        return addIndex(counter);
+    }
+
     public <R> ManyToManyIndex<R, C> addManyToManyIndex(Function<? super C, Set<R>> function) {
         return addManyToManyIndex(null, function);
     }
