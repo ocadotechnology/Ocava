@@ -39,7 +39,7 @@ public class NotificationBusTest {
 
     @Test
     public void testIsNotificationRegistered() {
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         NotificationHandler handler = new NotificationHandler();
 
         bus.addHandler(handler);
@@ -58,7 +58,7 @@ public class NotificationBusTest {
     @Test
     public void testDelayedAddHandler() {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
         NotificationHandler handler = new NotificationHandler();
 
@@ -69,11 +69,11 @@ public class NotificationBusTest {
         Assertions.assertTrue(handler.handled);
     }
 
-    /** Check that adding an intermediate handler does interfere when later adding a base handler. */
+    /** Check that adding an intermediate handler doesn't interfere when later adding a base handler. */
     @Test
     public void testComplexDelayedAddHandler() {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
         NotificationHandler handler = new NotificationHandler();
         OuterNotificationHandler outerHandler = new OuterNotificationHandler();
@@ -93,7 +93,7 @@ public class NotificationBusTest {
     @Test
     public void testCallingBroadcastFromAtLeastTwoThreadsFails() throws InterruptedException {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
 
         OuterNotificationHandler outerHandler = new OuterNotificationHandler();
@@ -137,7 +137,7 @@ public class NotificationBusTest {
     @Test
     public void testWhenTwoThreadsBroadcast_thenTheSecondFails() throws InterruptedException {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
 
         OuterNotificationHandler outerHandler = new OuterNotificationHandler();
@@ -173,7 +173,7 @@ public class NotificationBusTest {
     @Test
     public void testWhenTwoThreadsBroadcast_thenTheFirstAlwaysSucceedsAndTheSecondAlwaysFails() throws InterruptedException {
         WithinAppNotificationRouter router = WithinAppNotificationRouter.get();
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         router.registerExecutionLayer(new NonExecutingEventScheduler(TestSchedulerType.TEST_SCHEDULER_TYPE, TimeProvider.NULL), bus);
 
         OuterNotificationHandler outerHandler = new OuterNotificationHandler();
@@ -251,7 +251,7 @@ public class NotificationBusTest {
 
     @Test
     void testThrowsIllegalArgument_whenNotificationMissedFromSubscriber() {
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         assertThatThrownBy(() -> bus.addHandler(new Subscriber() {
 
             @Subscribe
@@ -269,7 +269,7 @@ public class NotificationBusTest {
 
     @Test
     void testThrowsIllegalArgument_whenSubscriberParameterNotANotification() {
-        NotificationBus<Notification> bus = new TestBus();
+        NotificationBus<Notification> bus = SimpleBus.create();
         assertThatThrownBy(() -> bus.addHandler(new Subscriber() {
 
             @Subscribe
@@ -284,18 +284,6 @@ public class NotificationBusTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("invalidHandler")
         .hasMessageContaining("String");
-    }
-
-    private static class TestBus extends NotificationBus<Notification> {
-        public TestBus() {
-            super(Notification.class);
-        }
-
-        @Override
-        protected boolean hasCorrectType(Class<?> notification) {
-            // Matches the way we sub-class:
-            return isNotificationRegistered(notification);
-        }
     }
 
     private static class NotificationHandler implements Subscriber {

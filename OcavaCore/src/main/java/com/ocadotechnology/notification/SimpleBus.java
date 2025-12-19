@@ -20,16 +20,11 @@ package com.ocadotechnology.notification;
  * Notification types on the NotificationRouter.
  */
 public class SimpleBus extends NotificationBus<Notification> {
-    private SimpleBus(Class<Notification> notificationClass) {
-        super(notificationClass);
+    private SimpleBus() {
+        super(Notification.class);
     }
 
     public static SimpleBus create() {
-        return new SimpleBus(Notification.class);
-    }
-
-    @Override
-    protected boolean hasCorrectType(Class<?> notification) {
-        return true;
+        return new SimpleBus();
     }
 }

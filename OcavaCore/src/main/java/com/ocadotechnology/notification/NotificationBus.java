@@ -45,7 +45,7 @@ public abstract class NotificationBus<N> {
 
     private final Logger logger = LoggerFactory.getLogger(NOTIFICATION_BUS_ID);
 
-    private final Class<N> notificationClass;
+    protected final Class<N> notificationClass;
 
     private final AtomicReference<Thread> thread = new AtomicReference<>(null);
 
@@ -247,7 +247,17 @@ public abstract class NotificationBus<N> {
         return hasCorrectType(notification);
     }
 
-    protected abstract boolean hasCorrectType(Class<?> notification);
+    /**
+     * Check if a given notification has the correct type to be handled by this bus.
+     * By default this is a simple check against the bus base notification,
+     * but implementers may wish to override to a call to {@link #isNotificationRegistered(Class)}
+     *
+     * @param notification The class of the notification to check
+     * @return true if this bus should handle the provided notification
+     */
+    protected boolean hasCorrectType(Class<?> notification) {
+        return this.notificationClass.isAssignableFrom(notification);
+    }
 
     @Override
     public String toString() {

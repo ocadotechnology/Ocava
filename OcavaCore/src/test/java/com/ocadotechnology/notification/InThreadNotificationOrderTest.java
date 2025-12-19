@@ -58,8 +58,8 @@ class InThreadNotificationOrderTest {
     }
 
     private void setupSubscribers() {
-        NotificationRouter.get().registerExecutionLayer(t1Scheduler, new TestBus(Notification.class));
-        NotificationRouter.get().registerExecutionLayer(t2Scheduler, new TestBus(Notification.class));
+        NotificationRouter.get().registerExecutionLayer(t1Scheduler, SimpleBus.create());
+        NotificationRouter.get().registerExecutionLayer(t2Scheduler, SimpleBus.create());
 
         notificationRememberingServiceOnT1.subscribeForNotifications();
         notificationRememberingServiceOnT2.subscribeForNotifications();

@@ -33,9 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.ocadotechnology.notification.Notification;
 import com.ocadotechnology.notification.NotificationRouter;
-import com.ocadotechnology.notification.TestBus;
+import com.ocadotechnology.notification.SimpleBus;
 import com.ocadotechnology.notification.TestSchedulerType;
 
 class ExecutorEventSchedulerTest {
@@ -104,7 +103,7 @@ class ExecutorEventSchedulerTest {
         AtomicBoolean failedWasCalled = new AtomicBoolean(false);
         scheduler.registerFailureListener(t -> failedWasCalled.set(true));
 
-        NotificationRouter.get().registerExecutionLayer(scheduler, new TestBus(Notification.class));
+        NotificationRouter.get().registerExecutionLayer(scheduler, SimpleBus.create());
         scheduler.stop();
 
         AtomicBoolean taskWasRun = new AtomicBoolean(false);

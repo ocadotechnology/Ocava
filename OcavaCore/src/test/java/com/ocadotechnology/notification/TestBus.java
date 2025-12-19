@@ -15,20 +15,16 @@
  */
 package com.ocadotechnology.notification;
 
-public class TestBus extends NotificationBus<Notification> {
-    public TestBus(Class<Notification> notificationClass) {
-        super(notificationClass);
+class TestBus extends NotificationBus<TestNotification> {
+    private TestBus() {
+        super(TestNotification.class);
     }
 
     private static class SingletonHolder {
-        public static final TestBus instance = new TestBus(Notification.class);
+        public static final TestBus instance = new TestBus();
     }
 
     public static TestBus get() {
         return SingletonHolder.instance;
-    }
-
-    @Override protected boolean hasCorrectType(Class<?> notification) {
-        return TestNotification.class.isAssignableFrom(notification);
     }
 }
