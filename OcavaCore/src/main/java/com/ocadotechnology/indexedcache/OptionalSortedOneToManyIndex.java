@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -32,13 +33,20 @@ import javax.annotation.CheckForNull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
+    /**
+     * It may be tempting to replace this with {@link Collections#emptyNavigableSet()}, but that
+     * only works if {@link C} implements {@link Comparable}, but it does not enforce this at compile time;
+     * it will fail at run time. See <a href="https://bugs.openjdk.org/browse/JDK-8181754">JDK-8181754</a>
+     */
+    private final NavigableSet<C> EMPTY_TREE_SET = ImmutableSortedSet.of();
 
-    private final Map<R, TreeSet<C>> indexValues = new LinkedHashMap<>();
+    private final Map<R, NavigableSet<C>> indexValues = new LinkedHashMap<>();
     private final Function<? super C, Optional<R>> function;
     private final Comparator<? super C> comparator;
     private ImmutableListMultimap<R, C> snapshot;
@@ -116,7 +124,7 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
         Optional<R> optionalR = function.apply(object);
         if (optionalR.isPresent()) {
             R r = optionalR.get();
-            TreeSet<C> cs = indexValues.computeIfAbsent(r, list -> new TreeSet<>(comparator));
+            NavigableSet<C> cs = indexValues.computeIfAbsent(r, list -> new TreeSet<>(comparator));
             if (!cs.add(object)) {
                 throw new IndexUpdateException(
                         name != null ? name : function.getClass().getSimpleName(),
@@ -130,9 +138,9 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
         }
     }
 
-    private SortedSet<C> getMutable(R r) {
-        SortedSet<C> list = indexValues.get(r);
-        return list == null ? Collections.emptySortedSet() : list;
+    private NavigableSet<C> getMutable(R r) {
+        NavigableSet<C> list = indexValues.get(r);
+        return list == null ? EMPTY_TREE_SET : list;
     }
 
     public Optional<C> getFirst(R r) {
@@ -155,12 +163,32 @@ public class OptionalSortedOneToManyIndex<R, C extends Identified<?>> extends Ab
     }
 
     public void forEach(R key, Consumer<C> consumer) {
-        TreeSet<C> treeSet = indexValues.get(key);
+        NavigableSet<C> treeSet = indexValues.get(key);
         if (treeSet == null) {
             return;
         }
         for (C c : treeSet) {
             consumer.accept(c);
         }
+    }
+
+    /**
+     *  For a given key 'r', return the least element from the sorted values greater than 'previous'
+     *  (same as iteration order).<br>
+     *  Note: previous does not have to exist in the set (the next element will still be returned).
+     */
+    public Optional<C> after(R r, C previous) {
+        SortedSet<C> cs = getMutable(r).tailSet(previous, false);
+        return cs.isEmpty() ? Optional.empty() : Optional.of(cs.first());
+    }
+
+    /**
+     *  For a given key 'r', return the greatest element from the sorted values less than 'next'
+     *  (same as iteration order).<br>
+     *  Note: next does not have to exist in the set (the previous element will still be returned).
+     */
+    public Optional<C> before(R r, C next) {
+        SortedSet<C> cs = getMutable(r).headSet(next, false);
+        return cs.isEmpty() ? Optional.empty() : Optional.of(cs.last());
     }
 }

@@ -39,7 +39,7 @@ import com.ocadotechnology.id.SimpleLongIdentified;
 @DisplayName("A SortedOneToManyIndexTest")
 class SortedOneToManyIndexTest {
     private static final String INDEX_NAME = "TEST_SORTED_ONE_TO_MANY_INDEX";
-    
+
     @Nested
     class CacheTypeTests extends IndexTests {
         @Override
@@ -98,6 +98,22 @@ class SortedOneToManyIndexTest {
 
             assertThat(index.first(INDEXING_VALUE).get()).isEqualTo(stateOne);
             assertThat(index.last(INDEXING_VALUE).get()).isEqualTo(stateFive);
+        }
+
+        @Test
+        void beforeAndAfter_returnNextValueInSpecifiedDirection() {
+            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            TestState stateFour = new TestState(Id.create(4), 4, INDEXING_VALUE);
+            TestState stateFive = new TestState(Id.create(5), 5, INDEXING_VALUE);
+            ImmutableList<TestState> expected = ImmutableList.of(stateOne, stateTwo, stateThree, stateFour, stateFive);
+            cache.addAll(expected.reverse());
+
+            assertThat(index.after(INDEXING_VALUE, stateThree)).contains(stateFour);
+            assertThat(index.before(INDEXING_VALUE, stateThree)).contains(stateTwo);
+            assertThat(index.before(INDEXING_VALUE, stateOne)).isEmpty();
+            assertThat(index.after(INDEXING_VALUE, stateFive)).isEmpty();
         }
 
         @Test
@@ -177,6 +193,17 @@ class SortedOneToManyIndexTest {
         }
 
         @Test
+        void beforeAndAfter_whenMultipleIndexingValuesPresent_thenOnlyReturnsValueAssociatedWithIndexingValue() {
+            TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            cache.addAll(ImmutableList.of(stateOne, stateTwo, stateThree));
+            assertThat(index.before(INDEXING_VALUE, stateTwo)).isEmpty();
+            assertThat(index.after(INDEXING_VALUE, stateTwo)).contains(stateThree);
+
+        }
+
+        @Test
         void findFirstValueSatisfying_whenNothingMatchesPredicate_returnsNull() {
             TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
             TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
@@ -221,7 +248,7 @@ class SortedOneToManyIndexTest {
             assertThat(testStates.get(0)).isSameAs(updateTwo.newObject);
             assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
         }
-        
+
         @Test
         void snapshot_whenIndexIsEmpty_returnsEmptySnapshot() {
             assertThat(index.snapshot()).isEqualTo(ImmutableListMultimap.of());

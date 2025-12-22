@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.indexedcache;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,6 +40,11 @@ import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
 public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIndex<C> {
+    /**
+     * It may be tempting to replace this with {@link Collections#emptyNavigableSet()}, but that
+     * only works if {@link C} implements {@link Comparable}, but it does not enforce this at compile time;
+     * it will fail at run time. See <a href="https://bugs.openjdk.org/browse/JDK-8181754">JDK-8181754</a>
+     */
     private final NavigableSet<C> EMPTY_TREE_SET = ImmutableSortedSet.of();
 
     private final Map<R, NavigableSet<C>> indexValues = new LinkedHashMap<>();
@@ -125,6 +131,16 @@ public class SortedOneToManyIndex<R, C extends Identified<?>> extends AbstractIn
     public Optional<C> after(R r, C previous) {
         NavigableSet<C> cs = getMutable(r).tailSet(previous, false);
         return cs.isEmpty() ? Optional.empty() : Optional.of(cs.first());
+    }
+
+    /**
+     *  For a given key 'r', return the greatest element from the sorted values less than 'next'
+     *  (same as iteration order).<br>
+     *  Note: next does not have to exist in the set (the previous element will still be returned).
+     */
+    public Optional<C> before(R r, C next) {
+        NavigableSet<C> cs = getMutable(r).headSet(next, false);
+        return cs.isEmpty() ? Optional.empty() : Optional.of(cs.last());
     }
 
     public UnmodifiableIterator<C> iterator(R r) {

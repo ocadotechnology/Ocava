@@ -29,7 +29,7 @@ import com.ocadotechnology.id.Identified;
 /**
  * A sorted version of {@link DefaultPredicateIndex}.
  * <br>
- * Note: this implementation seperately sorts both the true and false values of the predicate,
+ * Note: this implementation separately sorts both the true and false values of the predicate,
  * though it is not strictly required by the {@link SortedPredicateIndex} interface.
  * If this is not required, consider using a {@link SortedIdCachedPredicateIndex} instead.
  */

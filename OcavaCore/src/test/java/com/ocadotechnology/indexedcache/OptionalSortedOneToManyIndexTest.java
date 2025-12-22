@@ -29,6 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -64,6 +65,7 @@ class OptionalSortedOneToManyIndexTest {
 
         private static final Optional<Integer> INDEXING_VALUE = Optional.of(1);
         private static final Optional<Integer> DIFFERENT_INDEXING_VALUE = Optional.of(2);
+        private static final int NOT_EXISTING_INDEXING_VALUE = 999;
 
         private IndexedImmutableObjectCache<TestState, TestState> cache;
         private OptionalSortedOneToManyIndex<Integer, TestState> index;
@@ -331,8 +333,68 @@ class OptionalSortedOneToManyIndexTest {
             assertThat(snapshot.get(1)).isEqualTo(ImmutableList.of(testState2, testState1));
             assertThat(snapshot.get(2)).isEqualTo(ImmutableList.of(testState4, testState5, testState3));
         }
+
+        @Test
+        void beforeAndAfter_whenProvidedItemWithSameIndexingValueToOneProvided_shouldReturnApplicableValue() {
+            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            cache.add(testState1);
+            cache.add(testState2);
+            cache.add(testState3);
+            cache.add(testState4);
+            cache.add(testState5);
+
+            assertThat(index.before(DIFFERENT_INDEXING_VALUE.get(), testState4)).isEmpty();
+            assertThat(index.after(DIFFERENT_INDEXING_VALUE.get(), testState4)).contains(testState5);
+            assertThat(index.before(DIFFERENT_INDEXING_VALUE.get(), testState5)).contains(testState4);
+            assertThat(index.after(DIFFERENT_INDEXING_VALUE.get(), testState5)).contains(testState3);
+        }
+
+        @Test
+        void beforeAndAfter_whenProvidedItemWithDifferentIndexingValueToOneProvided_shouldStillReturnApplicableValue() {
+            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            cache.add(testState1);
+            cache.add(testState2);
+            cache.add(testState3);
+            cache.add(testState4);
+            cache.add(testState5);
+
+            // the provided value need not necessarily have the same indexing value as the one
+            // provided. It should work all the same.
+            assertThat(index.before(INDEXING_VALUE.get(), testState4)).contains(testState2);
+            assertThat(index.after(INDEXING_VALUE.get(), testState4)).contains(testState1);
+            assertThat(index.after(INDEXING_VALUE.get(), testState5)).isEmpty();
+
+            assertThat(index.before(DIFFERENT_INDEXING_VALUE.get(), testState4)).isEmpty();
+            assertThat(index.after(DIFFERENT_INDEXING_VALUE.get(), testState4)).contains(testState5);
+            assertThat(index.before(DIFFERENT_INDEXING_VALUE.get(), testState5)).contains(testState4);
+            assertThat(index.after(DIFFERENT_INDEXING_VALUE.get(), testState5)).contains(testState3);
+        }
+
+        @Test
+        void beforeAndAfter_whenProvidedNotExistingIndexValue_shouldReturnEmpty() {
+            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
+            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            cache.add(testState1);
+            cache.add(testState2);
+            cache.add(testState3);
+            cache.add(testState4);
+            cache.add(testState5);
+
+            assertThat(index.before(NOT_EXISTING_INDEXING_VALUE, testState4)).isEmpty();
+        }
     }
-    
+
     private interface LocationState {
         Integer getComparatorValue();
         Optional<Integer> getIndexingValue();
@@ -356,6 +418,11 @@ class OptionalSortedOneToManyIndexTest {
         @Override
         public Integer getComparatorValue() {
             return comparatorValue;
+        }
+
+        @Override
+        public String toString() {
+            return MoreObjects.toStringHelper(this).add("id", getId()).add("indexingValue", indexingValue).add("comparatorValue", comparatorValue).toString();
         }
     }
 }
