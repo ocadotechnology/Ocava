@@ -179,4 +179,20 @@ class PointToPointValidatorTest {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummySupertypeNotificationA.class));
         validator.validate(new DummySubscriberB(), ImmutableList.of(DummySubtypeNotificationC.class));
     }
+
+    private static class DummyMeaninglessNotification implements FireAndForgetNotification, PointToPointNotification {}
+    private static class DummyMeaninglessByInheritanceNotification extends DummyP2PNotification implements FireAndForgetNotification {}
+
+    /**
+     * It is not allowed for a notification to be both FireAndForget and PointToPoint.
+     */
+    @Test
+    void whenNotificationBothP2PAndFNF_thenException() {
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberA(), ImmutableList.of(DummyMeaninglessNotification.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummyMeaninglessNotification.class.getSimpleName()));
+        IllegalStateException f = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberA(), ImmutableList.of(DummyMeaninglessByInheritanceNotification.class)));
+        Assertions.assertTrue(f.getMessage().contains(DummyMeaninglessByInheritanceNotification.class.getSimpleName()));
+    }
 }

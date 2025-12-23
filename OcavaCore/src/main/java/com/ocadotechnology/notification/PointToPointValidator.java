@@ -56,6 +56,11 @@ class PointToPointValidator {
                         throw new IllegalStateException(getErrorMessage(newSubscription, oldSubscription));
                     }
                 }
+
+                //Weak validation that no notification is both FNF and P2P
+                if (FireAndForgetNotification.class.isAssignableFrom(subscribedNotification)) {
+                    throw new IllegalStateException(String.format("%s cannot be both a FireAndForgetNotification and a PointToPointNotification", subscribedNotification.getSimpleName()));
+                }
             }
         }
     }
