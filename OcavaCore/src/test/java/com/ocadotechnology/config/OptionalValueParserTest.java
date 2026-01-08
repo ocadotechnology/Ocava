@@ -1038,6 +1038,13 @@ public class OptionalValueParserTest {
         }
 
         @Test
+        @DisplayName("separates valid strings with arbitrary separator")
+        void testArbitrarySeparated() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "RED@@YELLOW@@APPLE");
+            assertThat(parser.asList("@@").ofStrings()).isEqualTo(Optional.of(ImmutableList.of("RED", "YELLOW", "APPLE")));
+        }
+
+        @Test
         @DisplayName("List of strings with space is trimmed")
         void testSpaceIsTrimmed() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "RED,YELLOW, APPLE");
@@ -1049,6 +1056,13 @@ public class OptionalValueParserTest {
         void testCommaSeparatedStringsWithColons() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "key1:value1,key2:value2");
             assertThat(parser.asList().ofStrings()).isEqualTo(Optional.of(ImmutableList.of("key1:value1", "key2:value2")));
+        }
+
+        @Test
+        @DisplayName("Arbitrarily-separated string can contain colons")
+        void testArbitrarilySeparatedStringsWithColons() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "key1:value1^key2:value2");
+            assertThat(parser.asList("^").ofStrings()).isEqualTo(Optional.of(ImmutableList.of("key1:value1", "key2:value2")));
         }
 
         @Test
@@ -1144,6 +1158,13 @@ public class OptionalValueParserTest {
         }
 
         @Test
+        @DisplayName("separates valid strings with arbitrary separator")
+        void testArbitrarySeparated() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "RED$YELLOW$APPLE");
+            assertThat(parser.asSet("$").ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("RED", "YELLOW", "APPLE")));
+        }
+
+        @Test
         @DisplayName("Set of strings with space is trimmed")
         void testSpaceIsTrimmed() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "RED,YELLOW, APPLE");
@@ -1155,6 +1176,13 @@ public class OptionalValueParserTest {
         void testCommaSeparatedStringsWithColons() {
             OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "key1:value1,key2:value2");
             assertThat(parser.asSet().ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("key1:value1", "key2:value2")));
+        }
+
+        @Test
+        @DisplayName("Arbitrarily-separated string can contain colons")
+        void testArbitrarilySeparatedStringsWithColons() {
+            OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "key1:value1#key2:value2");
+            assertThat(parser.asSet("#").ofStrings()).isEqualTo(Optional.of(ImmutableSet.of("key1:value1", "key2:value2")));
         }
 
         @Test
@@ -1280,6 +1308,17 @@ public class OptionalValueParserTest {
             @DisplayName("throws exception for duplicate keys")
             void duplicateKeysThrows() {
                 assertThrowsWithKey(() -> readMap("1=False;1=True"), IllegalArgumentException.class);
+            }
+
+            @Test
+            @DisplayName("can parse with arbitrary separators")
+            void arbitrarySeparators() {
+                OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "A>1|B>2|");
+                Optional<ImmutableMap<String, String>> map = parser.asMap("|", ">").ofStrings();
+                assertThat(map).isEqualTo(Optional.of(ImmutableMap.of(
+                        "A", "1",
+                        "B", "2"
+                )));
             }
         }
 
@@ -1435,6 +1474,17 @@ public class OptionalValueParserTest {
             void ignoresMissingKeys() {
                 Optional<ImmutableSetMultimap<K, V>> multimap = readMultimap("=False;1=True;1=False;2=False;3=False;4=False");
                 assertThat(multimap).isEqualTo(Optional.of(getDefaultMultimap()));
+            }
+
+            @Test
+            @DisplayName("can parse with arbitrary separators")
+            void arbitrarySeparators() {
+                OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "A~1$B~2");
+                Optional<ImmutableSetMultimap<String, String>> map = parser.asSetMultimap("$", "~").ofStrings();
+                assertThat(map).isEqualTo(Optional.of(ImmutableSetMultimap.of(
+                        "A", "1",
+                        "B", "2"
+                )));
             }
         }
 

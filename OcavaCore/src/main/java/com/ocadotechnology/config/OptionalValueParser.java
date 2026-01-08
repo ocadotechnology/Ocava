@@ -34,7 +34,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * Parser class to convert a config value into a typed optional result. All parsing methods will return {@link
  * Optional#empty()} if the value is am empty String.
  */
-public class OptionalValueParser {
+public final class OptionalValueParser implements TypedValueParser {
     private final Optional<StrictValueParser> parser;
 
     @VisibleForTesting
@@ -52,7 +52,7 @@ public class OptionalValueParser {
 
     /**
      * @return {@link Optional#empty()} if the config value is an empty String, otherwise returns an {@link Optional}
-     *          containing the the config value.
+     *          containing the config value.
      */
     public Optional<String> asString() {
         return parser.map(StrictValueParser::asString);
@@ -296,10 +296,24 @@ public class OptionalValueParser {
     }
 
     /**
+     * @return a {@link ListValueParser} operating on the String config value.
+     */
+    public OptionalListValueParser asList(String elementSeparator) {
+        return new OptionalListValueParser(parser.map(p -> p.asList(elementSeparator)));
+    }
+
+    /**
      * @return a {@link OptionalSetValueParser} operating on the String config value.
      */
     public OptionalSetValueParser asSet() {
         return new OptionalSetValueParser(parser.map(StrictValueParser::asSet));
+    }
+
+    /**
+     * @return a {@link OptionalSetValueParser} operating on the String config value.
+     */
+    public OptionalSetValueParser asSet(String elementSeparator) {
+        return new OptionalSetValueParser(parser.map(p -> p.asSet(elementSeparator)));
     }
 
     /**
@@ -312,8 +326,22 @@ public class OptionalValueParser {
     /**
      * @return a {@link OptionalMapValueParser} operating on the String config value.
      */
+    public OptionalMapValueParser asMap(String entrySeparator, String keyValueSeparator) {
+        return new OptionalMapValueParser(parser.map(p -> p.asMap(entrySeparator, keyValueSeparator)));
+    }
+
+    /**
+     * @return a {@link OptionalMapValueParser} operating on the String config value.
+     */
     public OptionalSetMultimapValueParser asSetMultimap() {
         return new OptionalSetMultimapValueParser(parser.map(StrictValueParser::asSetMultimap));
+    }
+
+    /**
+     * @return a {@link OptionalMapValueParser} operating on the String config value.
+     */
+    public OptionalSetMultimapValueParser asSetMultimap(String entrySeparator, String keyValueSeparator) {
+        return new OptionalSetMultimapValueParser(parser.map(p -> p.asSetMultimap(entrySeparator, keyValueSeparator)));
     }
 
     /**

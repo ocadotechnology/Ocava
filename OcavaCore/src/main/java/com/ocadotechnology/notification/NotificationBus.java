@@ -231,7 +231,7 @@ public abstract class NotificationBus<N> {
                     return true;
                 }
             }
-            // We haven't registered this notification or any of it's parents, so cache the failure:
+            // We haven't registered this notification or any of its parents, so cache the failure:
             cacheOfImpliedNotifications.put(notification, Boolean.FALSE);
             return false;
         } finally {

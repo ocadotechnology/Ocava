@@ -943,6 +943,13 @@ public class StrictValueParserTest {
         }
 
         @Test
+        @DisplayName("separates valid strings with arbitrary separator")
+        void testArbitrarySeparated() {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "RED@@YELLOW@@APPLE");
+            assertThat(parser.asList("@@").ofStrings()).isEqualTo(ImmutableList.of("RED", "YELLOW", "APPLE"));
+        }
+
+        @Test
         @DisplayName("List of strings with space is trimmed")
         void testSpaceIsTrimmed() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "RED,YELLOW, APPLE");
@@ -954,6 +961,13 @@ public class StrictValueParserTest {
         void testCommaSeparatedStringsWithColons() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "key1:value1,key2:value2");
             assertThat(parser.asList().ofStrings()).isEqualTo(ImmutableList.of("key1:value1", "key2:value2"));
+        }
+
+        @Test
+        @DisplayName("Arbitrarily-separated string can contain colons")
+        void testArbitrarilySeparatedStringsWithColons() {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "key1:value1^key2:value2");
+            assertThat(parser.asList("^").ofStrings()).isEqualTo(ImmutableList.of("key1:value1", "key2:value2"));
         }
 
         @Test
@@ -1049,6 +1063,13 @@ public class StrictValueParserTest {
         }
 
         @Test
+        @DisplayName("separates valid strings with arbitrary separator")
+        void testArbitrarySeparated() {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "RED$YELLOW$APPLE");
+            assertThat(parser.asSet("$").ofStrings()).isEqualTo(ImmutableSet.of("RED", "YELLOW", "APPLE"));
+        }
+
+        @Test
         @DisplayName("Set of strings with space is trimmed")
         void testSpaceIsTrimmed() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "RED,YELLOW, APPLE");
@@ -1060,6 +1081,13 @@ public class StrictValueParserTest {
         void testCommaSeparatedStringsWithColons() {
             StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "key1:value1,key2:value2");
             assertThat(parser.asSet().ofStrings()).isEqualTo(ImmutableSet.of("key1:value1", "key2:value2"));
+        }
+
+        @Test
+        @DisplayName("Arbitrarily-separated string can contain colons")
+        void testArbitrarilySeparatedStringsWithColons() {
+            StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "key1:value1#key2:value2");
+            assertThat(parser.asSet("#").ofStrings()).isEqualTo(ImmutableSet.of("key1:value1", "key2:value2"));
         }
 
         @Test
@@ -1185,6 +1213,17 @@ public class StrictValueParserTest {
             @DisplayName("throws exception for duplicate keys")
             void duplicateKeysThrows() {
                 assertThrowsWithKey(() -> readMap("1=False;1=True"), IllegalArgumentException.class);
+            }
+
+            @Test
+            @DisplayName("can parse with arbitrary separators")
+            void arbitrarySeparators() {
+                StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "A>1|B>2|");
+                ImmutableMap<String, String> map = parser.asMap("|", ">").ofStrings();
+                assertThat(map).isEqualTo(ImmutableMap.of(
+                        "A", "1",
+                        "B", "2"
+                ));
             }
         }
 
@@ -1340,6 +1379,17 @@ public class StrictValueParserTest {
             void ignoresMissingKeys() {
                 ImmutableMultimap<K, V> multimap = readMultimap("=False;1=True;1=False;2=False;3=False;4=False");
                 assertThat(multimap).isEqualTo(getDefaultMultimap());
+            }
+
+            @Test
+            @DisplayName("can parse with arbitrary separators")
+            void arbitrarySeparators() {
+                StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "A~1$B~2");
+                ImmutableSetMultimap<String, String> map = parser.asSetMultimap("$", "~").ofStrings();
+                assertThat(map).isEqualTo(ImmutableSetMultimap.of(
+                        "A", "1",
+                        "B", "2"
+                ));
             }
         }
 

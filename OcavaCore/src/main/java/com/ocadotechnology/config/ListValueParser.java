@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.config;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
@@ -28,10 +29,12 @@ import com.ocadotechnology.id.StringId;
 public class ListValueParser {
     private final Enum<?> key;
     private final String value;
+    private final Optional<String> elementSeparator;
 
-    public ListValueParser(Enum<?> key, String value) {
+    public ListValueParser(Enum<?> key, String value, Optional<String> elementSeparator) {
         this.value = value;
         this.key = key;
+        this.elementSeparator = elementSeparator;
     }
 
     /**
@@ -114,6 +117,9 @@ public class ListValueParser {
      */
     public <T> ImmutableList<T> withElementParser(Function<String, T> elementParser) {
         try {
+            if (elementSeparator.isPresent()) {
+                return ConfigParsers.getListOf(elementParser, elementSeparator.get()).apply(value);
+            }
             return ConfigParsers.getListOf(elementParser).apply(value);
         } catch (Throwable t) {
             throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);

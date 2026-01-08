@@ -61,6 +61,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.config.TestConfig.Colours;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.StringId;
@@ -597,6 +598,12 @@ class ConfigParsersTest {
         void testOfEnums() {
             assertThat(getListOfEnums(Colours.class).apply(LIST_ENUM_VALUES)).contains(Colours.RED, Colours.RED, Colours.BLUE);
         }
+
+        @Test
+        void testArbitrarySeparator() {
+            ImmutableList<String> list = getListOf(Function.identity(), "\\").apply("1\\2\\3");
+            assertThat(list).containsExactly("1", "2", "3");
+        }
     }
 
     @Nested
@@ -651,6 +658,12 @@ class ConfigParsersTest {
         void testOfEnums() {
             assertThat(getSetOfEnums(Colours.class).apply(LIST_ENUM_VALUES)).contains(Colours.RED, Colours.BLUE);
         }
+
+        @Test
+        void testArbitrarySeparator() {
+            ImmutableSet<String> set = getSetOf(Function.identity(), "/").apply("1/2/3");
+            assertThat(set).containsExactly("1", "2", "3");
+        }
     }
 
     @Nested
@@ -679,6 +692,13 @@ class ConfigParsersTest {
 
             assertThat(parsed).containsOnlyKeys("key1");
             assertThat(parsed).containsEntry("key1", "value1");
+        }
+
+        @Test
+        void testArbitrarySeparator() {
+            ImmutableMap<String, String> parsed = parseMap("key1>value1$key2>value2$", "$", ">", Function.identity(), Function.identity());
+            assertThat(parsed).containsEntry("key1", "value1");
+            assertThat(parsed).containsEntry("key2", "value2");
         }
     }
 }

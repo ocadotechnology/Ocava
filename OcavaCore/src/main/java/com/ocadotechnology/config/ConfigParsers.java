@@ -20,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 
 import javax.annotation.CheckForNull;
@@ -41,6 +42,10 @@ import com.ocadotechnology.validation.Failer;
  * Collection of parser functions used in the parsing of config values
  */
 public class ConfigParsers {
+    static final String DEFAULT_MAP_ENTRY_SEPARATOR = ";";
+    static final String DEFAULT_MAP_KEY_VALUE_SEPARATOR = "=";
+    static final String DEFAULT_LIST_SEPARATOR = ",";
+    static final String ALTERNATIVE_LIST_SEPARATOR = ":";
 
     private ConfigParsers() {
         // Utility class
@@ -53,7 +58,7 @@ public class ConfigParsers {
      * @throws NumberFormatException if the config value cannot be parsed to a double.
      */
     public static double parseFraction(String s) {
-        var proportion = parseDouble(s);
+        double proportion = parseDouble(s);
         Preconditions.checkState(proportion >= 0 && proportion <= 1, "Value must be between 0 and 1");
         return proportion;
     }
@@ -340,6 +345,20 @@ public class ConfigParsers {
     }
 
     /**
+     * Utility to convert a string into an {@link ImmutableCollection} of T where the elements in the string
+     * are separated using an arbitrary string.
+     *
+     * @param conversion       Function that can convert a single entry of the list from String to the desired type T
+     * @param collector        ImmutableCollection collector
+     * @param <T>              Type of value to be stored in the list
+     * @param <C>              Type of collection
+     * @param elementSeparator The string to separate out elements
+     */
+    public static <T, C extends ImmutableCollection<T>> Function<String, C> getCollectionOf(Function<String, T> conversion, Collector<T, ?, C> collector, String elementSeparator) {
+        return value -> Arrays.stream(parseParts(value, elementSeparator)).filter(s -> !s.isEmpty()).map(conversion).collect(collector);
+    }
+
+    /**
      * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of T.
      *
      * @param conversion Function that can convert a single entry of the String to the desired type T
@@ -350,13 +369,37 @@ public class ConfigParsers {
     }
 
     /**
-     * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableList} of T.
+     * Utility to convert a string into an {@link ImmutableList} of T where the elements in the string
+     * are separated using an arbitrary string.
+     *
+     * @param conversion       Function that can convert a single entry of the String to the desired type T
+     * @param <T>              Type of value to be stored in the list
+     * @param elementSeparator The string to separate out elements
+     */
+    public static <T> Function<String, ImmutableList<T>> getListOf(Function<String, T> conversion, String elementSeparator) {
+        return value -> getCollectionOf(conversion, ImmutableList.toImmutableList(), elementSeparator).apply(value);
+    }
+
+    /**
+     * Utility to convert a comma (,) or colon (:) separated string into an {@link ImmutableSet} of T.
      *
      * @param conversion Function that can convert a single entry of the String to the desired type T
      * @param <T>        Type of value to be stored in the list
      */
     public static <T> Function<String, ImmutableSet<T>> getSetOf(Function<String, T> conversion) {
         return value -> getCollectionOf(conversion, ImmutableSet.toImmutableSet()).apply(value);
+    }
+
+    /**
+     * Utility to convert a string into an {@link ImmutableSet} of T where the elements in the string
+     * are separated using an arbitrary string.
+     *
+     * @param conversion       Function that can convert a single entry of the String to the desired type T
+     * @param <T>              Type of value to be stored in the list
+     * @param elementSeparator The string to separate out elements
+     */
+    public static <T> Function<String, ImmutableSet<T>> getSetOf(Function<String, T> conversion, String elementSeparator) {
+        return value -> getCollectionOf(conversion, ImmutableSet.toImmutableSet(), elementSeparator).apply(value);
     }
 
     /**
@@ -489,9 +532,24 @@ public class ConfigParsers {
      * Any pair which does not contain the character '=' will be ignored.
      */
     public static <K, V> ImmutableMap<K, V> parseMap(String value, Function<String, K> keyParser, Function<String, V> valueParser) {
+        return parseMap(value, DEFAULT_MAP_ENTRY_SEPARATOR, DEFAULT_MAP_KEY_VALUE_SEPARATOR, keyParser, valueParser);
+    }
+
+    /**
+     * Returns a typed-Map for a String specified as a collection of key-value pairs e.g.
+     * <pre>"key1=value1;key2=value2"</pre>
+     *
+     * where arbitrary separators can be used in place of "=" and ";".
+     */
+    public static <K, V> ImmutableMap<K, V> parseMap(
+            String value,
+            String entrySeparator,
+            String keyValueSeparator,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser) {
         ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
-        for (String pair : value.split(";")) {
-            int x = pair.indexOf('=');
+        for (String pair : value.split(Pattern.quote(entrySeparator))) {
+            int x = pair.indexOf(keyValueSeparator);
             if (x <= 0) {
                 continue;
             }
@@ -503,12 +561,18 @@ public class ConfigParsers {
     }
 
     /**
-     * Splits the String value by either comma (",") or colon (":")
+     * Splits the String value by either comma (",") or colon (":") and trims whitespace.
      */
     private static String[] parseParts(String value) {
-        String[] splitArray = value.contains(",")
-                ? value.split(",")
-                : value.split(":");
+        String separator = value.contains(DEFAULT_LIST_SEPARATOR) ? DEFAULT_LIST_SEPARATOR : ALTERNATIVE_LIST_SEPARATOR;
+        return parseParts(value, separator);
+    }
+
+    /**
+     * Splits the String value by an arbitrary separator and trims whitespace.
+     */
+    private static String[] parseParts(String value, String separator) {
+        String[] splitArray = value.split(Pattern.quote(separator));
 
         for (int i = 0; i < splitArray.length; i++) {
             splitArray[i] = splitArray[i].trim();
@@ -528,9 +592,18 @@ public class ConfigParsers {
             String value,
             Function<String, K> keyParser,
             Function<String, V> valueParser) {
+        return parseSetMultimap(value, DEFAULT_MAP_ENTRY_SEPARATOR, DEFAULT_MAP_KEY_VALUE_SEPARATOR, keyParser, valueParser);
+    }
+
+    public static <K, V> ImmutableSetMultimap<K, V> parseSetMultimap(
+            String value,
+            String entrySeparator,
+            String keyValueSeparator,
+            Function<String, K> keyParser,
+            Function<String, V> valueParser) {
         ImmutableSetMultimap.Builder<K, V> builder = ImmutableSetMultimap.builder();
-        for (String pair : value.split(";")) {
-            String[] keyValues = pair.split("=", -1);
+        for (String pair : value.split(Pattern.quote(entrySeparator))) {
+            String[] keyValues = pair.split(Pattern.quote(keyValueSeparator), -1);
             if (keyValues.length < 2 || keyValues[0].isEmpty()) {
                 continue;
             }

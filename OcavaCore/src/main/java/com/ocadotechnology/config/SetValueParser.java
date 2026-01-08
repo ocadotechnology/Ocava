@@ -15,6 +15,7 @@
  */
 package com.ocadotechnology.config;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableSet;
@@ -29,10 +30,12 @@ import com.ocadotechnology.id.StringId;
 public class SetValueParser {
     private final Enum<?> key;
     private final String value;
+    private final Optional<String> elementSeparator;
 
-    public SetValueParser(Enum<?> key, String value) {
+    public SetValueParser(Enum<?> key, String value, Optional<String> elementSeparator) {
         this.value = value;
         this.key = key;
+        this.elementSeparator = elementSeparator;
     }
 
     /**
@@ -118,6 +121,9 @@ public class SetValueParser {
      */
     public <T> ImmutableSet<T> withElementParser(Function<String, T> elementParser) {
         try {
+            if (elementSeparator.isPresent()) {
+                return ConfigParsers.getSetOf(elementParser, elementSeparator.get()).apply(value);
+            }
             return ConfigParsers.getSetOf(elementParser).apply(value);
         } catch (Throwable t) {
             throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);

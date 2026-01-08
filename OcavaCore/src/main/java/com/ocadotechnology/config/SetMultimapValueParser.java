@@ -26,10 +26,14 @@ import com.google.common.collect.ImmutableSetMultimap;
 public class SetMultimapValueParser {
     private final Enum<?> key;
     private final String value;
+    private final String entrySeparator;
+    private final String keyValueSeparator;
 
-    public SetMultimapValueParser(Enum<?> key, String value) {
+    public SetMultimapValueParser(Enum<?> key, String value, String entrySeparator, String keyValueSeparator) {
         this.value = value;
         this.key = key;
+        this.entrySeparator = entrySeparator;
+        this.keyValueSeparator = keyValueSeparator;
     }
 
     /**
@@ -61,7 +65,7 @@ public class SetMultimapValueParser {
      */
     public <K, V> ImmutableSetMultimap<K, V> withKeyAndValueParsers(Function<String, K> keyParser, Function<String, V> valueParser) {
         try {
-            return ConfigParsers.parseSetMultimap(value, keyParser, valueParser);
+            return ConfigParsers.parseSetMultimap(value, entrySeparator, keyValueSeparator, keyParser, valueParser);
         } catch (Throwable t) {
             throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
         }

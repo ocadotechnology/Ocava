@@ -26,10 +26,14 @@ import com.google.common.collect.ImmutableMap;
 public class MapValueParser {
     private final Enum<?> key;
     private final String value;
+    private final String entrySeparator;
+    private final String keyValueSeparator;
 
-    public MapValueParser(Enum<?> key, String value) {
+    public MapValueParser(Enum<?> key, String value, String entrySeparator, String keyValueSeparator) {
         this.value = value;
         this.key = key;
+        this.entrySeparator = entrySeparator;
+        this.keyValueSeparator = keyValueSeparator;
     }
 
     /**
@@ -62,7 +66,7 @@ public class MapValueParser {
      */
     public <K, V> ImmutableMap<K, V> withKeyAndValueParsers(Function<String, K> keyParser, Function<String, V> valueParser) {
         try {
-            return ConfigParsers.parseMap(value, keyParser, valueParser);
+            return ConfigParsers.parseMap(value, entrySeparator, keyValueSeparator, keyParser, valueParser);
         } catch (Throwable t) {
             throw new IllegalStateException("Error parsing " + ConfigKeyUtils.getKeyName(key), t);
         }

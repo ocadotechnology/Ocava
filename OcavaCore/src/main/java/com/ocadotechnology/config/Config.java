@@ -83,7 +83,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
  * to the way the configuration library works by layering multiple configuration on top of each other.
  * <p>
  * If the presence of a config value is used to change the flow of logic (i.e. a config flag) it might be that you wish
- * to override it's presence by command line or specific additional config file. However once a config key is present it
+ * to override its presence by command line or specific additional config file. However once a config key is present it
  * cannot be removed.
  * <p>
  * To overcome this limitation, the method {@link #getIfKeyAndValueDefined} treats a key which maps to an empty string

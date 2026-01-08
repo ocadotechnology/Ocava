@@ -16,6 +16,7 @@
 package com.ocadotechnology.config;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -31,7 +32,7 @@ import com.ocadotechnology.physics.units.LengthUnit;
 /**
  * Parser class to convert a config value into a typed result.
  */
-public class StrictValueParser {
+public final class StrictValueParser implements TypedValueParser {
     private final Enum<?> key;
     private final String value;
     @CheckForNull
@@ -330,28 +331,56 @@ public class StrictValueParser {
      * @return a {@link ListValueParser} operating on the String config value.
      */
     public ListValueParser asList() {
-        return new ListValueParser(key, value);
+        return new ListValueParser(key, value, Optional.empty());
+    }
+
+    /**
+     * @return a {@link ListValueParser} operating on the String config value.
+     */
+    public ListValueParser asList(String elementSeparator) {
+        return new ListValueParser(key, value, Optional.of(elementSeparator));
     }
 
     /**
      * @return a {@link SetValueParser} operating on the String config value.
      */
     public SetValueParser asSet() {
-        return new SetValueParser(key, value);
+        return new SetValueParser(key, value, Optional.empty());
+    }
+
+    /**
+     * @return a {@link SetValueParser} operating on the String config value.
+     */
+    public SetValueParser asSet(String elementSeparator) {
+        return new SetValueParser(key, value, Optional.of(elementSeparator));
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public MapValueParser asMap() {
-        return new MapValueParser(key, value);
+        return new MapValueParser(key, value, ConfigParsers.DEFAULT_MAP_ENTRY_SEPARATOR, ConfigParsers.DEFAULT_MAP_KEY_VALUE_SEPARATOR);
+    }
+
+    /**
+     * @return a {@link MapValueParser} operating on the String config value.
+     */
+    public MapValueParser asMap(String entrySeparator, String keyValueSeparator) {
+        return new MapValueParser(key, value, entrySeparator, keyValueSeparator);
     }
 
     /**
      * @return a {@link MapValueParser} operating on the String config value.
      */
     public SetMultimapValueParser asSetMultimap() {
-        return new SetMultimapValueParser(key, value);
+        return new SetMultimapValueParser(key, value, ConfigParsers.DEFAULT_MAP_ENTRY_SEPARATOR, ConfigParsers.DEFAULT_MAP_KEY_VALUE_SEPARATOR);
+    }
+
+    /**
+     * @return a {@link MapValueParser} operating on the String config value.
+     */
+    public SetMultimapValueParser asSetMultimap(String entrySeparator, String keyValueSeparator) {
+        return new SetMultimapValueParser(key, value, entrySeparator, keyValueSeparator);
     }
 
     /**

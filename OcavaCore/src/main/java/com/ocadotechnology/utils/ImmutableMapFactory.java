@@ -311,7 +311,7 @@ public class ImmutableMapFactory {
 
     /**
      * This function creates a new filtered {@link ImmutableMap} from a baseMap. The filter parameter, which is a {@link Predicate},
-     * is used to test each key in the base map. If the result of the test is true that key, along with it's value, is
+     * is used to test each key in the base map. If the result of the test is true that key, along with its value, is
      * added to the new ImmutableMap. Otherwise they are not.
      *
      * @param baseMap   the base ImmutableMap used to generate the new ImmutableMap.
@@ -328,7 +328,7 @@ public class ImmutableMapFactory {
 
     /**
      * This function creates a new filtered {@link ImmutableMap} from a baseMap. The filter parameter, which is a {@link Predicate},
-     * is used to test each value in the base map. If the result of the test is true that value, along with it's key, is
+     * is used to test each value in the base map. If the result of the test is true that value, along with its key, is
      * added to the new ImmutableMap. Otherwise they are not.
      *
      * @param baseMap     the base ImmutableMap used to generate the new ImmutableMap.

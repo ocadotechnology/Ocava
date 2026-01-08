@@ -219,7 +219,7 @@ public class TableLineBuilder {
     }
 
     /**
-     * This function takes a {@link TableLineExtender} and calls it's addData function on this builder.
+     * This function takes a {@link TableLineExtender} and calls its addData function on this builder.
      * This should be used to add data to the TableLineBuilder which, when the {@link #build()} function is invoked, will create
      * a {@link TableLine} with the added data.
      *
