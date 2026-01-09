@@ -37,13 +37,18 @@ public final class TimeUnitConverter {
      * @param targetUnit The unit of time {@code eventTime} is to be converted into.
      */
     public static long toTimeUnitLong(double eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
-        long time;
+        double doubleToConvert = eventTime * getTimeUnitsInSourceTimeUnit(currentUnit, targetUnit);
+        if (doubleToConvert >= Long.MAX_VALUE) {
+            return Long.MAX_VALUE;
+        }
+        if (doubleToConvert <= Long.MIN_VALUE) {
+            return Long.MIN_VALUE;
+        }
         try {
-            time = DoubleMath.roundToLong(eventTime * getTimeUnitsInSourceTimeUnit(currentUnit, targetUnit), RoundingMode.FLOOR);
+            return DoubleMath.roundToLong(doubleToConvert, RoundingMode.FLOOR);
         } catch (ArithmeticException e) {
             throw new IllegalArgumentException("Invalid timestamp: " + eventTime, e);
         }
-        return time;
     }
 
     /**

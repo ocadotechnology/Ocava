@@ -16,7 +16,6 @@
 package com.ocadotechnology.physics.units;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.RoundingMode;
 import java.util.Arrays;
@@ -105,11 +104,6 @@ public class TimeUnitConverterTest implements UtilityClassTest {
     }
 
     @Test
-    void toTimeUnitLong_Double_MinValue() {
-        assertThrows(IllegalArgumentException.class, () -> TimeUnitConverter.toTimeUnitLong(-Double.MAX_VALUE, TimeUnit.SECONDS, TimeUnit.MILLISECONDS));
-    }
-
-    @Test
     void toTimeUnitDouble_Double_MinValue_withNoConversion() {
         assertEquals(-Double.MAX_VALUE, TimeUnitConverter.toTimeUnitDouble(-Double.MAX_VALUE, TimeUnit.MILLISECONDS, TimeUnit.MILLISECONDS));
     }
@@ -123,11 +117,6 @@ public class TimeUnitConverterTest implements UtilityClassTest {
     void toTimeUnitDouble_Double_MinValue_withLargerConversion() {
         double ratio = getRatioOfUnits(TimeUnit.MILLISECONDS, TimeUnit.DAYS);
         assertEquals(-Double.MAX_VALUE * ratio, TimeUnitConverter.toTimeUnitDouble(-Double.MAX_VALUE, TimeUnit.MILLISECONDS, TimeUnit.DAYS));
-    }
-
-    @Test
-    void toTimeUnitLong_Double_MaxValue() {
-        assertThrows(IllegalArgumentException.class, () -> TimeUnitConverter.toTimeUnitLong(Double.MAX_VALUE, TimeUnit.SECONDS, TimeUnit.MILLISECONDS));
     }
 
     @Test

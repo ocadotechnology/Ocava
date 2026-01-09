@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class EventUtilTest {
@@ -33,6 +34,29 @@ class EventUtilTest {
     void cleanup() {
         EventUtil.setSimulationTimeUnit(TimeUnit.SECONDS);
     }
+
+    // region eventTimeToIsoString
+    enum EventTimeToIsoStringTestCase {
+        ZERO(0, "1970-01-01T00:00:00.000Z"),
+        THOUSAND(1000, "1970-01-01T00:00:01.000Z"),
+        LONG_MAX_VALUE(Long.MAX_VALUE, "+292278994-08-17T07:12:55.807Z"),
+        MIN_TIMESTAMP(-62135596800000L, "0001-01-01T00:00:00.000Z");
+        final double input;
+        final String expectedOutput;
+
+        EventTimeToIsoStringTestCase(double input, String expectedOutput) {
+            this.input = input;
+            this.expectedOutput = expectedOutput;
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EventTimeToIsoStringTestCase.class)
+    void eventTimeToIsoString_shouldConvertZero(EventTimeToIsoStringTestCase testCase) {
+        EventUtil.setSimulationTimeUnit(TimeUnit.MILLISECONDS);
+        assertEquals(testCase.expectedOutput, EventUtil.eventTimeToIsoString(testCase.input));
+    }
+    // endregion
 
     //region timeUnits
     @Test
@@ -103,28 +127,11 @@ class EventUtilTest {
     }
 
     @Test
-    void testEventTimeToString_PrimitiveDouble_MaxValue() {
-        assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString(Double.MAX_VALUE));
-    }
-
-    @Test
     void testEventTimeToString_PrimitiveDouble_MinSupportedValue() {
         // Use long here to avoid precision errors; value will be cast to double at point of use
         long minSupportedTime = -62135596800L;
         assertEquals("0001-01-01 00:00:00.000", EventUtil.eventTimeToString((double) minSupportedTime));
         assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString((double) (minSupportedTime - 1)));
-    }
-
-    @Test
-    void testEventTimeToString_PrimitiveDouble_MaxSupportedTime() {
-        //Setting to ms makes it easier to reason about this as the conversion factor is 1.0
-        EventUtil.setSimulationTimeUnit(TimeUnit.MILLISECONDS);
-        // Max supported time is constrained due to use of DoubleMath.roundToLong()
-        // Use long here to avoid precision errors; value will be cast to double at point of use
-        long maxSupportedTime = 9223372036854775295L;
-        // Years greater than 9999 are prefixed by "+", since the year format is "yyyy" - see SignStyle.EXCEEDS_PAD
-        assertEquals("+292278994-08-17 07:12:54.784", EventUtil.eventTimeToString((double) maxSupportedTime));
-        assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString((double) (maxSupportedTime + 1)));
     }
 
     @Test
@@ -180,28 +187,11 @@ class EventUtilTest {
     }
 
     @Test
-    void testEventTimeToString_Double_MaxValue() {
-        assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString(Double.valueOf(Double.MAX_VALUE)));
-    }
-
-    @Test
     void testEventTimeToString_Double_MinSupportedTime() {
         // Use long here to avoid precision errors; value will be converted to Double at point of use
         long minSupportedTime = -62135596800L;
         assertEquals("0001-01-01 00:00:00.000", EventUtil.eventTimeToString(Double.valueOf(minSupportedTime)));
         assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString(Double.valueOf(minSupportedTime - 1)));
-    }
-
-    @Test
-    void testEventTimeToString_Double_MaxSupportedTime() {
-        //Setting to ms makes it easier to reason about as the conversion factor is 1
-        EventUtil.setSimulationTimeUnit(TimeUnit.MILLISECONDS);
-        // Max supported time is constrained due to use of DoubleMath.roundToLong()
-        // Use long here to avoid precision errors; value will be converted to Double at point of use
-        long maxSupportedTime = 9223372036854775295L;
-        // Years greater than 9999 are prefixed by "+", since the year format is "yyyy" - see SignStyle.EXCEEDS_PAD
-        assertEquals("+292278994-08-17 07:12:54.784", EventUtil.eventTimeToString(Double.valueOf(maxSupportedTime)));
-        assertThrows(IllegalArgumentException.class, () -> EventUtil.eventTimeToString(Double.valueOf(maxSupportedTime + 1)));
     }
 
     @Test
