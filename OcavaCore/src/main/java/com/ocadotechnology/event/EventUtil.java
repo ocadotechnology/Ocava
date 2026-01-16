@@ -52,13 +52,13 @@ public class EventUtil {
         simulationTimeUnit = timeUnit;
     }
 
-    private static String eventTimeToFormat(double eventTime, DateTimeFormatter dateTimeFormatter) {
+    public static String eventTimeToFormat(double eventTime, DateTimeFormatter dateTimeFormatter) {
         return Double.isFinite(eventTime)
                 ? milliEventTimeToFormat(TimeUnitConverter.toTimeUnitLong(eventTime, simulationTimeUnit, TimeUnit.MILLISECONDS), dateTimeFormatter)
                 : Double.toString(eventTime);
     }
 
-    private static String eventTimeToFormat(long eventTime, DateTimeFormatter dateTimeFormatter) {
+    public static String eventTimeToFormat(long eventTime, DateTimeFormatter dateTimeFormatter) {
         return milliEventTimeToFormat(TimeUnitConverter.toTimeUnitLong(eventTime, simulationTimeUnit, TimeUnit.MILLISECONDS), dateTimeFormatter);
     }
 
