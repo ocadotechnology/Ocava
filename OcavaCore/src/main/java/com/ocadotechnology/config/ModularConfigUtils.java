@@ -23,13 +23,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
+import java.util.SortedSet;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.ocadotechnology.config.ConfigManager.ConfigDataSource;
 
 /**
@@ -84,13 +85,12 @@ public class ModularConfigUtils {
      * @param file - if file is not a modular config it will return the sorted properties inside the file.
      *
      */
-    public static Set<Entry<String, String>> getSortedMergedConfig(File file) throws IOException {
+    public static SortedSet<Entry<String, String>> getSortedMergedConfig(File file) throws IOException {
         ConfigDataSource configDataSource = ConfigDataSource.fromFile(file);
         Properties sourceProps = configDataSource.readAsProperties(new ConfigSettingCollector());
         return sourceProps.entrySet().stream()
                 .map(entry -> Map.entry(entry.getKey().toString(), entry.getValue().toString()))
-                .sorted(Entry.comparingByKey())
-                .collect(ImmutableSet.toImmutableSet());
+                .collect(ImmutableSortedSet.toImmutableSortedSet(Entry.comparingByKey()));
     }
 
     /**
@@ -100,9 +100,9 @@ public class ModularConfigUtils {
      * ----------------<br>
      * a.a.z=4 <br>
      * a.b.c=1 <br>
-     * a.e.d=3<br>
+     * a.e.d=3 <br>
      * <br>
-     * b.a.a=2<br>
+     * b.a.a=2 <br>
      * ----------------<br>
      *
      * @param configFile     the entry point of the config
@@ -117,11 +117,31 @@ public class ModularConfigUtils {
         File newFile = new File(outputFilePath);
         Preconditions.checkArgument(!configFile.equals(newFile), "Wrong outputFilePath: %s as this will overwrite the original file.", outputFilePath);
 
-        Set<Entry<String, String>> configList = getSortedMergedConfig(configFile);
+        SortedSet<Entry<String, String>> configList = getSortedMergedConfig(configFile);
 
         Optional.ofNullable(newFile.getParentFile()).ifPresent(File::mkdirs);
         Preconditions.checkArgument (newFile.createNewFile(), "OutputFilePath %s already exists.", outputFilePath);
 
+        writeConfigListToFile(newFile, configList);
+    }
+
+    /**
+     * This writes all the provided configs to file.
+     * The entries are sorted by the first key and would be grouped by it (with an empty line as separator).<br>
+     * Ex "a.b.c=1; b.a.a=2; a.e.d=3; a.a.z=4" would result in the following format <br>
+     * ----------------<br>
+     * a.a.z=4 <br>
+     * a.b.c=1 <br>
+     * a.e.d=3 <br>
+     * <br>
+     * b.a.a=2 <br>
+     * ----------------<br>
+     *
+     * @param newFile     the file to write to
+     * @param configList  the config to write
+     * @throws IOException
+     */
+    public static void writeConfigListToFile(File newFile, SortedSet<Entry<String, String>> configList) throws IOException {
         String currentKey = null;
         try (FileWriter fileWriter = new FileWriter(newFile, StandardCharsets.UTF_8)) {
             for (Entry<String, String> entry : configList) {
