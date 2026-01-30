@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
@@ -92,6 +93,70 @@ class CachedGroupByTest {
         assertThat(groupByAggregation.get(CoordinateLikeTestObject.ORIGIN)).isEqualTo(4);
         assertThat(groupByAggregation.get(otherCoordinate)).isEqualTo(5);
     }
+
+    //region Snapshot tests for CachedGroupBy
+
+    @Test
+    void snapshot_whenGroupByAggregationIsEmpty_returnsEmptySnapshot() {
+        assertThat(groupByAggregation.snapshot()).isEmpty();
+    }
+
+    @Test
+    void snapshot_whenGroupByAggregationIsAddedTo_returnsSnapshotWithThatElement() {
+        TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 42);
+        cache.add(testState);
+
+        assertThat(groupByAggregation.snapshot()).isEqualTo(ImmutableMap.of(testState.location, testState.value));
+    }
+
+    @Test
+    void snapshot_whenGroupByAggregationIsRemovedFrom_returnsSnapshotWithoutThatElement() {
+        TestState stateOne = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 1);
+        TestState stateTwo = new TestState(Id.create(2), CoordinateLikeTestObject.create(1, 1), 2);
+        cache.addAll(ImmutableSet.of(stateOne, stateTwo));
+        groupByAggregation.snapshot(); // So call below is not first call
+
+        cache.delete(stateOne.getId());
+
+        assertThat(groupByAggregation.snapshot()).isEqualTo(ImmutableMap.of(stateTwo.location, stateTwo.value));
+    }
+
+    @Test
+    void snapshot_whenNoChanges_thenSameObjectReturned() {
+        TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 42);
+        cache.add(testState);
+
+        Object firstSnapshot = groupByAggregation.snapshot();
+        Object secondSnapshot = groupByAggregation.snapshot();
+
+        assertThat(firstSnapshot).isSameAs(secondSnapshot);
+    }
+
+    @Test
+    void snapshot_whenGroupByAggregationAddedTo_thenNewObjectReturned() {
+        Object firstSnapshot = groupByAggregation.snapshot();
+
+        TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 5);
+        cache.add(testState);
+        Object secondSnapshot = groupByAggregation.snapshot();
+
+        assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+    }
+
+    @Test
+    void snapshot_whenGroupByAggregationRemovedFrom_thenNewObjectReturned() {
+        TestState testState = new TestState(Id.create(1), CoordinateLikeTestObject.ORIGIN, 5);
+        cache.add(testState);
+
+        Object firstSnapshot = groupByAggregation.snapshot();
+
+        cache.delete(testState.getId());
+
+        Object secondSnapshot = groupByAggregation.snapshot();
+        assertThat(firstSnapshot).isNotSameAs(secondSnapshot);
+    }
+
+    //endregion
 
     private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
         private final CoordinateLikeTestObject location;

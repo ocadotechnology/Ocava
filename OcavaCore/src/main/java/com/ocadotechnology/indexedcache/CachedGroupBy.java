@@ -26,14 +26,29 @@ import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.ocadotechnology.id.Identified;
 
+/**
+ * An index that groups elements of type {@code C} by a key of type {@code G} and aggregates them into a result of type {@code T}.
+ *
+ * <p>
+ * This class maintains a mapping from group keys ({@code G}) to aggregated results ({@code T}), updating the aggregation
+ * as elements are added or removed.
+ * </p>
+ *
+ * @param <C> - the type of elements being indexed and grouped.
+ * @param <G> - the type of the group key, as extracted from each element using the provided groupByExtractor function.
+ * @param <T> - the type of the aggregation result for each group, as produced by the provided collector. The expectation
+ *           is that T is immutable, as otherwise there can be unexpected behavior from returning cached objects directly.
+ */
 public class CachedGroupBy<C extends Identified<?>, G, T> extends AbstractIndex<C> {
 
     private final Multimap<G, C> cachedGroupValues = LinkedHashMultimap.create();
     private final Map<G, T> cachedAggregation = new LinkedHashMap<>();
+    private transient ImmutableMap<G, T> snapshot; //Null if the previous snapshot has been invalidated by an update
 
     private final Function<? super C, G> groupByExtractor;
     private final Collector<? super C, ?, T> collector;
@@ -57,6 +72,13 @@ public class CachedGroupBy<C extends Identified<?>, G, T> extends AbstractIndex<
         return cachedAggregation.getOrDefault(g, emptyAggregation);
     }
 
+    public ImmutableMap<G, T> snapshot() {
+        if (snapshot == null) {
+            snapshot = ImmutableMap.copyOf(cachedAggregation);
+        }
+        return snapshot;
+    }
+
     @Override
     protected void remove(C object) {
         G group = groupByExtractor.apply(object);
@@ -78,6 +100,7 @@ public class CachedGroupBy<C extends Identified<?>, G, T> extends AbstractIndex<
     }
 
     private void updateGroup(G g) {
+        snapshot = null;
         Collection<C> groupValues = cachedGroupValues.get(g);
 
         // Clear up empty groups to avoid a memory leak
