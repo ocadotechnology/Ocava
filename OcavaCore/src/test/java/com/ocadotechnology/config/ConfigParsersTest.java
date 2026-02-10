@@ -45,6 +45,7 @@ import static com.ocadotechnology.config.ConfigParsers.parseMap;
 import static com.ocadotechnology.config.ConfigParsers.parseSpeed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +89,7 @@ class ConfigParsersTest {
         @ParameterizedTest
         @ValueSource(strings = {"-0.1", "1.1"})
         void parseFraction_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String fraction) {
-            Exception exception = Assertions.assertThrows(
+            Exception exception = assertThrows(
                     IllegalStateException.class,
                     () -> ConfigParsers.parseFraction(fraction)
             );
@@ -101,7 +102,7 @@ class ConfigParsersTest {
         @ParameterizedTest
         @ValueSource(strings = {"blah", ""})
         void parseFraction_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String fraction) {
-            Assertions.assertThrows(
+            assertThrows(
                     NumberFormatException.class,
                     () -> ConfigParsers.parseFraction(fraction)
             );
@@ -127,7 +128,7 @@ class ConfigParsersTest {
         @ParameterizedTest
         @ValueSource(strings = {"-0.1", "1.1", "-10.0%", "110.0%"})
         void parseProbability_whenProvidedDataOutOfRange_thenThrowsIllegalStateException(String probability) {
-            Exception exception = Assertions.assertThrows(
+            Exception exception = assertThrows(
                     IllegalStateException.class,
                     () -> ConfigParsers.parseProbability(probability)
             );
@@ -140,7 +141,7 @@ class ConfigParsersTest {
         @ParameterizedTest
         @ValueSource(strings = {"blah", "", "%", "blah%", "%blah%", "%20", "%20%"})
         void parseProbability_whenProvidedDataNotANumber_thenThrowsNumberFormatException(String probability) {
-            Assertions.assertThrows(
+            assertThrows(
                     NumberFormatException.class,
                     () -> ConfigParsers.parseProbability(probability)
             );
@@ -688,15 +689,20 @@ class ConfigParsersTest {
 
         @Test
         void testMissingEquals() {
-            ImmutableMap<String, String> parsed = parseMap("key1=value1;key2 value2", Function.identity(), Function.identity());
-
-            assertThat(parsed).containsOnlyKeys("key1");
-            assertThat(parsed).containsEntry("key1", "value1");
+            assertThrows(IllegalArgumentException.class, () -> parseMap("value1", Function.identity(), Function.identity()));
+            assertThrows(IllegalArgumentException.class, () -> parseMap("key1=value1;key2 value2", Function.identity(), Function.identity()));
         }
 
         @Test
         void testArbitrarySeparator() {
             ImmutableMap<String, String> parsed = parseMap("key1>value1$key2>value2$", "$", ">", Function.identity(), Function.identity());
+            assertThat(parsed).containsEntry("key1", "value1");
+            assertThat(parsed).containsEntry("key2", "value2");
+        }
+
+        @Test
+        void testLongSeparator() {
+            ImmutableMap<String, String> parsed = parseMap("key1==value1;key2==value2;", ";", "==", Function.identity(), Function.identity());
             assertThat(parsed).containsEntry("key1", "value1");
             assertThat(parsed).containsEntry("key2", "value2");
         }

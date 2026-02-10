@@ -549,12 +549,16 @@ public class ConfigParsers {
             Function<String, V> valueParser) {
         ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
         for (String pair : value.split(Pattern.quote(entrySeparator))) {
-            int x = pair.indexOf(keyValueSeparator);
-            if (x <= 0) {
+            if (pair.isBlank()) {
                 continue;
             }
+
+            int x = pair.indexOf(keyValueSeparator);
+            if (x <= 0) {
+                throw new IllegalArgumentException(String.format("Expected config to be a map but got %s", value));
+            }
             K propertyKey = keyParser.apply(pair.substring(0, x).trim());
-            V propertyValue = valueParser.apply(pair.substring(x + 1).trim());
+            V propertyValue = valueParser.apply(pair.substring(x + keyValueSeparator.length()).trim());
             builder.put(propertyKey, propertyValue);
         }
         return builder.build();

@@ -17,6 +17,7 @@ package com.ocadotechnology.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -1203,10 +1204,9 @@ public class StrictValueParserTest {
             }
 
             @Test
-            @DisplayName("entries with missing keys are ignored")
-            void ignoresMissingKeys() {
-                ImmutableMap<K, V> map = readMap("=False;1=True;2=False;3=False;4=False");
-                assertThat(map).isEqualTo(getDefaultMap());
+            @DisplayName("throws for entries with missing keys")
+            void missingKeys() {
+                assertThrows(IllegalStateException.class, () -> readMap("=False;1=True;2=False;3=False;4=False"));
             }
 
             @Test
@@ -1247,11 +1247,26 @@ public class StrictValueParserTest {
             }
 
             @Test
-            @DisplayName("ignores missing values")
-            void handlesMissingValues() {
-                ImmutableMap<String, String> map = readMap("1;2=");
-                assertThat(map.get("1")).isNull();
-                assertThat(map.get("2")).isEmpty();
+            @DisplayName("throws for missing values")
+            void missingValues() {
+                assertThrows(IllegalStateException.class, () -> readMap("1;2="));
+                assertThrows(IllegalStateException.class, () -> readMap("1=blah;2;"));
+            }
+
+            @Test
+            @DisplayName("throws for missing keys")
+            void missingKeys() {
+                assertThrows(IllegalStateException.class, () -> readMap("=blah;2=woo"));
+                assertThrows(IllegalStateException.class, () -> readMap("1=blah;=foo;"));
+            }
+
+            @Test
+            @DisplayName("loads empty values")
+            void emptyValues() {
+                ImmutableMap<String, String> map = readMap("1=;2=");
+                assertThat(map).containsOnlyKeys("1", "2");
+                assertThat(map).containsEntry("1", "");
+                assertThat(map).containsEntry("2", "");
             }
         }
 
@@ -1286,17 +1301,9 @@ public class StrictValueParserTest {
             }
 
             @Test
-            @DisplayName("applies valueParser to empty string for missing values")
+            @DisplayName("throws for missing values")
             void handlesMissingValues() {
-                StrictValueParser parser = new StrictValueParser(TestConfig.FOO, "1;2=");
-
-                Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
-                    assertThat(v).isEmpty();
-                    return v;
-                };
-                ImmutableMap<Integer, String> map = parser.asMap().withKeyAndValueParsers(Integer::valueOf, identityFunctionWithAssertionStringIsEmpty);
-                assertThat(map).containsOnlyKeys(2);
-                assertThat(map).containsEntry(2, "");
+                assertThrows(IllegalStateException.class, () -> readMap("1;2="));
             }
 
             @Test

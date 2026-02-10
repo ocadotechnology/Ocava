@@ -17,6 +17,7 @@ package com.ocadotechnology.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -1298,10 +1299,9 @@ public class OptionalValueParserTest {
             }
 
             @Test
-            @DisplayName("entries with missing keys are ignored")
-            void ignoresMissingKeys() {
-                Optional<ImmutableMap<K, V>> map = readMap("=False;1=True;2=False;3=False;4=False");
-                assertThat(map).isEqualTo(Optional.of(getDefaultMap()));
+            @DisplayName("throws for entries with missing keys")
+            void missingKeys() {
+                assertThrows(IllegalStateException.class, () -> readMap("=False;1=True;2=False;3=False;4=False"));
             }
 
             @Test
@@ -1342,10 +1342,9 @@ public class OptionalValueParserTest {
             }
 
             @Test
-            @DisplayName("ignores missing values")
-            void handlesMissingValues() {
-                Optional<ImmutableMap<String, String>> map = readMap("1;2=");
-                assertThat(map.get()).isEqualTo(ImmutableMap.of("2", ""));
+            @DisplayName("throws for missing values without =")
+            void missingValues() {
+                assertThrows(IllegalStateException.class, () -> readMap("1;2="));
             }
         }
 
@@ -1382,16 +1381,9 @@ public class OptionalValueParserTest {
             }
 
             @Test
-            @DisplayName("applies valueParser to empty string for missing values")
-            void handlesMissingValues() {
-                OptionalValueParser parser = new OptionalValueParser(TestConfig.FOO, "1;2=");
-
-                Function<String, String> identityFunctionWithAssertionStringIsEmpty = v -> {
-                    assertThat(v).isEmpty();
-                    return v;
-                };
-                Optional<ImmutableMap<Object, String>> map = parser.asMap().withKeyAndValueParsers(Integer::valueOf, identityFunctionWithAssertionStringIsEmpty);
-                assertThat(map.get()).isEqualTo(ImmutableMap.of(2, ""));
+            @DisplayName("throws for missing values without =")
+            void missingValues() {
+                assertThrows(IllegalStateException.class, () -> readMap("1;2="));
             }
 
             @Test
