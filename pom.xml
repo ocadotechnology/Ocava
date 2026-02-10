@@ -60,7 +60,7 @@
         <jackson-databind.version>2.21.0</jackson-databind.version>
         <jackson-dataformat-cbor.version>2.21.0</jackson-dataformat-cbor.version>
         <disruptor.version>4.0.0</disruptor.version>
-        <logback-classic.version>1.5.28</logback-classic.version>
+        <logback-classic.version>1.5.29</logback-classic.version>
         <jmh.version>1.37</jmh.version>
         <sqlite-jdbc.version>3.51.1.0</sqlite-jdbc.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
