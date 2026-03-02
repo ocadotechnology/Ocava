@@ -55,7 +55,8 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
      * @param initialAcceleration initial acceleration
      * @param vehicleProperties   vehicle properties
      * @return Traversal that starts with the given speed and acceleration and ends at rest after traversing distance.
-     * If the distance is less than the braking distance, then the braking traversal will instead be returned.
+     * If the distance is less than the braking distance, then the braking traversal will instead be returned, covering
+     * the full braking distance.
      */
     public Traversal create(double distance, double initialSpeed, double initialAcceleration, VehicleMotionProperties vehicleProperties) {
         validateInputs(distance, initialSpeed, initialAcceleration, vehicleProperties);
@@ -266,7 +267,7 @@ public final class ConstantJerkTraversalCalculator implements TraversalCalculato
         ImmutableList<TraversalSection> sections = traversalSectionBuilder
                 .addAll(deceleratingPhaseSections)
                 .build();
-        return new Traversal(ImmutableList.copyOf(sections));
+        return new Traversal(sections);
     }
 
     private void validateInputs(double distance, double initialSpeed, double initialAcceleration, VehicleMotionProperties props) throws TraversalCalculationException {
