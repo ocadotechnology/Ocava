@@ -24,11 +24,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 17
-        uses: actions/setup-java@v1
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: 'temurin'
       - shell: bash
         env:
@@ -41,5 +41,5 @@ jobs:
           ossrh_login: ${{ secrets.ossrh_login }}
           ossrh_pass: ${{ secrets.ossrh_pass }}
         run: |
-          mvn -B versions:set -DnewVersion="${{ github.event.release.tag_name }}"
+          mvn -B versions:set -DprocessAllModules -DnewVersion="${{ github.event.release.tag_name }}"
           mvn -B -s .mvn/settings.xml -P release deploy --file pom.xml
