@@ -1,16 +1,32 @@
-# Development Process
+# Contributing (for public users )
+If you are an external contributor, you should contribute by creating a fork of the project, 
+before submitting a pull request through GitHub.
 
 Please note that this library is primarily developed on an internal, private repository.  This means that issue numbers referenced in commit messages refer to the issue numbers in the internal repository.
 
-# Contributing
+# Contributing (for internal guest users)
+If you are contributing from an internal source,
+but are not part of the members of the project in the internal repository,
+you should contribute by creating a fork of the project, before submitting a pull request.
+
+Alternatively, you can contact a team member on Slack to gain temporary developer access to the repository.
+
+# Contributing (for members)
 Branch, edit, push, submit a merge request. Please squash commits on merging into master.
 
 We would encourage users to contribute a variety of domain-independent utilities which fit into the broad theme of creating, running and using simulations.
+We would ask users to not contribute any code or commit messages which refer to Ocado-specific concepts or projects.
+This may simply require some effort to remove such references, or in other cases it may be that the concept being shared is too Ocado-specific to be placed in the public GitHub repository or too niche to be useful.
+In these cases it may make more sense to share this code in the separate internal Ocava project
 
 All new code added to this project, or changes made to existing code, should be committed with tests.
 
 Effort should be made to ensure that code added to this project is in a state where it is easy to understand and use, especially where it may use non-standard or complex patterns.
-This may be achieved though example code (eg in unit tests) or javadocs. 
+This may be achieved though example code (eg in unit tests) or javadocs. Reviewers from outside the author's team can be particularly helpful for this. 
+
+## Review
+All changes should be reviewed by two reviewers.
+Typically these would be one member of Ocado's Simulation teams, and one other.
 
 ## Commit messages
 You must follow commit message formats used for automated releases. They are enforced by push rules.
