@@ -7,7 +7,7 @@ Please note that this library is primarily developed on an internal, private rep
 # Contributing (for internal guest users)
 If you are contributing from an internal source,
 but are not part of the members of the project in the internal repository,
-you should contribute by creating a fork of the project, before submitting a pull request.
+you should contribute by creating a fork of the project, before submitting a merge request.
 
 Alternatively, you can contact a team member on Slack to gain temporary developer access to the repository.
 
@@ -22,7 +22,7 @@ In these cases it may make more sense to share this code in the separate interna
 All new code added to this project, or changes made to existing code, should be committed with tests.
 
 Effort should be made to ensure that code added to this project is in a state where it is easy to understand and use, especially where it may use non-standard or complex patterns.
-This may be achieved though example code (eg in unit tests) or javadocs. Reviewers from outside the author's team can be particularly helpful for this. 
+This may be achieved through example code (eg in unit tests) or javadocs. Reviewers from outside the author's team can be particularly helpful for this. 
 
 ## Review
 All changes should be reviewed by two reviewers.
