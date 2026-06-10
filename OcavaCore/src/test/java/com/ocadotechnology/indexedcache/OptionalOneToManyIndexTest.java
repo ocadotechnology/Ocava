@@ -16,6 +16,7 @@
 package com.ocadotechnology.indexedcache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
@@ -49,19 +50,92 @@ class OptionalOneToManyIndexTest {
         OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
             // IMPORTANT:
             // DO NOT inline indexFunction, as that will not fail to compile should addOptionalOneToManyIndex() require a type
-            // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate<>, due
+            // of Function<TestState, Optional<Coordinate>> instead of Function<? super TestState, Optional<Coordinate>>, due
             // to automatic type coercion of the lambda.
             Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
             return cache.addOptionalOneToManyIndex(indexFunction);
         }
     }
 
+    @Nested
+    class OptionalSubTypeOneToManyIndexTests extends IndexTests {
+        @Override
+        OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+            // IMPORTANT:
+            // DO NOT inline indexFunction, as that will not fail to compile should addOptionalSubTypeOneToManyIndex()
+            // require a type of Function<ExtendedTestState, Optional<CoordinateLikeTestObject>> instead of
+            // Function<? super ExtendedTestState, Optional<CoordinateLikeTestObject>>, due to type coercion of the lambda.
+            Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
+
+            // This is unchecked, but we need to force the type of the index to match the return type of the function in
+            // order to use the test suite.
+            @SuppressWarnings("unchecked")
+            OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> subTypeIndex =
+                    (OptionalOneToManyIndex<CoordinateLikeTestObject, TestState>) (OptionalOneToManyIndex<?, ?>)
+                            cache.addOptionalSubTypeOneToManyIndex(null, ExtendedTestState.class, indexFunction);
+            return subTypeIndex;
+        }
+
+        @Override
+        TestState createState(long id, Optional<CoordinateLikeTestObject> location) {
+            return new ExtendedTestState(Id.create(id), location);
+        }
+
+        @Test
+        void add_whenBaseTypeStateAdded_thenStateNotIndexed() {
+            cache.add(new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN)));
+
+            assertThat(index.streamKeys().mapToInt(index::count).sum()).isEqualTo(0);
+        }
+
+        @Test
+        void add_whenBaseAndSubTypeStatesAdded_thenOnlySubTypeStateIndexed() {
+            cache.add(new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN)));
+            ExtendedTestState extended = new ExtendedTestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(extended);
+
+            assertThat(index.stream(CoordinateLikeTestObject.ORIGIN)).containsExactly(extended);
+        }
+
+        @Test
+        void update_whenBaseTypeStateReplacedBySubType_thenThrowsException() {
+            TestState baseState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(baseState);
+
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+
+            assertThatThrownBy(() -> cache.update(baseState, extended))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.streamKeys().mapToInt(index::count).sum()).isEqualTo(0);
+        }
+
+        @Test
+        void update_whenSubTypeStateReplacedByBaseType_thenThrowsException() {
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(extended);
+
+            TestState baseState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+
+            assertThatThrownBy(() -> cache.update(extended, baseState))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.stream(CoordinateLikeTestObject.ORIGIN)).containsExactly(extended);
+        }
+    }
+
     private abstract static class IndexTests {
 
-        private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> index;
+        IndexedImmutableObjectCache<TestState, TestState> cache;
+        OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> index;
 
         abstract OptionalOneToManyIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+
+        TestState createState(long id, Optional<CoordinateLikeTestObject> location) {
+            return new TestState(Id.create(id), location);
+        }
 
         @BeforeEach
         void init() {
@@ -76,13 +150,13 @@ class OptionalOneToManyIndexTest {
         class BehaviourTests {
             @Test
             void add_whenOptionalIsEmpty_thenStateNotIndexed() {
-                cache.add(new TestState(Id.create(1), Optional.empty()));
+                cache.add(createState(1, Optional.empty()));
                 assertThat(index.streamKeys().mapToInt(index::count).sum()).isEqualTo(0);
             }
 
             @Test
             void add_whenOptionalIsPresent_thenStateIndexed() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 assertThat(index.stream(CoordinateLikeTestObject.ORIGIN)).first().isEqualTo(testState);
@@ -95,7 +169,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenOptionalIsPresent_returnsSnapshotWithSingleElement() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 assertThat(index.snapshot().values()).containsOnly(testState);
@@ -103,8 +177,8 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenOptionalIsNotPresent_returnsSnapshotWithoutElement() {
-                TestState stateOne = new TestState(Id.create(1), Optional.empty());
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateOne = createState(1, Optional.empty());
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
                 assertThat(index.snapshot().values()).containsOnly(stateTwo);
@@ -112,8 +186,8 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.create(1, 0)));
+                TestState stateOne = createState(1, Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.create(1, 0)));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
                 index.snapshot();  // So call below is not first call
 
@@ -124,9 +198,9 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void forEach_appliesConsumerToEach() {
-                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState stateThree = new TestState(Id.create(3), Optional.empty());
+                TestState stateOne = createState(1, Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateThree = createState(3, Optional.empty());
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
 
                 ArrayList<TestState> arrayList = new ArrayList<>();
@@ -139,9 +213,9 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void forEachWithFilter_appliesConsumerToEach() {
-                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState stateThree = new TestState(Id.create(3), Optional.empty());
+                TestState stateOne = createState(1, Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateThree = createState(3, Optional.empty());
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
 
                 ArrayList<TestState> arrayList = new ArrayList<>();
@@ -169,7 +243,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -182,7 +256,7 @@ class OptionalOneToManyIndexTest {
             void snapshot_whenIndexAddedTo_newObjectReturned() {
                 Object firstSnapshot = index.snapshot();
 
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
                 Object secondSnapshot = index.snapshot();
 
@@ -191,7 +265,7 @@ class OptionalOneToManyIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -205,8 +279,8 @@ class OptionalOneToManyIndexTest {
             @Test
             void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState testState2 = new TestState(Id.create(2), Optional.empty());
+                TestState testState1 = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState2 = createState(2, Optional.empty());
                 cache.add(testState1);
 
                 Object firstSnapshot = index.snapshot();
@@ -220,8 +294,8 @@ class OptionalOneToManyIndexTest {
             @Test
             void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState testState2 = new TestState(Id.create(2), Optional.empty());
+                TestState testState1 = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState2 = createState(2, Optional.empty());
                 cache.add(testState1);
                 cache.add(testState2);
 
@@ -239,7 +313,7 @@ class OptionalOneToManyIndexTest {
         Optional<CoordinateLikeTestObject> getLocation();
     }
 
-    private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
+    private static sealed class TestState extends SimpleLongIdentified<TestState> implements LocationState permits ExtendedTestState {
         private final Optional<CoordinateLikeTestObject> location;
 
         private TestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
@@ -250,6 +324,12 @@ class OptionalOneToManyIndexTest {
         @Override
         public Optional<CoordinateLikeTestObject> getLocation() {
             return location;
+        }
+    }
+
+    private static final class ExtendedTestState extends TestState {
+        private ExtendedTestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
+            super(id, location);
         }
     }
 }

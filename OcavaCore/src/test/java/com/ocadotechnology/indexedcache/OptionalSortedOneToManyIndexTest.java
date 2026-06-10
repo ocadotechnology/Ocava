@@ -61,16 +61,89 @@ class OptionalSortedOneToManyIndexTest {
         }
     }
 
+    @Nested
+    class OptionalSubTypeSortedOneToManyIndexTests extends IndexTests {
+        @Override
+        OptionalSortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+            // IMPORTANT:
+            // DO NOT inline indexFunction, as that will not fail to compile should addOptionalSubTypeSortedOneToManyIndex()
+            // require a type of Function<ExtendedTestState, Optional<Integer>> instead of
+            // Function<? super ExtendedTestState, Optional<Integer>>, due to type coercion of the lambda.
+            Comparator<LocationState> comparator = Comparator.comparingInt(LocationState::getComparatorValue);
+
+            // This is unchecked, but we need to force the type of the index to match the return type of the function in
+            // order to use the test suite.
+            @SuppressWarnings("unchecked")
+            OptionalSortedOneToManyIndex<Integer, TestState> subTypeIndex =
+                    (OptionalSortedOneToManyIndex<Integer, TestState>) (OptionalSortedOneToManyIndex<?, ?>)
+                            cache.addOptionalSubTypeSortedOneToManyIndex(INDEX_NAME, ExtendedTestState.class, LocationState::getIndexingValue, comparator);
+            return subTypeIndex;
+        }
+
+        @Override
+        TestState createState(long id, Integer comparatorValue, Optional<Integer> indexingValue) {
+            return new ExtendedTestState(Id.create(id), comparatorValue, indexingValue);
+        }
+
+        @Test
+        void add_whenBaseTypeStateAdded_thenStateNotIndexed() {
+            cache.add(new TestState(Id.create(1), 1, INDEXING_VALUE));
+
+            assertThat(index.streamKeySet().mapToInt(index::size).sum()).isEqualTo(0);
+        }
+
+        @Test
+        void add_whenBaseAndSubTypeStatesAdded_thenOnlySubTypeStateIndexed() {
+            cache.add(new TestState(Id.create(1), 1, INDEXING_VALUE));
+            ExtendedTestState extended = new ExtendedTestState(Id.create(2), 2, INDEXING_VALUE);
+            cache.add(extended);
+
+            assertThat(index.stream(INDEXING_VALUE.get())).containsExactly(extended);
+        }
+
+        @Test
+        void update_whenBaseTypeStateReplacedBySubType_thenThrowsException() {
+            TestState baseState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(baseState);
+
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), 1, INDEXING_VALUE);
+
+            assertThatThrownBy(() -> cache.update(baseState, extended))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.streamKeySet().mapToInt(index::size).sum()).isEqualTo(0);
+        }
+
+        @Test
+        void update_whenSubTypeStateReplacedByBaseType_thenThrowsException() {
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), 1, INDEXING_VALUE);
+            cache.add(extended);
+
+            TestState baseState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+
+            assertThatThrownBy(() -> cache.update(extended, baseState))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.stream(INDEXING_VALUE.get())).containsExactly(extended);
+        }
+    }
+
     private abstract static class IndexTests {
 
-        private static final Optional<Integer> INDEXING_VALUE = Optional.of(1);
-        private static final Optional<Integer> DIFFERENT_INDEXING_VALUE = Optional.of(2);
-        private static final int NOT_EXISTING_INDEXING_VALUE = 999;
+        static final Optional<Integer> INDEXING_VALUE = Optional.of(1);
+        static final Optional<Integer> DIFFERENT_INDEXING_VALUE = Optional.of(2);
+        static final int NOT_EXISTING_INDEXING_VALUE = 999;
 
-        private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OptionalSortedOneToManyIndex<Integer, TestState> index;
+        IndexedImmutableObjectCache<TestState, TestState> cache;
+        OptionalSortedOneToManyIndex<Integer, TestState> index;
 
         abstract OptionalSortedOneToManyIndex<Integer, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+
+        TestState createState(long id, Integer comparatorValue, Optional<Integer> indexingValue) {
+            return new TestState(Id.create(id), comparatorValue, indexingValue);
+        }
 
         @BeforeEach
         void init() {
@@ -80,14 +153,14 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenOptionalIsEmpty_thenStateNotIndexed() {
-            cache.add(new TestState(Id.create(1), 1, Optional.empty()));
+            cache.add(createState(1, 1, Optional.empty()));
 
             assertThat(index.streamKeySet().mapToInt(index::size).sum()).isEqualTo(0);
         }
 
         @Test
         void addToCache_whenOptionalIsPresent_thenStateIndexed() {
-            TestState testState = new TestState(Id.create(100), 1, INDEXING_VALUE);
+            TestState testState = createState(100, 1, INDEXING_VALUE);
             cache.add(testState);
 
             assertThat(index.asList(INDEXING_VALUE.get()).get(0)).isEqualTo(testState);
@@ -95,8 +168,8 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndexCompareAsEqual_thenThrowsExceptionOnSecondAdd() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 1, INDEXING_VALUE);
 
             assertThatCode(() -> cache.add(stateOne)).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateTwo))
@@ -111,8 +184,8 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndexCompareAsEqual_thenThrowsExceptionOnAtomicAdd() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 1, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 1, INDEXING_VALUE);
 
             assertThatThrownBy(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo)))
                     .isInstanceOf(CacheUpdateException.class)
@@ -125,9 +198,9 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndexCompareAsEqual_thenThrowsExceptionOnFirstInconsistence() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
-            TestState stateThree = new TestState(Id.create(3), 1, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, INDEXING_VALUE);
+            TestState stateThree = createState(3, 1, INDEXING_VALUE);
 
             assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
             assertThatThrownBy(() -> cache.add(stateThree))
@@ -142,19 +215,19 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenMultipleTestStatesWithDifferentIndicesCompareAsEqual_thenIndexedSuccessfully() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 1, DIFFERENT_INDEXING_VALUE);
 
             assertThatCode(() -> cache.addAll(ImmutableSet.of(stateOne, stateTwo))).doesNotThrowAnyException();
         }
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndex_thenFirstAndLastCorrect() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
-            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
-            TestState stateFour = new TestState(Id.create(4), 4, INDEXING_VALUE);
-            TestState stateFive = new TestState(Id.create(5), 5, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, INDEXING_VALUE);
+            TestState stateThree = createState(3, 3, INDEXING_VALUE);
+            TestState stateFour = createState(4, 4, INDEXING_VALUE);
+            TestState stateFive = createState(5, 5, INDEXING_VALUE);
             ImmutableList<TestState> expected = ImmutableList.of(stateOne, stateTwo, stateThree, stateFour, stateFive);
             cache.addAll(expected.reverse());
 
@@ -164,11 +237,11 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void addToCache_whenMultipleTestStatesWithTheSameIndex_thenIndexIsSorted() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
-            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
-            TestState stateFour = new TestState(Id.create(4), 4, INDEXING_VALUE);
-            TestState stateFive = new TestState(Id.create(5), 5, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, INDEXING_VALUE);
+            TestState stateThree = createState(3, 3, INDEXING_VALUE);
+            TestState stateFour = createState(4, 4, INDEXING_VALUE);
+            TestState stateFive = createState(5, 5, INDEXING_VALUE);
             ImmutableList<TestState> expected = ImmutableList.of(stateOne, stateTwo, stateThree, stateFour, stateFive);
             cache.addAll(expected.reverse());
 
@@ -178,9 +251,9 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void forEachWithFilter_appliesConsumerToEach() {
-            TestState stateOne = new TestState(Id.create(1), 1, DIFFERENT_INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, Optional.empty());
-            TestState stateThree = new TestState(Id.create(3), 3, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, DIFFERENT_INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, Optional.empty());
+            TestState stateThree = createState(3, 3, INDEXING_VALUE);
             cache.addAll(ImmutableSet.of(stateOne, stateTwo, stateThree));
 
             ArrayList<TestState> arrayList = new ArrayList<>();
@@ -192,12 +265,12 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void updateCache_whenComparatorValuesAreSwapped_testStatesAreSorted() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, INDEXING_VALUE);
             cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
-            Change<TestState> updateOne = Change.update(stateOne, new TestState(Id.create(1), 2, INDEXING_VALUE));
-            Change<TestState> updateTwo = Change.update(stateTwo, new TestState(Id.create(2), 1, INDEXING_VALUE));
+            Change<TestState> updateOne = Change.update(stateOne, createState(1, 2, INDEXING_VALUE));
+            Change<TestState> updateTwo = Change.update(stateTwo, createState(2, 1, INDEXING_VALUE));
             cache.updateAll(ImmutableSet.of(updateOne, updateTwo));
 
             ImmutableList<TestState> testStates = index.asList(INDEXING_VALUE.get());
@@ -212,7 +285,7 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenOptionalIsPresent_returnsSnapshotWithSingleElement() {
-            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState = createState(1, 1, INDEXING_VALUE);
             cache.add(testState);
 
             assertThat(index.snapshot().values()).containsOnly(testState);
@@ -220,8 +293,8 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenOptionalIsNotPresent_returnsSnapshotWithoutElement() {
-            TestState stateOne = new TestState(Id.create(1), 1, Optional.empty());
-            TestState stateTwo = new TestState(Id.create(2), 2, INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, Optional.empty());
+            TestState stateTwo = createState(2, 2, INDEXING_VALUE);
             cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
             assertThat(index.snapshot().values()).containsOnly(stateTwo);
@@ -229,8 +302,8 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-            TestState stateOne = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState stateTwo = new TestState(Id.create(2), 2, DIFFERENT_INDEXING_VALUE);
+            TestState stateOne = createState(1, 1, INDEXING_VALUE);
+            TestState stateTwo = createState(2, 2, DIFFERENT_INDEXING_VALUE);
             cache.addAll(ImmutableSet.of(stateOne, stateTwo));
             index.snapshot();  // So call below is not first call
 
@@ -249,7 +322,7 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState = createState(1, 1, INDEXING_VALUE);
             cache.add(testState);
 
             Object firstSnapshot = index.snapshot();
@@ -262,7 +335,7 @@ class OptionalSortedOneToManyIndexTest {
         void snapshot_whenIndexAddedTo_newObjectReturned() {
             Object firstSnapshot = index.snapshot();
 
-            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState = createState(1, 1, INDEXING_VALUE);
             cache.add(testState);
             Object secondSnapshot = index.snapshot();
 
@@ -271,7 +344,7 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-            TestState testState = new TestState(Id.create(1), 1, INDEXING_VALUE);
+            TestState testState = createState(1, 1, INDEXING_VALUE);
             cache.add(testState);
 
             Object firstSnapshot = index.snapshot();
@@ -285,8 +358,8 @@ class OptionalSortedOneToManyIndexTest {
         @Test
         void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
             // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-            TestState testState1 = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 2, Optional.empty());
+            TestState testState1 = createState(1, 1, INDEXING_VALUE);
+            TestState testState2 = createState(2, 2, Optional.empty());
             cache.add(testState1);
 
             Object firstSnapshot = index.snapshot();
@@ -300,8 +373,8 @@ class OptionalSortedOneToManyIndexTest {
         @Test
         void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
             // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMultimap.of()
-            TestState testState1 = new TestState(Id.create(1), 1, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 2, Optional.empty());
+            TestState testState1 = createState(1, 1, INDEXING_VALUE);
+            TestState testState2 = createState(2, 2, Optional.empty());
             cache.add(testState1);
             cache.add(testState2);
 
@@ -315,11 +388,11 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void snapshot_whenMultipleStatesPerValue_thenStatesAreSorted() {
-            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
-            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
-            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
-            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            TestState testState1 = createState(1, 3, INDEXING_VALUE);
+            TestState testState2 = createState(2, 1, INDEXING_VALUE);
+            TestState testState3 = createState(3, 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = createState(4, 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = createState(5, 4, DIFFERENT_INDEXING_VALUE);
             cache.add(testState1);
             cache.add(testState2);
             cache.add(testState3);
@@ -336,11 +409,11 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void beforeAndAfter_whenProvidedItemWithSameIndexingValueToOneProvided_shouldReturnApplicableValue() {
-            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
-            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
-            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
-            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            TestState testState1 = createState(1, 3, INDEXING_VALUE);
+            TestState testState2 = createState(2, 1, INDEXING_VALUE);
+            TestState testState3 = createState(3, 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = createState(4, 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = createState(5, 4, DIFFERENT_INDEXING_VALUE);
             cache.add(testState1);
             cache.add(testState2);
             cache.add(testState3);
@@ -355,11 +428,11 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void beforeAndAfter_whenProvidedItemWithDifferentIndexingValueToOneProvided_shouldStillReturnApplicableValue() {
-            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
-            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
-            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
-            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            TestState testState1 = createState(1, 3, INDEXING_VALUE);
+            TestState testState2 = createState(2, 1, INDEXING_VALUE);
+            TestState testState3 = createState(3, 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = createState(4, 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = createState(5, 4, DIFFERENT_INDEXING_VALUE);
             cache.add(testState1);
             cache.add(testState2);
             cache.add(testState3);
@@ -380,11 +453,11 @@ class OptionalSortedOneToManyIndexTest {
 
         @Test
         void beforeAndAfter_whenProvidedNotExistingIndexValue_shouldReturnEmpty() {
-            TestState testState1 = new TestState(Id.create(1), 3, INDEXING_VALUE);
-            TestState testState2 = new TestState(Id.create(2), 1, INDEXING_VALUE);
-            TestState testState3 = new TestState(Id.create(3), 6, DIFFERENT_INDEXING_VALUE);
-            TestState testState4 = new TestState(Id.create(4), 2, DIFFERENT_INDEXING_VALUE);
-            TestState testState5 = new TestState(Id.create(5), 4, DIFFERENT_INDEXING_VALUE);
+            TestState testState1 = createState(1, 3, INDEXING_VALUE);
+            TestState testState2 = createState(2, 1, INDEXING_VALUE);
+            TestState testState3 = createState(3, 6, DIFFERENT_INDEXING_VALUE);
+            TestState testState4 = createState(4, 2, DIFFERENT_INDEXING_VALUE);
+            TestState testState5 = createState(5, 4, DIFFERENT_INDEXING_VALUE);
             cache.add(testState1);
             cache.add(testState2);
             cache.add(testState3);
@@ -400,7 +473,7 @@ class OptionalSortedOneToManyIndexTest {
         Optional<Integer> getIndexingValue();
     }
 
-    private static class TestState extends SimpleLongIdentified<TestState> implements LocationState {
+    private static sealed class TestState extends SimpleLongIdentified<TestState> implements LocationState permits ExtendedTestState {
         private final Optional<Integer> indexingValue;
         private final Integer comparatorValue;
 
@@ -423,6 +496,12 @@ class OptionalSortedOneToManyIndexTest {
         @Override
         public String toString() {
             return MoreObjects.toStringHelper(this).add("id", getId()).add("indexingValue", indexingValue).add("comparatorValue", comparatorValue).toString();
+        }
+    }
+
+    private static final class ExtendedTestState extends TestState {
+        private ExtendedTestState(Id<TestState> id, Integer comparatorValue, Optional<Integer> indexingValue) {
+            super(id, comparatorValue, indexingValue);
         }
     }
 }

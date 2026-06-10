@@ -85,12 +85,85 @@ class OptionalOneToOneIndexTest {
         }
     }
 
+    @Nested
+    class OptionalSubTypeOneToOneIndexTests extends IndexTests {
+        @Override
+        OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache) {
+            // IMPORTANT:
+            // DO NOT inline indexFunction, as that will not fail to compile should addOptionalSubTypeOneToOneIndex()
+            // require a type of Function<ExtendedTestState, Optional<CoordinateLikeTestObject>> instead of
+            // Function<? super ExtendedTestState, Optional<CoordinateLikeTestObject>>, due to type coercion of the lambda.
+            Function<LocationState, Optional<CoordinateLikeTestObject>> indexFunction = LocationState::getLocation;
+
+            // This is unchecked, but we need to force the type of the index to match the return type of the function in
+            // order to use the test suite.
+            @SuppressWarnings("unchecked")
+            OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> subTypeIndex =
+                    (OptionalOneToOneIndex<CoordinateLikeTestObject, TestState>) (OptionalOneToOneIndex<?, ?>)
+                            cache.addOptionalSubTypeOneToOneIndex(INDEX_NAME, ExtendedTestState.class, indexFunction);
+            return subTypeIndex;
+        }
+
+        @Override
+        TestState createState(long id, Optional<CoordinateLikeTestObject> location) {
+            return new ExtendedTestState(Id.create(id), location);
+        }
+
+        @Test
+        void add_whenBaseTypeStateAdded_thenStateNotIndexed() {
+            cache.add(new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN)));
+
+            assertThat(index.streamKeys().count()).isEqualTo(0);
+        }
+
+        @Test
+        void add_whenBaseAndSubTypeStatesAdded_thenOnlySubTypeStateIndexed() {
+            cache.add(new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN)));
+            ExtendedTestState extended = new ExtendedTestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(extended);
+
+            assertThat(index.getOrNull(CoordinateLikeTestObject.ORIGIN)).isEqualTo(extended);
+        }
+
+        @Test
+        void update_whenBaseTypeStateReplacedBySubType_thenThrowsException() {
+            TestState baseState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(baseState);
+
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+
+            assertThatThrownBy(() -> cache.update(baseState, extended))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.streamKeys().count()).isEqualTo(0);
+        }
+
+        @Test
+        void update_whenSubTypeStateReplacedByBaseType_thenThrowsException() {
+            ExtendedTestState extended = new ExtendedTestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+            cache.add(extended);
+
+            TestState baseState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+
+            assertThatThrownBy(() -> cache.update(extended, baseState))
+                    .isInstanceOf(CacheUpdateException.class)
+                    .hasRootCauseInstanceOf(IndexUpdateException.class);
+
+            assertThat(index.getOrNull(CoordinateLikeTestObject.ORIGIN)).isEqualTo(extended);
+        }
+    }
+
     private abstract static class IndexTests {
 
-        private IndexedImmutableObjectCache<TestState, TestState> cache;
-        private OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> index;
+        IndexedImmutableObjectCache<TestState, TestState> cache;
+        OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> index;
 
         abstract OptionalOneToOneIndex<CoordinateLikeTestObject, TestState> addIndexToCache(IndexedImmutableObjectCache<TestState, TestState> cache);
+
+        TestState createState(long id, Optional<CoordinateLikeTestObject> location) {
+            return new TestState(Id.create(id), location);
+        }
 
         @BeforeEach
         void init() {
@@ -105,13 +178,13 @@ class OptionalOneToOneIndexTest {
         class BehaviourTests {
             @Test
             void add_whenOptionalIsEmpty_thenStateNotIndexed() {
-                cache.add(new TestState(Id.create(1), Optional.empty()));
+                cache.add(createState(1, Optional.empty()));
                 assertThat(index.streamKeys().count()).isEqualTo(0);
             }
 
             @Test
             void add_whenOptionalIsPresent_thenStateIndexed() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 assertThat(index.getOrNull(CoordinateLikeTestObject.ORIGIN)).isEqualTo(testState);
@@ -119,12 +192,12 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void update_addAndRemoveAreIdempotent() {
-                TestState original = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState original = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 assertThat(index.streamKeys().count()).isEqualTo(0);
                 cache.add(original);
                 assertThat(index.streamKeys().count()).isEqualTo(1);
 
-                TestState sameIdNoCoordinate = new TestState(Id.create(1), Optional.empty());
+                TestState sameIdNoCoordinate = createState(1, Optional.empty());
                 cache.update(original, sameIdNoCoordinate);
                 assertThat(index.streamKeys().count()).isEqualTo(0);
 
@@ -134,10 +207,10 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void update_whenKeyChangedValueIsUpdated() {
-                TestState original = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState original = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(original);
 
-                TestState sameIdChangedCoordinate = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(1, 1)));
+                TestState sameIdChangedCoordinate = createState(1, Optional.of(CoordinateLikeTestObject.create(1, 1)));
                 cache.update(original, sameIdChangedCoordinate);
                 assertThat(index.streamKeys().count()).isEqualTo(1);
                 assertThat(index.get(sameIdChangedCoordinate.getLocation().get()).get()).isEqualTo(sameIdChangedCoordinate);
@@ -148,11 +221,11 @@ class OptionalOneToOneIndexTest {
                 assertThat(cache.size()).isEqualTo(0);
                 assertThat(index.count()).isEqualTo(0);
 
-                TestState one = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState one = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(one);
                 assertThat(index.count()).isEqualTo(1);
 
-                TestState two = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.create(1, 1)));
+                TestState two = createState(2, Optional.of(CoordinateLikeTestObject.create(1, 1)));
                 cache.add(two);
                 assertThat(index.count()).isEqualTo(2);
 
@@ -165,8 +238,8 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void add_whenNewValueHasSameKeyAsOld_thenThrowsExceptionAndRollsBackChanges() {
-                TestState original = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState clash = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState original = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState clash = createState(2, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(original);
 
                 //Check exception
@@ -187,7 +260,7 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void snapshot_whenOptionalIsPresent_returnsSnapshotWithSingleElement() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(CoordinateLikeTestObject.ORIGIN, testState));
@@ -195,8 +268,8 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void snapshot_whenOptionalIsNotPresent_returnsSnapshotWithoutElement() {
-                TestState stateOne = new TestState(Id.create(1), Optional.empty());
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState stateOne = createState(1, Optional.empty());
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
 
                 assertThat(index.snapshot()).isEqualTo(ImmutableMap.of(CoordinateLikeTestObject.ORIGIN, stateTwo));
@@ -204,8 +277,8 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_returnsSnapshotWithoutThatElement() {
-                TestState stateOne = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.create(0, 1)));
-                TestState stateTwo = new TestState(Id.create(2), Optional.of(CoordinateLikeTestObject.create(1, 0)));
+                TestState stateOne = createState(1, Optional.of(CoordinateLikeTestObject.create(0, 1)));
+                TestState stateTwo = createState(2, Optional.of(CoordinateLikeTestObject.create(1, 0)));
                 cache.addAll(ImmutableSet.of(stateOne, stateTwo));
                 index.snapshot();  // So call below is not first call
 
@@ -232,7 +305,7 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void snapshot_whenNoChangesToNonEmptyCache_thenSameObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -245,7 +318,7 @@ class OptionalOneToOneIndexTest {
             void snapshot_whenIndexAddedTo_newObjectReturned() {
                 Object firstSnapshot = index.snapshot();
 
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
                 Object secondSnapshot = index.snapshot();
 
@@ -254,7 +327,7 @@ class OptionalOneToOneIndexTest {
 
             @Test
             void snapshot_whenIndexRemovedFrom_newObjectReturned() {
-                TestState testState = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
                 cache.add(testState);
 
                 Object firstSnapshot = index.snapshot();
@@ -268,8 +341,8 @@ class OptionalOneToOneIndexTest {
             @Test
             void snapshot_whenIndexNotAddedTo_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState testState2 = new TestState(Id.create(2), Optional.empty());
+                TestState testState1 = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState2 = createState(2, Optional.empty());
                 cache.add(testState1);
 
                 Object firstSnapshot = index.snapshot();
@@ -283,8 +356,8 @@ class OptionalOneToOneIndexTest {
             @Test
             void snapshot_whenIndexNotRemovedFrom_thenSameObjectReturned() {
                 // Need to ensure a non-empty initial index, otherwise snapshot will always be ImmutableMap.of()
-                TestState testState1 = new TestState(Id.create(1), Optional.of(CoordinateLikeTestObject.ORIGIN));
-                TestState testState2 = new TestState(Id.create(2), Optional.empty());
+                TestState testState1 = createState(1, Optional.of(CoordinateLikeTestObject.ORIGIN));
+                TestState testState2 = createState(2, Optional.empty());
                 cache.add(testState1);
                 cache.add(testState2);
 
@@ -356,7 +429,7 @@ class OptionalOneToOneIndexTest {
                                 IntStream.range(1, count + 1)
                                         .mapToObj(y -> {
                                             Optional<CoordinateLikeTestObject> location = ((x + y) % emptyFrequency) == 0 ? Optional.empty() : Optional.of(CoordinateLikeTestObject.create(x, y));
-                                            return new TestState(Id.create(x * count * 10 + y), location);
+                                            return createState(x * count * 10L + y, location);
                                         }))
                         .flatMap(Function.identity())
                         .toArray(TestState[]::new);
@@ -368,7 +441,7 @@ class OptionalOneToOneIndexTest {
         Optional<CoordinateLikeTestObject> getLocation();
     }
 
-    private static final class TestState extends SimpleLongIdentified<TestState> implements LocationState {
+    private static sealed class TestState extends SimpleLongIdentified<TestState> implements LocationState permits ExtendedTestState {
         private final Optional<CoordinateLikeTestObject> location;
 
         private TestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
@@ -387,6 +460,12 @@ class OptionalOneToOneIndexTest {
         @Override
         public Optional<CoordinateLikeTestObject> getLocation() {
             return location;
+        }
+    }
+
+    private static final class ExtendedTestState extends TestState {
+        private ExtendedTestState(Id<TestState> id, Optional<CoordinateLikeTestObject> location) {
+            super(id, location);
         }
     }
 }

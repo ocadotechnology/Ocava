@@ -500,6 +500,20 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addIndex(index);
     }
 
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     */
+    public <R, S extends C> OptionalOneToManyIndex<R, S> addOptionalSubTypeOneToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Optional<R>> function) {
+        OptionalOneToManyIndex<R, S> index = new OptionalOneToManyIndex<>(name, function);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
     public <R> OptionalOneToOneIndex<R, C> addOptionalOneToOneIndex(Function<? super C, Optional<R>> function) {
         return addOptionalOneToOneIndex(null, function);
     }
@@ -522,6 +536,20 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
      */
     public <R> OptionalOneToOneIndex<R, C> addOptionalOneToOneIndex(@CheckForNull String name, Function<? super C, Optional<R>> function, Hints hint) {
         return addIndex(OptionalOneToOneIndexFactory.newOptionalOneToOneIndex(name, function, hint));
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     */
+    public <R, S extends C> OptionalOneToOneIndex<R, S> addOptionalSubTypeOneToOneIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Optional<R>> function) {
+        AbstractOptionalOneToOneIndex<R, S> index = OptionalOneToOneIndexFactory.newOptionalOneToOneIndex(name, function, Hints.optimiseForQuery);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
     }
 
     /**
@@ -617,6 +645,26 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             Comparator<? super C> comparator) {
         OptionalSortedOneToManyIndex<R, C> index = new OptionalSortedOneToManyIndex<>(name, function, comparator);
         return addIndex(index);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     * @param comparator A comparator on a set of elements C which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements C where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public <R, S extends C> OptionalSortedOneToManyIndex<R, S> addOptionalSubTypeSortedOneToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Optional<R>> function,
+            Comparator<? super S> comparator) {
+        OptionalSortedOneToManyIndex<R, S> index = new OptionalSortedOneToManyIndex<>(name, function, comparator);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
     }
 
     public <G, T> CachedGroupBy<C, G, T> cacheGroupBy(Function<? super C, G> groupByExtractor, Collector<? super C, ?, T> collector) {
