@@ -428,6 +428,23 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     *
+     * Uses the optimiseForQuery implementation. The optimiseForInfrequentChanges variant is not available for
+     * sub-type indexes as it requires a reference to the full cache.
+     */
+    public <R, S extends C> ManyToManyIndex<R, S> addSubTypeManyToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Set<R>> function) {
+        ManyToManyIndex<R, S> index = new DefaultManyToManyIndex<>(name, function);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
+    /**
      * @param function key extraction function
      * @param comparator A comparator on a set of elements C which is consistent with equals().
      *        More formally, a total-order comparator on a set of elements C where
@@ -458,6 +475,26 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addIndex(index);
     }
 
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     * @param comparator A comparator on a set of elements S which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements S where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public <R, S extends C> OptionalSortedManyToManyIndex<R, S> addOptionalSubTypeSortedManyToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Optional<Set<R>>> function,
+            Comparator<? super S> comparator) {
+        OptionalSortedManyToManyIndex<R, S> index = new OptionalSortedManyToManyIndex<>(name, function, comparator);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
     public <R> OneToOneIndex<R, C> addOneToOneIndex(Function<? super C, R> function) {
         return addOneToOneIndex(null, function);
     }
@@ -474,12 +511,40 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
         return addIndex(new OneToOneIndex<>(name, function, hint));
     }
 
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     */
+    public <R, S extends C> OneToOneIndex<R, S> addSubTypeOneToOneIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, R> function) {
+        OneToOneIndex<R, S> index = new OneToOneIndex<>(name, function, Hints.optimiseForQuery);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
     public <R> OneToManyIndex<R, C> addOneToManyIndex(Function<? super C, R> function) {
         return addOneToManyIndex(null, function);
     }
 
     public <R> OneToManyIndex<R, C> addOneToManyIndex(@CheckForNull String name, Function<? super C, R> function) {
         return addIndex(OneToManyIndex.create(name, function));
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     */
+    public <R, S extends C> OneToManyIndex<R, S> addSubTypeOneToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, R> function) {
+        OneToManyIndex<R, S> index = OneToManyIndex.create(name, function);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
     }
 
     public <R> ManyToOneIndex<R, C> addManyToOneIndex(Function<? super C, Collection<R>> function) {
@@ -489,6 +554,20 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     public <R> ManyToOneIndex<R, C> addManyToOneIndex(@CheckForNull String name, Function<? super C, Collection<R>> function) {
         ManyToOneIndex<R, C> index = new ManyToOneIndex<>(name, function);
         return addIndex(index);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function
+     */
+    public <R, S extends C> ManyToOneIndex<R, S> addSubTypeManyToOneIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, Collection<R>> function) {
+        ManyToOneIndex<R, S> index = new ManyToOneIndex<>(name, function);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
     }
 
     public <R> OptionalOneToManyIndex<R, C> addOptionalOneToManyIndex(Function<? super C, Optional<R>> function) {
@@ -584,6 +663,26 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function.
+     * @param comparator A comparator on a set of elements S which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements S where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public <R, S extends C> SortedOneToManyIndex<R, S> addSubTypeSortedOneToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, R> function,
+            Comparator<? super S> comparator) {
+        SortedOneToManyIndex<R, S> index = new SortedOneToManyIndex<>(name, function, comparator);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
+    /**
      * @param function key extraction function.
      * @param comparatorGenerator generates a comparator for a given key
      *        A comparator on a set of elements C which is consistent with equals().
@@ -614,6 +713,27 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             Function<R, ? extends Comparator<? super C>> comparatorGenerator) {
         SeparatelySortedOneToManyIndex<R, C> index = new SeparatelySortedOneToManyIndex<>(name, function, comparatorGenerator);
         return addIndex(index);
+    }
+
+    /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param function key extraction function.
+     * @param comparatorGenerator generates a comparator for a given key
+     *        A comparator on a set of elements S which is consistent with equals().
+     *        More formally, a total-order comparator on a set of elements S where
+     *        compare(c1, c2) == 0 implies that Objects.equals(c1, c2) == true.
+     *        This requirement is strictly enforced. Violating it will produce an IllegalStateException
+     *        and leave the cache in an inconsistent state.
+     */
+    public <R, S extends C> SeparatelySortedOneToManyIndex<R, S> addSubTypeSeparatelySortedOneToManyIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Function<? super S, R> function,
+            Function<R, ? extends Comparator<? super S>> comparatorGenerator) {
+        SeparatelySortedOneToManyIndex<R, S> index = new SeparatelySortedOneToManyIndex<>(name, function, comparatorGenerator);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
     }
 
     /**
