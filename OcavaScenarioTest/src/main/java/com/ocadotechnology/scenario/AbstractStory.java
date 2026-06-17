@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.random.RepeatableRandom;
 import com.ocadotechnology.simulation.Simulation;
@@ -43,6 +45,7 @@ public abstract class AbstractStory<S extends Simulation> {
     protected final StepManager<S> stepManager;
     protected final ScenarioNotificationListener listener;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public AbstractStory(AbstractScenarioSimulationApi<S> simulation) {
         OcavaCleaner.register();
 

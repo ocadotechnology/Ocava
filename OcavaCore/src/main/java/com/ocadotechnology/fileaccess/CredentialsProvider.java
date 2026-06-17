@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Properties;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -32,6 +34,7 @@ public class CredentialsProvider {
     private static final String USER_HOME = "user.home";
     private final String homeDir;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This exception in this constructor precludes the existence of any data in the object.")
     public CredentialsProvider() {
         homeDir = System.getProperty(USER_HOME);
         Preconditions.checkNotNull(homeDir, "user.home is not set");

@@ -17,16 +17,20 @@ package com.ocadotechnology.utils;
 
 import java.util.function.Supplier;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 
 public class RememberingSupplier<T> implements Supplier<T> {
     private final Supplier<T> supplier;
     private T value;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public RememberingSupplier(Supplier<T> supplier) {
         this.supplier = Preconditions.checkNotNull(supplier, "RememberingSupplier can't be initialised with a null supplier");
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public RememberingSupplier(T value) {
         supplier = null;
         this.value = Preconditions.checkNotNull(value, "RememberingSupplier can't be initialised with a null value");

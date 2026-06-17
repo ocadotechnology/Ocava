@@ -23,6 +23,8 @@ import java.util.function.UnaryOperator;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.id.Identified;
@@ -37,6 +39,7 @@ public class Change<C extends Identified<?>> implements Serializable {
     @CheckForNull public final C originalObject;
     @CheckForNull public final C newObject;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This exception in this constructor precludes the existence of any data in the object.")
     private Change(@Nullable C originalObject, @Nullable C newObject) {
         Preconditions.checkState(originalObject != null || newObject != null, "Change should have at least one non null object");
         this.originalObject = originalObject;

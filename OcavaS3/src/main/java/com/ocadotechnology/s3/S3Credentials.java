@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.s3;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.config.Config;
@@ -28,6 +30,7 @@ class S3Credentials {
 
     private final String endpoint, accessKey, secretKey;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This Preconditions in this class ensure that the only secret element is populated last")
     S3Credentials(Config<S3Config> s3Config) {
         fileProvider = new CredentialsProvider();
         if (configDefinesAllValues(s3Config)){

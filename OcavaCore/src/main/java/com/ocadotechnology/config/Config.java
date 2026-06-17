@@ -508,14 +508,17 @@ public class Config<E extends Enum<E>> implements Serializable, Comparable<Confi
     }
 
     private Optional<String> getIfKeyDefined(Enum<?> key) {
-        if (key.getClass().equals(cls) && values.containsKey(cls.cast(key))) {
-            return Optional.ofNullable(values.get(cls.cast(key)).currentValue)
-                    .map(String::trim);
+        if (key.getClass().equals(cls)) {
+            ConfigValue value = values.get(cls.cast(key));
+            return value != null
+                    ? Optional.ofNullable(value.currentValue).map(String::trim)
+                    : Optional.empty();
         }
         Class<?> declaringClass = key.getDeclaringClass();
         while (declaringClass != null) {
-            if (subConfig.containsKey(declaringClass)) {
-                return subConfig.get(declaringClass).getIfKeyDefined(key);
+            Config<?> declaringClassConfig = subConfig.get(declaringClass);
+            if (declaringClassConfig != null) {
+                return declaringClassConfig.getIfKeyDefined(key);
             }
             declaringClass = declaringClass.getDeclaringClass();
         }

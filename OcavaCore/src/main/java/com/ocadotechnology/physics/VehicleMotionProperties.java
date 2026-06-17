@@ -17,6 +17,8 @@ package com.ocadotechnology.physics;
 
 import java.io.Serializable;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 
@@ -92,6 +94,7 @@ public class VehicleMotionProperties implements Serializable {
      * @param jerkDecelerationUp must be less than zero
      * @param jerkDecelerationDown must be greater than zero
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public VehicleMotionProperties(
             double acceleration,
             double accelerationAbsoluteTolerance,
@@ -132,6 +135,7 @@ public class VehicleMotionProperties implements Serializable {
         this.jerkDecelerationDown = jerkDecelerationDown;
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public VehicleMotionProperties(double maxSpeed, double acceleration, double jerk, double toleranceFraction) {
         this(acceleration,
                 acceleration * toleranceFraction,
@@ -145,6 +149,7 @@ public class VehicleMotionProperties implements Serializable {
                 jerk);
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public VehicleMotionProperties(double maxSpeed, double acceleration, double deceleration, double speedAndAccelerationToleranceFraction,
             double jerkAccelUp, double jerkAccelDown, double jerkDecelUp, double jerkDecelDown) {
         this(acceleration, acceleration * speedAndAccelerationToleranceFraction,

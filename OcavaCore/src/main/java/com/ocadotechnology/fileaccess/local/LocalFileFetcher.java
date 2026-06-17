@@ -18,6 +18,8 @@ package com.ocadotechnology.fileaccess.local;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.fileaccess.DataSourceDefinition;
@@ -26,6 +28,7 @@ import com.ocadotechnology.fileaccess.service.DataAccessor;
 public class LocalFileFetcher implements DataAccessor {
     private final Config<LocalFileConfig> localConfig;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This exception in this constructor precludes the existence of any data in the object.")
     public LocalFileFetcher(Config<?> initialConfig) {
         Preconditions.checkArgument((initialConfig != null && initialConfig.enumTypeMatches(LocalFileConfig.class)), "Invalid localConfig");
         this.localConfig = (Config<LocalFileConfig>) initialConfig;

@@ -20,6 +20,8 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -64,6 +66,7 @@ public class TrafficLightController implements RestHandler {
 
     private Cancelable nextCycleEvent;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public TrafficLightController(
             RestSender restSender,
             EventScheduler scheduler,
@@ -169,7 +172,7 @@ public class TrafficLightController implements RestHandler {
     }
 
     private double getDurationOfCycle(TrafficLightState currentState) {
-        return lightDurationsForTraffic.get(currentState.getTrafficColour());
+        return Preconditions.checkNotNull(lightDurationsForTraffic.get(currentState.getTrafficColour()), "No data found for %s", currentState.getTrafficColour());
     }
 
     @VisibleForTesting

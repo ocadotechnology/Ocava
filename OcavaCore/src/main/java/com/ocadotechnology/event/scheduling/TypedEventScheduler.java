@@ -15,6 +15,8 @@
  */
 package com.ocadotechnology.event.scheduling;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 
 /**
@@ -23,6 +25,7 @@ import com.google.common.base.Preconditions;
 public abstract class TypedEventScheduler implements EventSchedulerWithCanceling {
     protected final EventSchedulerType type;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public TypedEventScheduler(EventSchedulerType type) {
         Preconditions.checkNotNull(type, "Type can't be null");
         this.type = type;

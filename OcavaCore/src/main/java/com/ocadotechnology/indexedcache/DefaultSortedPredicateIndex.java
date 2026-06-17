@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 
 import javax.annotation.CheckForNull;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
 
@@ -45,6 +47,7 @@ public class DefaultSortedPredicateIndex<C extends Identified<?>> extends Abstra
      *                   This requirement is strictly enforced. Violating it will produce an IllegalStateException
      *                   and leave the cache in an inconsistent state.
      */
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "There is no exception thrown.")
     public DefaultSortedPredicateIndex(@CheckForNull String name, Predicate<? super C> predicate, Comparator<? super C> comparator) {
         super(name);
         this.index = new SortedOneToManyIndex<>(name, predicate::test, comparator);

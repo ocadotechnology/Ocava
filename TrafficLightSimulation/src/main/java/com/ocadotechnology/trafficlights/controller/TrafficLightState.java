@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -45,10 +47,12 @@ public class TrafficLightState {
     private final ImmutableMap<LightType, LightColour> lightTypeLightColourMap;
     private final boolean pedestrianCrossingRequested;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public TrafficLightState(LightColour trafficColour, LightColour pedestrianColour, boolean pedestrianCrossingRequested) {
         this(ImmutableMap.of(LightType.TRAFFIC, trafficColour, LightType.PEDESTRIAN, pedestrianColour), pedestrianCrossingRequested);
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public TrafficLightState(ImmutableMap<LightType, LightColour> lightTypeLightColourMap, boolean pedestrianCrossingRequested) {
         this.lightTypeLightColourMap = lightTypeLightColourMap;
         this.pedestrianCrossingRequested = pedestrianCrossingRequested;

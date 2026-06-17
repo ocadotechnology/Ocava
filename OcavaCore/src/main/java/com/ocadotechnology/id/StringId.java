@@ -19,6 +19,8 @@ import java.io.Serializable;
 
 import javax.annotation.concurrent.Immutable;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -54,6 +56,7 @@ public class StringId<T> implements Serializable, Comparable<StringId<T>>, Ident
         return new StringId<>(id);
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     private StringId(String id) {
         Preconditions.checkNotNull(id);
         Preconditions.checkArgument(!id.isEmpty());

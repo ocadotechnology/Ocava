@@ -17,6 +17,8 @@ package com.ocadotechnology.s3.spi;
 
 import java.nio.file.Path;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.config.Config;
 import com.ocadotechnology.fileaccess.DataSourceDefinition;
@@ -29,6 +31,7 @@ public class S3FileFetcher implements DataAccessor {
     private S3FileManager s3FileManager = null;
     private final boolean cacheOnly;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This precondition does not permit populating any security-relevant data")
     public S3FileFetcher(Config<?> config, boolean cacheOnly) {
         Preconditions.checkArgument((config != null && config.enumTypeMatches(S3Config.class)), "Invalid S3Config");
         s3Config = (Config<S3Config>) config;

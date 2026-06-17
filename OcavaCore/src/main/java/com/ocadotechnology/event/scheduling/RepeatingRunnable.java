@@ -20,6 +20,8 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.time.TimeConverter;
 
@@ -630,6 +632,7 @@ public class RepeatingRunnable implements Runnable {
         }
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     private RepeatingRunnable(
             double time,
             double period,

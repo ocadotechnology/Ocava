@@ -20,6 +20,8 @@ import java.util.Optional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.ocadotechnology.validation.Failer;
@@ -34,16 +36,19 @@ public class RandomWeightedChooser<E> {
     private final ImmutableMap<E, Double> itemsByWeight;
     private final double sumOfWeights;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public RandomWeightedChooser(ImmutableMap<E, Double> itemsByWeight) {
         this(itemsByWeight, Optional.empty());
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public RandomWeightedChooser(
             ImmutableMap<E, Double> itemsByWeight,
             InstancedRepeatableRandom instancedRepeatableRandom) {
         this(itemsByWeight, Optional.of(instancedRepeatableRandom));
     }
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public RandomWeightedChooser(
             ImmutableMap<E, Double> itemsByWeight,
             Optional<InstancedRepeatableRandom> instancedRepeatableRandom) {

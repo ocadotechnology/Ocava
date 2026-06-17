@@ -17,6 +17,8 @@ package com.ocadotechnology.maths.stats;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -27,6 +29,7 @@ public class Probability implements Comparable<Probability> {
     public static final Probability ONE = new Probability(1);
     private final double probability;
 
+    @SuppressFBWarnings(value = "CT_CONSTRUCTOR_THROW", justification = "This object does not contain data that constitutes a security risk")
     public Probability(double v) {
         Preconditions.checkState(v >= 0 && v <= 1, "Probability must be between 0 and 1");
         this.probability = v;

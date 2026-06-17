@@ -24,6 +24,8 @@ import com.ocadotechnology.event.scheduling.EventScheduler;
 import com.ocadotechnology.utils.RememberingSupplier;
 
 public class CrossAppNotificationRouter implements NotificationRouter {
+    private final Object lock = new Object();
+
     private static class SingletonHolder {
         private static final CrossAppNotificationRouter instance = new CrossAppNotificationRouter();
     }
@@ -109,8 +111,10 @@ public class CrossAppNotificationRouter implements NotificationRouter {
     }
 
     @Override
-    public synchronized <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus) {
-        WithinAppNotificationRouter.get().registerExecutionLayer(scheduler, notificationBus);
+    public <T> void registerExecutionLayer(EventScheduler scheduler, NotificationBus<T> notificationBus) {
+        synchronized (lock) {
+            WithinAppNotificationRouter.get().registerExecutionLayer(scheduler, notificationBus);
+        }
     }
 
     @Override
