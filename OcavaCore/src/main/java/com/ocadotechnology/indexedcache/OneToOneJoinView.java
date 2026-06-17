@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import com.google.common.base.Preconditions;
 import com.ocadotechnology.id.Identified;
@@ -28,8 +29,11 @@ import com.ocadotechnology.wrappers.Pair;
 
 public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identified<B_ID>, B_ID, Z> {
 
-    private final OptionalOneToOneIndex<Z, A> zAOneToOneIndex;
-    private final OptionalOneToOneIndex<Z, B> zBOneToOneIndex;
+    private final Function<Z, Optional<A>> zAMapping;
+    private final Function<Z, Optional<B>> zBMapping;
+
+    private final Function<A, Optional<Z>> aZMapping;
+    private final Function<B, Optional<Z>> bZMapping;
 
     private final Map<Identity<A_ID>, Pair<A, B>> aIdToPair = new HashMap<>();
     private final Map<Identity<B_ID>, Pair<A, B>> bIdToPair = new HashMap<>();
@@ -38,9 +42,38 @@ public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identi
     private final List<CacheStateRemovedListener<Pair<A, B>>> stateRemovedListeners = new ArrayList<>();
     private final List<CacheStateAddedListener<Pair<A, B>>> stateAddedListeners = new ArrayList<>();
 
+    /// Creates a [OneToOneJoinView] using [OptionalOneToOneIndex] instances to provide the
+    /// bidirectional mappings between the join key type Z and types A and B.
+    ///
+    /// @param aCache           the listenable cache containing objects of type A
+    /// @param bCache           the listenable cache containing objects of type B
+    /// @param zAOneToOneIndex  an index mapping join keys of type Z to objects of type A
+    /// @param zBOneToOneIndex  an index mapping join keys of type Z to objects of type B
     public OneToOneJoinView(StateChangeListenable<A> aCache, StateChangeListenable<B> bCache, OptionalOneToOneIndex<Z, A> zAOneToOneIndex, OptionalOneToOneIndex<Z, B> zBOneToOneIndex) {
-        this.zAOneToOneIndex = zAOneToOneIndex;
-        this.zBOneToOneIndex = zBOneToOneIndex;
+        this(aCache, bCache, zAOneToOneIndex::get, zBOneToOneIndex::get, zAOneToOneIndex::getKeyFor, zBOneToOneIndex::getKeyFor);
+    }
+
+    /// Creates a `OneToOneJoinView` using explicit mapping functions to define the relationship
+    /// between the join key type Z and the cached types A and B.
+    /// The view registers itself as a state change listener on both caches.
+    ///
+    /// @param aCache     the listenable cache containing objects of type A
+    /// @param bCache     the listenable cache containing objects of type B
+    /// @param zAMapping  function to look up an A given a join key Z
+    /// @param zBMapping  function to look up a B given a join key Z
+    /// @param aZMapping  function to derive the join key Z from an A
+    /// @param bZMapping  function to derive the join key Z from a B
+    public OneToOneJoinView(
+            StateChangeListenable<A> aCache,
+            StateChangeListenable<B> bCache,
+            Function<Z, Optional<A>> zAMapping,
+            Function<Z, Optional<B>> zBMapping,
+            Function<A, Optional<Z>> aZMapping,
+            Function<B, Optional<Z>> bZMapping) {
+        this.zAMapping = zAMapping;
+        this.zBMapping = zBMapping;
+        this.aZMapping = aZMapping;
+        this.bZMapping = bZMapping;
 
         aCache.registerStateChangeListener(this::aHasChanged);
         bCache.registerStateChangeListener(this::bHasChanged);
@@ -79,15 +112,15 @@ public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identi
     }
 
     private Pair<A, B> aWasAdded(A a) {
-        return zAOneToOneIndex.getKeyFor(a)
-                .flatMap(zBOneToOneIndex::get)
+        return aZMapping.apply(a)
+                .flatMap(zBMapping)
                 .map(b -> add(a, b))
                 .orElse(null);
     }
 
     private Pair<A, B> bWasAdded(B b) {
-        return zBOneToOneIndex.getKeyFor(b)
-                .flatMap(zAOneToOneIndex::get)
+        return bZMapping.apply(b)
+                .flatMap(zAMapping)
                 .map(a -> add(a, b))
                 .orElse(null);
     }
@@ -135,4 +168,3 @@ public class OneToOneJoinView<A extends Identified<A_ID>, A_ID, B extends Identi
         stateRemovedListeners.add(stateRemovedListener);
     }
 }
-
