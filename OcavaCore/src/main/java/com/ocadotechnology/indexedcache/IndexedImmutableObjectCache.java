@@ -322,6 +322,23 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
     }
 
     /**
+     * @param name optional String parameter - the name of the index.
+     * @param subType the subType of the index class being tracked
+     * @param predicate key extraction predicate
+     *
+     * Uses the optimiseForQuery implementation. The optimiseForInfrequentChanges variant is not available for
+     * sub-type indexes as it requires a reference to the full cache.
+     */
+    public <S extends C> PredicateIndex<S> addSubTypePredicateIndex(
+            @CheckForNull String name,
+            Class<S> subType,
+            Predicate<? super S> predicate) {
+        DefaultPredicateIndex<S> index = new DefaultPredicateIndex<>(name, predicate);
+        addIndex(new SubTypeIndexWrapper<>(name, subType, index));
+        return index;
+    }
+
+    /**
      * Add a {@link SortedPredicateIndex} to the cache, which defines a sort order for elements that pass the predicate.
      * <br>
      * Defaults to optimising for querying the index.
