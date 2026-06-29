@@ -21,7 +21,9 @@ import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -118,6 +120,42 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             updateStarting();
             objectStore.addAll(newObjects);
             updateIndexes(newObjects.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
+        } finally {
+            updateComplete();
+        }
+    }
+
+    /**
+     * As {@link #addAll(ImmutableCollection)}, but updates the registered indexes concurrently (one index per task,
+     * across a parallel stream) rather than one after another.
+     *
+     * <p>This is intended for one-shot bulk population such as application startup, where a large number of
+     * objects are added to a cache with many registered indexes and the wall-clock cost of building those indexes
+     * sequentially is significant. You may not want to use this on a latency-sensitive or steady-state update path -
+     * it consumes the common ForkJoinPool and gives no benefit for small updates. The default
+     * {@link #addAll}/{@link #update} paths are unchanged and remain fully sequential.
+     *
+     * <p>Preconditions the caller is responsible for (they hold for the standard index types, whose updates touch only
+     * their own state):
+     * <ul>
+     *     <li>Each index must update independently during {@link Index#updateAll} - touching only its own internal
+     *         state, and never reading the cache, reading from or writing to another index, or mutating shared state.</li>
+     *     <li>Any notification an index emits while updating must be safe to broadcast from a non-scheduler thread
+     *         (Ocava's cross-thread broadcasting handles this by scheduling onto the target scheduler's thread).</li>
+     * </ul>
+     *
+     * <p>The backing object store is populated before the indexes are updated, and state change listeners are invoked
+     * serially on the calling thread after all indexes have been updated, exactly as for {@link #addAll}.
+     *
+     * @param newObjects the collection of values to be added to the cache
+     * @throws CacheUpdateException if any objects are already present in the cache with matching ids, or if an index
+     *         update fails (in which case the index updates that did succeed are rolled back)
+     */
+    public void addAllWithParallelIndexUpdates(ImmutableCollection<C> newObjects) throws CacheUpdateException {
+        try {
+            updateStarting();
+            objectStore.addAll(newObjects);
+            updateIndexesInParallel(newObjects.stream().map(Change::add).collect(ImmutableList.toImmutableList()));
         } finally {
             updateComplete();
         }
@@ -926,13 +964,67 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
             try {
                 indexes.get(i).updateAll(changes);
             } catch (IndexUpdateException e) {
-                rollbackBatchUpdate(changes, i, e);
+                rollbackBatchUpdate(indexes.subList(0, i), changes, e);
                 throw new CacheUpdateException("Failed to update indices", e);
             }
         }
         changes.forEach(update -> updateStateChangeListeners(update.originalObject, update.newObject));
         if (!atomicStateChangeListeners.isEmpty()) {
             atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
+        }
+    }
+
+    /**
+     * As {@link #updateIndexes(ImmutableCollection)}, but the per-index updates run concurrently on a parallel stream.
+     * Each index is updated by a single task (so an index's own state is only ever touched by one thread); the indexes
+     * are independent of each other. State change listeners are invoked afterwards on the calling thread, preserving the
+     * single-threaded listener contract. See {@link #addAllWithParallelIndexUpdates} for the preconditions and intended usage.
+     */
+    private void updateIndexesInParallel(ImmutableList<Change<C>> changes) {
+        Queue<Index<C>> updatedIndexes = new ConcurrentLinkedQueue<>();
+        AtomicReference<IndexUpdateException> firstFailure = new AtomicReference<>();
+
+        indexes.parallelStream().forEach(index -> {
+            try {
+                index.updateAll(changes);
+                updatedIndexes.add(index);
+            } catch (IndexUpdateException e) {
+                firstFailure.compareAndSet(null, e);
+            }
+        });
+
+        IndexUpdateException failure = firstFailure.get();
+        if (failure != null) {
+            rollbackBatchUpdate(updatedIndexes, changes, failure);
+            throw new CacheUpdateException("Failed to update indices", failure);
+        }
+
+        changes.forEach(update -> updateStateChangeListeners(update.originalObject, update.newObject));
+        if (!atomicStateChangeListeners.isEmpty()) {
+            atomicStateChangeListeners.forEach(l -> l.stateChanged(changes));
+        }
+    }
+
+    /**
+     * Rolls back the indexes that were successfully updated during a batch update. A failing index is required to roll
+     * itself back (see {@link Index#updateAll}), so only the indexes that succeeded - plus the object store - need their
+     * changes inverted here.
+     *
+     * <p>This works for both serial and parallel update chains: the caller supplies exactly the indexes that succeeded,
+     * whether that is a prefix of the index list (serial) or the arbitrary subset that completed before the first
+     * failure (parallel).
+     */
+    private void rollbackBatchUpdate(Collection<Index<C>> updatedIndexes, ImmutableCollection<Change<C>> changes, IndexUpdateException cause) {
+        ImmutableList<Change<C>> reverseChanges = changes.stream()
+                .map(Change::inverse)
+                .collect(ImmutableList.toImmutableList());
+        try {
+            for (Index<C> index : updatedIndexes) {
+                index.updateAll(reverseChanges);
+            }
+            objectStore.updateAll(reverseChanges);
+        } catch (IndexUpdateException | CacheUpdateException e) {
+            throw new IllegalStateException("Failed to rollback changes after index failure: " + cause.getMessage(), e);
         }
     }
 
@@ -946,21 +1038,6 @@ public class IndexedImmutableObjectCache<C extends Identified<? extends I>, I> i
                 indexes.get(i).update(oldValue, newValue);
             }
             objectStore.update(newValue, oldValue);
-        } catch (IndexUpdateException | CacheUpdateException e) {
-            throw new IllegalStateException("Failed to rollback changes after index failure: " + cause.getMessage(), e);
-        }
-    }
-
-    private void rollbackBatchUpdate(ImmutableCollection<Change<C>> changes, int failedIndexNumber, IndexUpdateException cause) {
-        ImmutableList<Change<C>> reverseChanges = changes.stream()
-                .map(Change::inverse)
-                .collect(ImmutableList.toImmutableList());
-
-        try {
-            for (int i = 0; i < failedIndexNumber; ++i) {
-                indexes.get(i).updateAll(reverseChanges);
-            }
-            objectStore.updateAll(reverseChanges);
         } catch (IndexUpdateException | CacheUpdateException e) {
             throw new IllegalStateException("Failed to rollback changes after index failure: " + cause.getMessage(), e);
         }

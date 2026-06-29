@@ -31,7 +31,7 @@ import com.ocadotechnology.validation.Failer;
 
 public class CacheIndexFailureTest {
     private enum Method {
-        ADD, DELETE, UPDATE, ADD_ALL, DELETE_ALL, UPDATE_ALL;
+        ADD, DELETE, UPDATE, ADD_ALL, ADD_ALL_IN_PARALLEL, DELETE_ALL, UPDATE_ALL;
     }
 
     private static final String FAILING_INDEX_NAME = "FAILING_TEST_INDEX";
@@ -107,6 +107,9 @@ public class CacheIndexFailureTest {
                 break;
             case ADD_ALL:
                 cache.addAll(ImmutableList.of(NEW_STATE_3, NEW_STATE_6));
+                break;
+            case ADD_ALL_IN_PARALLEL:
+                cache.addAllWithParallelIndexUpdates(ImmutableList.of(NEW_STATE_3, NEW_STATE_6));
                 break;
             case DELETE_ALL:
                 cache.deleteAll(ImmutableList.of(OLD_STATE_1.getId(), OLD_STATE_2.getId()));
