@@ -48,7 +48,7 @@ import com.ocadotechnology.validation.Failer;
  * A realtime event scheduler using a {@link ScheduledThreadPoolExecutor} to schedule the execution of events for a
  * given time in the future.
  */
-public class ExecutorEventScheduler extends TypedEventScheduler {
+public class ExecutorEventScheduler extends TypedEventScheduler implements EventSchedulerWithFailureListeners {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorEventScheduler.class);
 
     private static final PlaceholderScheduledFuture PLACEHOLDER_FUTURE = new PlaceholderScheduledFuture();
@@ -292,10 +292,12 @@ public class ExecutorEventScheduler extends TypedEventScheduler {
         return executor.getQueue().size();
     }
 
+    @Override
     public void registerFailureListener(Consumer<Throwable> failureListener) {
         failureListeners.add(failureListener);
     }
 
+    @Override
     public void registerRecoverableFailureListener(Consumer<RecoverableException> failureListener) {
         recoverableFailureListeners.add(failureListener);
     }

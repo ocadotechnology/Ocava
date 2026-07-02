@@ -30,7 +30,7 @@ import com.ocadotechnology.event.scheduling.BusyLoopQueue.BusyLoopQueueType;
 import com.ocadotechnology.time.TimeProvider;
 import com.ocadotechnology.time.TimeProviderWithUnit;
 
-public class BusyLoopEventScheduler extends TypedEventScheduler {
+public class BusyLoopEventScheduler extends TypedEventScheduler implements EventSchedulerWithFailureListeners {
     private static final Logger logger = LoggerFactory.getLogger(BusyLoopEventScheduler.class);
     private final BusyLoopQueue busyLoopQueue;
     private final TimeProvider timeProvider;
@@ -252,10 +252,12 @@ public class BusyLoopEventScheduler extends TypedEventScheduler {
         onShutDowns.add(onShutDown);
     }
 
+    @Override
     public void registerFailureListener(Consumer<Throwable> l) {
         failureListeners.add(l);
     }
 
+    @Override
     public void registerRecoverableFailureListener(Consumer<RecoverableException> l) {
         recoverableFailureListeners.add(l);
     }
