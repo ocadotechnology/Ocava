@@ -17,6 +17,7 @@ package com.ocadotechnology.fileaccess.serviceloader;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
@@ -82,6 +83,7 @@ public class DataAccessManager {
                             + ". Modes with available ServiceProviders: " + providerMap.keySet());
         }
         Preconditions.checkState(initialConfigMap.containsKey(mode), "Accessor is not initialised for mode " + mode);
-        return providerMap.get(mode).createAccessor(initialConfigMap.get(mode));
+        // Objects.requireNonNull needed to make spotbugs happy
+        return Objects.requireNonNull(providerMap.get(mode)).createAccessor(initialConfigMap.get(mode));
     }
 }

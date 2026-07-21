@@ -91,7 +91,7 @@ public class CSVWriter {
             }
 
             supplier.streamLines().forEach(tableLine ->
-                    writeLine(bufferedWriter, getObjectsToWrite(headers, tableLine)));
+                    writeLine(bufferedWriter, getObjectsToWrite(tableLine)));
             supplier.fileWritten();
         } catch (IOException e) {
             throw new RuntimeException("Failed to write file " + filePath, e);
@@ -102,9 +102,9 @@ public class CSVWriter {
         return enableCompression && !pathToFile.getFileSystem().getPathMatcher("glob:*.gz").matches(pathToFile.getFileName());
     }
 
-    private ImmutableList<String> getObjectsToWrite(ImmutableSet<String> header, TableLine tableLine) {
-        return header.stream()
-                .map(columnHeader -> tableLine.getLineMap().get(columnHeader).replaceAll("[\",]", ""))
+    private ImmutableList<String> getObjectsToWrite(TableLine tableLine) {
+        return tableLine.getLineMap().values().stream()
+                .map(val -> val.replaceAll("[\",]", ""))
                 .collect(ImmutableList.toImmutableList());
     }
 

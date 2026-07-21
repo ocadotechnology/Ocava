@@ -202,7 +202,13 @@ public class NonNegativeIntegerSplitterByWeights<E> {
 
         ImmutableMap<E, Double> remainderByItem = ImmutableMapFactory.createWithNewValues(
                 idealAmounts,
-                (item, idealAmount) -> idealAmount - roundedDownAmounts.get(item));
+                (item, idealAmount) -> {
+                    Integer roundedAmount = Preconditions.checkNotNull(
+                            roundedDownAmounts.get(item),
+                            "Missing rounded-down amount for item %s",
+                            item);
+                    return idealAmount - roundedAmount.doubleValue();
+                });
 
         ImmutableSet<E> itemsToAddTo = remainderByItem.entrySet().stream()
                 .sorted(valueComparator.reversed())
