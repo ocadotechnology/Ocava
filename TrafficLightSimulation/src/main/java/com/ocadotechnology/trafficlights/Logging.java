@@ -40,7 +40,7 @@ public class Logging {
         loggerContext.reset();
 
         PatternLayout patternLayout = new PatternLayout();
-        patternLayout.getDefaultConverterMap().put("st", SimTimeConverter.class.getName());
+        patternLayout.getDefaultConverterSupplierMap().put("k", SimTimeConverter::new);
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
