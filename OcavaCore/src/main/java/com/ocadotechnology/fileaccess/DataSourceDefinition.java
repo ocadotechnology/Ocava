@@ -24,6 +24,7 @@ public class DataSourceDefinition <E extends Enum<E>> {
     public final E mode;
     /**
      * Config key indicating the local file path, either absolute or relative to a root data directory.
+     * This can also be used for a resource name when using the resource fetching mode.
      */
     public final E localFile;
     /**

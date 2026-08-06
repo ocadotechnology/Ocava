@@ -1,1 +1,2 @@
 com.ocadotechnology.fileaccess.local.LocalDataAccessServiceProvider
+com.ocadotechnology.fileaccess.resource.ResourceDataAccessServiceProvider
