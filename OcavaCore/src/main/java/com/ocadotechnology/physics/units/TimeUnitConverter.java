@@ -90,18 +90,6 @@ public final class TimeUnitConverter {
     }
 
     /**
-     * Converts the given event time from the given time units to simulation time units.
-     *
-     * @param eventTime The time value to be converted into simulation time units.
-     * @param currentUnit The unit of time the eventTime is to be converted from.
-     * @deprecated duplicate method - use {@link #toTimeUnitDouble} instead.
-     */
-    @Deprecated
-    public static double fromTimeUnit(double eventTime, TimeUnit currentUnit, TimeUnit targetUnit) {
-        return toTimeUnitDouble(eventTime, currentUnit, targetUnit);
-    }
-
-    /**
      * Create a ratio from the source time unit to the wanted time unit
      */
     private static double getTimeUnitsInSourceTimeUnit(TimeUnit sourceUnit, TimeUnit targetUnit) {

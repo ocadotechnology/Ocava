@@ -81,28 +81,6 @@ public class TimeUnitConverterTest implements UtilityClassTest {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("getAllUnitCombinations")
-    void fromTimeUnit_fromLong_withUnits(TimeUnit currentTimeUnit, TimeUnit targetTimeUnit) {
-        long eventTime = 1L;
-        double ratio = getRatioOfUnits(currentTimeUnit, targetTimeUnit);
-        Assertions.assertEquals(
-                eventTime * ratio,
-                TimeUnitConverter.fromTimeUnit(eventTime, currentTimeUnit, targetTimeUnit)
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("getAllUnitCombinations")
-    void fromTimeUnit_fromDouble_withUnits(TimeUnit currentTimeUnit, TimeUnit targetTimeUnit) {
-        double eventTime = 1.5d;
-        double ratio = getRatioOfUnits(currentTimeUnit, targetTimeUnit);
-        Assertions.assertEquals(
-                eventTime * ratio,
-                TimeUnitConverter.fromTimeUnit(eventTime, currentTimeUnit, targetTimeUnit)
-        );
-    }
-
     @Test
     void toTimeUnitDouble_Double_MinValue_withNoConversion() {
         assertEquals(-Double.MAX_VALUE, TimeUnitConverter.toTimeUnitDouble(-Double.MAX_VALUE, TimeUnit.MILLISECONDS, TimeUnit.MILLISECONDS));
