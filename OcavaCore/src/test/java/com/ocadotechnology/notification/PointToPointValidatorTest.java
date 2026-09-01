@@ -38,9 +38,7 @@ class PointToPointValidatorTest {
         validator.reset();
     }
 
-    /**
-     * P2P <-- DummyP2PNotification
-     */
+    /// P2P <-- DummyP2PNotification
     private static class DummyNotification implements Notification {}
     private static class DummyP2PNotification implements Notification, PointToPointNotification {}
 
@@ -81,26 +79,20 @@ class PointToPointValidatorTest {
         Assertions.assertTrue(e.getMessage().contains(DummyP2PNotification.class.getSimpleName()));
     }
 
-    /**
-     * DummySupertypeNotification <--+
-     *                               |
-     * P2P <----------- DummyP2PSubtypeNotification
-     */
+    /// DummySupertypeNotification <--+
+    ///                               |
+    /// P2P <----------- DummyP2PSubtypeNotification
     private static class DummySupertypeNotification implements Notification {}
     private static class DummyP2PSubtypeNotification extends DummySupertypeNotification implements PointToPointNotification {}
 
-    /**
-     * This case is allowed by the weak rule (but not the strong rule) because only one of sub and super is P2P.
-     */
+    /// This case is allowed by the weak rule (but not the strong rule) because only one of sub and super is P2P.
     @Test
     void whenSubtypeIsP2P_thenNoException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummySupertypeNotification.class));
         validator.validate(new DummySubscriberB(), ImmutableList.of(DummyP2PSubtypeNotification.class));
     }
 
-    /**
-     * This case is allowed by the weak rule (but not the strong rule) because no subscriber directly mentions a P2P.
-     */
+    /// This case is allowed by the weak rule (but not the strong rule) because no subscriber directly mentions a P2P.
     @Test
     void whenBothSubscribersForSuperAndSubtypeIsP2P_thenNoException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummySupertypeNotification.class));
@@ -116,15 +108,11 @@ class PointToPointValidatorTest {
         Assertions.assertTrue(e.getMessage().contains(DummySubscriberA.class.getSimpleName()));
     }
 
-    /**
-     * P2P <-- DummyP2PSupertypeNotification <-- DummySubtypeNotification
-     */
+    /// P2P <-- DummyP2PSupertypeNotification <-- DummySubtypeNotification
     private static class DummyP2PSupertypeNotification implements Notification, PointToPointNotification {}
     private static class DummySubtypeNotification extends DummyP2PSupertypeNotification {}
 
-    /**
-     * This case is disallowed by the weak rule because both super and sub are P2P.
-     */
+    /// This case is disallowed by the weak rule because both super and sub are P2P.
     @Test
     void whenSupertypeIsP2P_thenException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummyP2PSupertypeNotification.class));
@@ -142,50 +130,92 @@ class PointToPointValidatorTest {
         Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotification.class.getSimpleName()));
     }
 
-    /**
-     * DummySuperTypeInterfaceA <---+
-     *                              |
-     * P2P <--------- DummyCommonP2PSubtypeNotification
-     *                              |
-     * DummySuperTypeInterfaceB <---+
-     */
+    /// DummySuperTypeInterfaceA <---+
+    ///                              |
+    /// P2P <--------- DummyCommonP2PSubtypeNotification
+    ///                              |
+    /// DummySuperTypeInterfaceB <---+
     private interface DummySuperTypeInterfaceA extends Notification {}
     private interface DummySuperTypeInterfaceB extends Notification {}
     private static class DummyCommonP2PSubtypeNotification implements DummySuperTypeInterfaceA, DummySuperTypeInterfaceB, PointToPointNotification {}
 
-    /**
-     * This case is allowed by the weak rule (but not the strong rule) because no subscriber directly mentions a P2P.
-     */
+    /// This case is allowed by the weak rule (but not the strong rule) because no subscriber directly mentions a P2P.
     @Test
     void whenCommonSubtypeIsP2P_thenNoException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummySuperTypeInterfaceA.class));
         validator.validate(new DummySubscriberB(), ImmutableList.of(DummySuperTypeInterfaceB.class));
     }
 
-    /**
-     * DummySupertypeNotificationA <---+
-     *                                 |
-     * P2P <--------- DummyMiddleTypeNotificationB <-- DummySubtypeNotificationC
-     */
+    /// DummySupertypeNotificationA <---+
+    ///                                 |
+    /// P2P <--------- DummyMiddleTypeNotificationB <-- DummySubtypeNotificationC
     private static class DummySupertypeNotificationA implements Notification {}
     private static class DummyMiddleTypeNotificationB extends DummySupertypeNotificationA implements PointToPointNotification {}
     private static class DummySubtypeNotificationC extends DummyMiddleTypeNotificationB {}
 
-    /**
-     * This case is allowed by the weak rule (but not the strong rule) because only one of A and C is P2P.
-     */
+    /// This case is allowed by the weak rule (but not the strong rule) because only one of A and C is P2P.
     @Test
     void whenMiddleTypeIsP2P_thenNoException() {
         validator.validate(new DummySubscriberA(), ImmutableList.of(DummySupertypeNotificationA.class));
         validator.validate(new DummySubscriberB(), ImmutableList.of(DummySubtypeNotificationC.class));
     }
 
+    /// The middle type and its own subtype are both P2P, so - unlike A and C above - this is a genuine conflict.
+    @Test
+    void whenMiddleTypeAndItsOwnSubtypeAreBothSubscribed_thenException() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummyMiddleTypeNotificationB.class));
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberB(), ImmutableList.of(DummySubtypeNotificationC.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummyMiddleTypeNotificationB.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummySubtypeNotificationC.class.getSimpleName()));
+    }
+
+    /// P2P <--------- DummyMiddleTypeNotificationB <-- DummySubtypeNotificationC
+    ///                                 |
+    /// DummySupertypeNotificationA <---+
+    ///                                 |
+    /// P2P <--------- DummySiblingMiddleTypeNotificationD
+    private static class DummySiblingMiddleTypeNotificationD extends DummySupertypeNotificationA implements PointToPointNotification {}
+
+    /// Two independently-P2P middle types that share a common ancestor which is NOT itself
+    /// P2P must not conflict with each other.
+    @Test
+    void whenTwoP2PMiddleTypesShareNonP2PAncestor_thenNoException() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummyMiddleTypeNotificationB.class));
+        validator.validate(new DummySubscriberB(), ImmutableList.of(DummySiblingMiddleTypeNotificationD.class));
+    }
+
+    ///                               DummySiblingNotificationA
+    ///                                            |
+    /// P2P <-- DummySiblingsParentNotification <--+
+    ///                                            |
+    ///                               DummySiblingNotificationB
+    private static class DummySiblingsParentNotification implements Notification, PointToPointNotification {}
+    private static class DummySiblingNotificationA extends DummySiblingsParentNotification {}
+    private static class DummySiblingNotificationB extends DummySiblingsParentNotification {}
+
+    /// Two unrelated sibling subtypes of a common P2P ancestor must not conflict with
+    /// each other, as long as nothing is subscribed to the shared ancestor itself.
+    @Test
+    void whenSiblingSubtypesAreP2P_thenNoException() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummySiblingNotificationA.class));
+        validator.validate(new DummySubscriberB(), ImmutableList.of(DummySiblingNotificationB.class));
+    }
+
+    /// If the shared ancestor IS subscribed to, then it genuinely conflicts with either sibling.
+    @Test
+    void whenSiblingSubtypeAndCommonAncestorAreBothSubscribed_thenException() {
+        validator.validate(new DummySubscriberA(), ImmutableList.of(DummySiblingsParentNotification.class));
+        IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,
+                () -> validator.validate(new DummySubscriberB(), ImmutableList.of(DummySiblingNotificationA.class)));
+        Assertions.assertTrue(e.getMessage().contains(DummySiblingsParentNotification.class.getSimpleName()));
+        Assertions.assertTrue(e.getMessage().contains(DummySiblingNotificationA.class.getSimpleName()));
+    }
+
     private static class DummyMeaninglessNotification implements FireAndForgetNotification, PointToPointNotification {}
     private static class DummyMeaninglessByInheritanceNotification extends DummyP2PNotification implements FireAndForgetNotification {}
 
-    /**
-     * It is not allowed for a notification to be both FireAndForget and PointToPoint.
-     */
+    /// It is not allowed for a notification to be both FireAndForget and PointToPoint.
     @Test
     void whenNotificationBothP2PAndFNF_thenException() {
         IllegalStateException e = Assertions.assertThrows(IllegalStateException.class,

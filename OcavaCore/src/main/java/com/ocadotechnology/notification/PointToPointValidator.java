@@ -15,113 +15,91 @@
  */
 package com.ocadotechnology.notification;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Enforces that there is at most ONE subscribing class for any PointToPointNotification.
- * We do not check broadcasts (there may be multiple broadcasters). We do not allow multiple instances of a subscriber.
- *
- * Formally, it raises an error if this weak check passes:
- *  exists sub1(A), sub2(B) in Subscriptions, A, B in Classes : sub1 != sub2 & A >= B & P2P >= A
- */
+/// Enforces that there is at most ONE subscribing class for any PointToPointNotification.
+/// We do not check broadcasts (there may be multiple broadcasters). We do not allow multiple instances of a subscriber.
+///
+/// Formally, it raises an error if this weak check passes:
+///  exists sub1(A), sub2(B) in Subscriptions, A, B in Classes : sub1 != sub2 & A >= B & P2P >= A
 class PointToPointValidator {
-    //Map from P2P notification class to subscribing class
-    private final Map<Class<?>, Subscription> subscriptions = new ConcurrentHashMap<>();
+    // Map from the P2P notification class subscribed to, to the class of its subscriber
+    private final Map<Class<?>, Class<?>> subscriptions = new HashMap<>();
 
-    private static final class Subscription {
-        final Class<?> subscriberClass;
-        final Class<?> notificationClass;
-
-        private Subscription(Class<?> subscriberClass, Class<?> notificationClass) {
-            this.subscriberClass = subscriberClass;
-            this.notificationClass = notificationClass;
-        }
-    }
+    // Guards all access to subscriptions: a single check-then-insert needs to compare the new
+    // notification against every existing subscription, so per-key atomicity is not sufficient.
+    private final Object lock = new Object();
 
     PointToPointValidator() {
     }
 
-    /** This method is and needs to remain ThreadSafe. */
+    /// This method is and needs to remain ThreadSafe.
     void validate(Object subscriber, List<Class<?>> subscribedNotifications) {
         Class<?> subscriberClass = subscriber.getClass();
-        for (Class<?> subscribedNotification : subscribedNotifications) {
-            if (PointToPointNotification.class.isAssignableFrom(subscribedNotification)) {
-                for (Class<?> supertypeClass : getP2PSupertypes(subscribedNotification)) {
-                    Subscription newSubscription = new Subscription(subscriberClass, subscribedNotification);
-                    Subscription oldSubscription = subscriptions.putIfAbsent(supertypeClass, newSubscription);
-                    if (oldSubscription != null) {
-                        throw new IllegalStateException(getErrorMessage(newSubscription, oldSubscription));
+        synchronized (lock) {
+            for (Class<?> subscribedNotification : subscribedNotifications) {
+                if (PointToPointNotification.class.isAssignableFrom(subscribedNotification)) {
+
+                    // Two subscriptions are only ambiguous at dispatch time if their notification classes are
+                    // equal, or one is an ancestor of the other - i.e. some runtime notification instance could
+                    // be delivered to both. Sharing a common ancestor (e.g. two sibling subtypes) is fine.
+                    for (Map.Entry<Class<?>, Class<?>> existingSubscription : subscriptions.entrySet()) {
+                        if (isRelated(existingSubscription.getKey(), subscribedNotification)) {
+                            throw new IllegalStateException(getErrorMessage(subscriberClass, subscribedNotification, existingSubscription));
+                        }
+                    }
+
+                    subscriptions.put(subscribedNotification, subscriberClass);
+
+                    // Weak validation that no notification is both FNF and P2P
+                    if (FireAndForgetNotification.class.isAssignableFrom(subscribedNotification)) {
+                        throw new IllegalStateException(String.format("%s cannot be both a FireAndForgetNotification and a PointToPointNotification", subscribedNotification.getSimpleName()));
                     }
                 }
-
-                //Weak validation that no notification is both FNF and P2P
-                if (FireAndForgetNotification.class.isAssignableFrom(subscribedNotification)) {
-                    throw new IllegalStateException(String.format("%s cannot be both a FireAndForgetNotification and a PointToPointNotification", subscribedNotification.getSimpleName()));
-                }
             }
         }
     }
 
-    private List<Class<?>> getP2PSupertypes(Class<?> clazz) {
-        List<Class<?>> classesToCheck = new ArrayList<>();
-        classesToCheck.add(clazz);
-
-        for (int i = 0; i < classesToCheck.size(); i++) {
-            Class<?> next = classesToCheck.get(i);
-
-            Class<?> superclass = next.getSuperclass();
-            addIfClassImplementsP2P(superclass, classesToCheck);
-
-            for (Class<?> inter : next.getInterfaces()) {
-                addIfClassImplementsP2P(inter, classesToCheck);
-            }
-        }
-
-        return classesToCheck;
+    private boolean isRelated(Class<?> a, Class<?> b) {
+        return a.isAssignableFrom(b) || b.isAssignableFrom(a);
     }
 
-    private void addIfClassImplementsP2P(Class<?> clazz, List<Class<?>> classesToCheck) {
-        if (clazz != null && classImplementsP2P(clazz) && !classesToCheck.contains(clazz)) {
-            classesToCheck.add(clazz);
-        }
-    }
+    private String getErrorMessage(Class<?> newSubscriberClass, Class<?> newNotificationClass, Map.Entry<Class<?>, Class<?>> oldSubscription) {
+        Class<?> oldNotificationClass = oldSubscription.getKey();
+        Class<?> oldSubscriberClass = oldSubscription.getValue();
 
-    private boolean classImplementsP2P(Class<?> clazz) {
-        return PointToPointNotification.class.isAssignableFrom(clazz) && !clazz.equals(PointToPointNotification.class);
-    }
-
-    private String getErrorMessage(Subscription newSubscription, Subscription oldSubscription) {
-        if (newSubscription.subscriberClass.equals(oldSubscription.subscriberClass)) {
+        if (newSubscriberClass.equals(oldSubscriberClass)) {
             return String.format(
                     "Too many P2P subscribers. PointToPointNotification %s is subscribed to twice by %s",
-                    newSubscription.notificationClass.getSimpleName(),
-                    newSubscription.subscriberClass.getSimpleName());
+                    newNotificationClass.getSimpleName(),
+                    newSubscriberClass.getSimpleName());
         }
-        if (newSubscription.notificationClass.equals(oldSubscription.notificationClass)) {
+        if (newNotificationClass.equals(oldNotificationClass)) {
             return String.format(
                     "Too many P2P subscribers. A subscriber of type %s, and one of type %s (which both listen to notification %s, which is P2P) have been registered",
-                    newSubscription.subscriberClass.getSimpleName(),
-                    oldSubscription.subscriberClass.getSimpleName(),
-                    newSubscription.notificationClass.getSimpleName());
+                    newSubscriberClass.getSimpleName(),
+                    oldSubscriberClass.getSimpleName(),
+                    newNotificationClass.getSimpleName());
         }
 
-        String ancestorDescendant = newSubscription.notificationClass.isAssignableFrom(oldSubscription.notificationClass) ?
+        String ancestorDescendant = newNotificationClass.isAssignableFrom(oldNotificationClass) ?
                 "descendant" :
                 "ancestor";
 
         return String.format(
                 "Too many P2P subscribers. A subscriber of type %s which listens to notifications of type %s, and one of type %s which listens to its P2P %s %s have been registered",
-                newSubscription.subscriberClass.getSimpleName(),
-                newSubscription.notificationClass.getSimpleName(),
-                oldSubscription.subscriberClass.getSimpleName(),
+                newSubscriberClass.getSimpleName(),
+                newNotificationClass.getSimpleName(),
+                oldSubscriberClass.getSimpleName(),
                 ancestorDescendant,
-                oldSubscription.notificationClass.getSimpleName());
+                oldNotificationClass.getSimpleName());
     }
 
     void reset() {
-        subscriptions.clear();
+        synchronized (lock) {
+            subscriptions.clear();
+        }
     }
 }
