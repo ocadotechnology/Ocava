@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/// Enforces that there is at most ONE subscribing class for any PointToPointNotification.
+/// Enforces that there is at most ONE subscribed instance for each PointToPointNotification.
 /// We do not check broadcasts (there may be multiple broadcasters). We do not allow multiple instances of a subscriber.
 ///
 /// Formally, it raises an error if this weak check passes:

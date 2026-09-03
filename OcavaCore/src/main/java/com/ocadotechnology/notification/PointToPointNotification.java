@@ -15,19 +15,15 @@
  */
 package com.ocadotechnology.notification;
 
-/**
- * Marker interface for notifications that are intended
- * to be used in point-to-point fashion i.e. there is at
- * most ONE subscribing class.
- *
- * There may be multiple broadcasters. We also permit
- * multiple instances of the subscriber class.
- *
- * The purpose of having this interface is to allow
- * the creator of a notification to declare that it
- * is being used for control flow and thus future
- * users should not add a subscriber because doing so
- * would risk interference and race conditions.
- */
+/// Marker interface for notifications that are intended to be used in
+/// point-to-point fashion i.e. there is at most ONE subscribed instance,
+/// of any class, registered to receive this notification.
+///
+/// There may be multiple broadcasters.
+///
+/// The purpose of having this interface is to allow the creator of a
+/// notification to declare that it is being used for control flow and thus
+/// future users should not add a subscriber because doing so would risk
+/// interference and race conditions.
 public interface PointToPointNotification {
 }
