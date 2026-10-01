@@ -242,6 +242,16 @@ public class SimpleDiscreteEventScheduler implements EventSchedulerWithCanceling
         blockEvent(() -> timeProvider.getTime() - currentTime >= delay);
     }
 
+    /**
+     * Discard all scheduled events. For testing purposes.
+     *
+     * @throws IllegalStateException if the scheduler is not paused.
+     */
+    public void clearEvents() {
+        Preconditions.checkState(runState.isPaused(), "Method SimpleDiscreteEventScheduler#clearEvents() can only be called when the scheduler is paused");
+        discreteEventsQueue.clear();
+    }
+
     @Override
     public boolean hasOnlyDaemonEvents() {
         return discreteEventsQueue.hasOnlyDaemonEvents();

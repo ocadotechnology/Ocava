@@ -19,16 +19,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.google.common.util.concurrent.Runnables;
 import com.ocadotechnology.notification.TestSchedulerType;
@@ -229,6 +234,52 @@ public class SimpleDiscreteEventSchedulerTest {
     void runUntilTime_withoutTimeUnitSet_thenThrowsException() {
         scheduler.pause();
         assertThrows(TimeUnitNotSpecifiedException.class, () -> scheduler.runUntilTime(Instant.ofEpochMilli(1)));
+    }
+
+    @Test
+    void clearEvents_whenNoEventsScheduled_andSchedulerPaused_thenNoEffect() {
+        scheduler.pause();
+        scheduler.clearEvents();
+        assertEquals(Double.NaN, scheduler.getNextScheduledEventTime());
+    }
+
+    @Test
+    void clearEvents_whenNoEventsScheduled_andSchedulerNotPaused_thenThrowsException() {
+        assertThrows(IllegalStateException.class, scheduler::clearEvents);
+    }
+
+    @ParameterizedTest
+    @MethodSource("eventSchedulingMethods")
+    void clearEvents_whenEventScheduled_andSchedulerPaused_thenEventCleared(BiConsumer<SimpleDiscreteEventScheduler, Runnable> eventSchedulingMethod) {
+        scheduler.pause();
+        eventSchedulingMethod.accept(scheduler, () -> fail("Events not cleared"));
+
+        scheduler.clearEvents();
+        assertEquals(Double.NaN, scheduler.getNextScheduledEventTime());
+
+        scheduler.unPause();
+    }
+
+    @ParameterizedTest
+    @MethodSource("eventSchedulingMethods")
+    void clearEvents_whenEventScheduled_andSchedulerNotPaused_thenThrowsException(BiConsumer<SimpleDiscreteEventScheduler, Runnable> eventSchedulingMethod) {
+        scheduler.pause();
+        scheduler.doNow(scheduler::clearEvents);
+        eventSchedulingMethod.accept(scheduler, () -> fail("Events not cleared"));
+
+        // unpause() will cause the scheduled call to clearEvents() to be executed while the scheduler is not paused
+        assertThrows(IllegalStateException.class, scheduler::unPause);
+    }
+
+    private static Stream<BiConsumer<SimpleDiscreteEventScheduler, Runnable>> eventSchedulingMethods() {
+        return Stream.of(
+                (scheduler, event) -> scheduler.doNow(event, "doNow"),
+                (scheduler, event) -> scheduler.doAt(10, event, "doAt"),
+                (scheduler, event) -> scheduler.doAtDaemon(1, event, "doAtDaemon"),
+                (scheduler, event) -> scheduler.doAtOrNow(10, event, "doAtOrNow"),
+                (scheduler, event) -> scheduler.doIn(1, event, "doIn"),
+                (scheduler, event) -> scheduler.doInDaemon(1, event, "doInDaemon")
+        );
     }
 
     @Nested
