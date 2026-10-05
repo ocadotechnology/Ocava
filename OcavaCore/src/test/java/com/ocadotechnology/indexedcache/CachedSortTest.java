@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.ocadotechnology.id.Id;
 import com.ocadotechnology.id.SimpleLongIdentified;
 
@@ -149,6 +150,55 @@ class CachedSortTest {
             ImmutableList<TestState> testStates = sort.asList();
             assertThat(testStates.get(0)).isSameAs(updateTwo.newObject);
             assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
+        }
+
+        @Test
+        void tailSet_whenInclusive_thenReturnsElementsGreaterThanOrEqualToFromElement() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+
+            assertThat(sort.tailSet(states.get(2))).containsExactly(states.get(2), states.get(3), states.get(4));
+            assertThat(sort.tailSet(states.get(2), true)).containsExactly(states.get(2), states.get(3), states.get(4));
+            assertThat(sort.tailSet(states.get(0))).containsExactlyElementsOf(states);
+        }
+
+        @Test
+        void tailSet_whenExclusive_thenReturnsElementsStrictlyGreaterThanFromElement() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+
+            assertThat(sort.tailSet(states.get(2), false)).containsExactly(states.get(3), states.get(4));
+            assertThat(sort.tailSet(states.get(4), false)).isEmpty();
+        }
+
+        @Test
+        void tailSet_whenFromElementNotInCache_thenSlicesByComparator() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+            TestState probe = new TestState(Id.create(99), 3);
+
+            assertThat(sort.tailSet(probe)).containsExactly(states.get(3), states.get(4));
+            assertThat(sort.tailSet(new TestState(Id.create(99), 6))).isEmpty();
+        }
+
+        @Test
+        void tailSet_whenCacheUpdatedAfterCall_thenPreviousResultIsUnchanged() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+            ImmutableSortedSet<TestState> before = sort.tailSet(states.get(2));
+
+            TestState stateFive = new TestState(Id.create(5), 5);
+            cache.add(stateFive);
+
+            assertThat(before).containsExactly(states.get(2), states.get(3), states.get(4));
+            assertThat(sort.tailSet(states.get(2))).containsExactly(states.get(2), states.get(3), states.get(4), stateFive);
+        }
+
+        private ImmutableList<TestState> addStatesWithIndices0To4() {
+            ImmutableList<TestState> states = ImmutableList.of(
+                    new TestState(Id.create(0), 0),
+                    new TestState(Id.create(1), 1),
+                    new TestState(Id.create(2), 2),
+                    new TestState(Id.create(3), 3),
+                    new TestState(Id.create(4), 4));
+            cache.addAll(states.reverse());
+            return states;
         }
     }
 

@@ -23,6 +23,7 @@ import java.util.function.Function;
 import javax.annotation.CheckForNull;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import com.ocadotechnology.id.Identified;
@@ -107,6 +108,26 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
         return values.stream()
                 .map(mappingFunction)
                 .collect(ImmutableList.toImmutableList());
+    }
+
+    /**
+     * Equivalent to {@link TreeSet#tailSet(Object)}, except that the result is an immutable snapshot rather than a
+     * live view of the index.
+     *
+     * @return the elements greater than or equal to fromElement, in sort order.
+     */
+    public ImmutableSortedSet<C> tailSet(C fromElement) {
+        return tailSet(fromElement, true);
+    }
+
+    /**
+     * Equivalent to {@link TreeSet#tailSet(Object, boolean)}, except that the result is an immutable snapshot rather
+     * than a live view of the index.
+     *
+     * @return the elements greater than (or equal to, if inclusive is true) fromElement, in sort order.
+     */
+    public ImmutableSortedSet<C> tailSet(C fromElement, boolean inclusive) {
+        return ImmutableSortedSet.copyOfSorted(values.tailSet(fromElement, inclusive));
     }
 
     public UnmodifiableIterator<C> iterator() {
