@@ -24,6 +24,9 @@
             <id>central</id>
             <username>${env.central_login}</username>
             <password>${env.central_pass}</password>
+            <repositoryOrigins>
+                <repositoryOrigin>https://central.sonatype.com</repositoryOrigin>
+            </repositoryOrigins>
         </server>
     </servers>
 
