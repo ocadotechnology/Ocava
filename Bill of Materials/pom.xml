@@ -146,12 +146,12 @@
 
     <distributionManagement>
         <repository>
-            <id>central</id>
+            <id>ocado-releases</id>
             <name>Ocada Cross Stream Releases</name>
             <url>https://nexus.ocado.tech/repository/shared-maven-releases</url>
         </repository>
         <snapshotRepository>
-            <id>central</id>
+            <id>ocado-snapshots</id>
             <name>Ocada Cross Stream Snapshots</name>
             <url>https://nexus.ocado.tech/repository/shared-maven-snapshots</url>
             <uniqueVersion>false</uniqueVersion>
