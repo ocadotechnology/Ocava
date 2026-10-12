@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -150,6 +152,51 @@ class CachedSortTest {
             ImmutableList<TestState> testStates = sort.asList();
             assertThat(testStates.get(0)).isSameAs(updateTwo.newObject);
             assertThat(testStates.get(1)).isSameAs(updateOne.newObject);
+        }
+
+        @Test
+        void tailIterator_whenInclusive_thenIteratesElementsGreaterThanOrEqualToFromElement() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+
+            assertThat(sort.tailIterator(states.get(2))).toIterable().containsExactly(states.get(2), states.get(3), states.get(4));
+            assertThat(sort.tailIterator(states.get(2), true)).toIterable().containsExactly(states.get(2), states.get(3), states.get(4));
+            assertThat(sort.tailIterator(states.get(0))).toIterable().containsExactlyElementsOf(states);
+        }
+
+        @Test
+        void tailIterator_whenExclusive_thenIteratesElementsStrictlyGreaterThanFromElement() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+
+            assertThat(sort.tailIterator(states.get(2), false)).toIterable().containsExactly(states.get(3), states.get(4));
+            assertThat(sort.tailIterator(states.get(4), false)).isExhausted();
+        }
+
+        @Test
+        void tailIterator_whenFromElementNotInCache_thenSlicesByComparator() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+            TestState probe = new TestState(Id.create(99), 3);
+
+            assertThat(sort.tailIterator(probe)).toIterable().containsExactly(states.get(3), states.get(4));
+            assertThat(sort.tailIterator(new TestState(Id.create(99), 6))).isExhausted();
+        }
+
+        @Test
+        void tailIterator_whenRemoveCalled_thenThrowsUnsupportedOperationException() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+            Iterator<TestState> iterator = sort.tailIterator(states.get(2));
+            iterator.next();
+
+            assertThatThrownBy(iterator::remove).isInstanceOf(UnsupportedOperationException.class);
+        }
+
+        @Test
+        void tailIterator_whenCacheUpdatedAfterCall_thenIteratorThrowsConcurrentModificationException() {
+            ImmutableList<TestState> states = addStatesWithIndices0To4();
+            Iterator<TestState> iterator = sort.tailIterator(states.get(2));
+
+            cache.add(new TestState(Id.create(5), 5));
+
+            assertThatThrownBy(iterator::next).isInstanceOf(ConcurrentModificationException.class);
         }
 
         @Test

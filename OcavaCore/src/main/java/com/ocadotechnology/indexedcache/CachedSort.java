@@ -111,8 +111,31 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
     }
 
     /**
+     * Returns an iterator over the elements greater than or equal to fromElement, in sort order. Equivalent to
+     * iterating over {@link TreeSet#tailSet(Object)}, except that the iterator does not support removal.
+     *
+     * @return an unmodifiable iterator over the elements greater than or equal to fromElement, in sort order.
+     */
+    public UnmodifiableIterator<C> tailIterator(C fromElement) {
+        return tailIterator(fromElement, true);
+    }
+
+    /**
+     * Returns an iterator over the elements greater than (or equal to, if inclusive is true) fromElement, in sort
+     * order. Equivalent to iterating over {@link TreeSet#tailSet(Object, boolean)}, except that the iterator does not
+     * support removal.
+     *
+     * @return an unmodifiable iterator over the elements greater than (or equal to, if inclusive is true) fromElement,
+     *         in sort order.
+     */
+    public UnmodifiableIterator<C> tailIterator(C fromElement, boolean inclusive) {
+        return Iterators.unmodifiableIterator(values.tailSet(fromElement, inclusive).iterator());
+    }
+
+    /**
      * Equivalent to {@link TreeSet#tailSet(Object)}, except that the result is an immutable snapshot rather than a
-     * live view of the index.
+     * live view of the index. CARE: This method copies the tailSet to a new ImmutableSortedSet which may be
+     * expensive for large sets.
      *
      * @return the elements greater than or equal to fromElement, in sort order.
      */
@@ -122,7 +145,8 @@ public class CachedSort<C extends Identified<?>> extends AbstractIndex<C> {
 
     /**
      * Equivalent to {@link TreeSet#tailSet(Object, boolean)}, except that the result is an immutable snapshot rather
-     * than a live view of the index.
+     * than a live view of the index. CARE: This method copies the tailSet to a new ImmutableSortedSet which may be
+     * expensive for large sets.
      *
      * @return the elements greater than (or equal to, if inclusive is true) fromElement, in sort order.
      */
