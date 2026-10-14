@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,6 +33,40 @@ public class NotificationCacheTest {
 
         Assertions.assertEquals(expected, cache.knownNotification(notification));
 
+    }
+
+    @Test
+    public void notificationIsKnownWhenSuperTypeIsKnown() {
+        NotificationCache cache = new NotificationCache();
+
+        cache.addKnownNotification(TestEventNotification.class);
+        Assertions.assertFalse(cache.knownNotification(new RedCircleNotification()));
+
+        cache.addKnownNotification(ShapeNotification.class);
+        Assertions.assertTrue(cache.knownNotification(new RedCircleNotification()));
+    }
+
+    @Test
+    public void superTypeMatchesAreIndependentBetweenCaches() {
+        NotificationCache shapeCache = new NotificationCache();
+        shapeCache.addKnownNotification(ShapeNotification.class);
+
+        NotificationCache testEventCache = new NotificationCache();
+        testEventCache.addKnownNotification(TestEventNotification.class);
+
+        Assertions.assertTrue(shapeCache.knownNotification(new RedCircleNotification()));
+        Assertions.assertFalse(testEventCache.knownNotification(new RedCircleNotification()));
+    }
+
+    @Test
+    public void notificationIsUnknownAfterClean() {
+        NotificationCache cache = new NotificationCache();
+
+        cache.addKnownNotification(ShapeNotification.class);
+        Assertions.assertTrue(cache.knownNotification(new RedCircleNotification()));
+
+        cache.clean();
+        Assertions.assertFalse(cache.knownNotification(new RedCircleNotification()));
     }
 
     private static Stream<Arguments> getArguments() {

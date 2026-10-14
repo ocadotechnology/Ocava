@@ -15,8 +15,10 @@
  */
 package com.ocadotechnology.scenario;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.CheckForNull;
@@ -27,6 +29,8 @@ import com.google.common.reflect.TypeToken;
 @ParametersAreNonnullByDefault
 public class NotificationCache extends Cleanable {
     private final Set<Class<?>> knownNotifications = new LinkedHashSet<>();
+    private final Map<Class<?>, Set<? extends Class<?>>> superTypesByClass = new HashMap<>();
+
     @CheckForNull
     private Object notification;
     // we have to keep both as there are cases where we have unordered steps check value A in notification and ordered step wait for value B in the same notification
@@ -72,8 +76,8 @@ public class NotificationCache extends Cleanable {
         return false;
     }
 
-    private static <T> Set<Class<? super T>> getSuperTypes(Class<T> clazz) {
-        return TypeToken.of(clazz).getTypes().rawTypes();
+    private Set<? extends Class<?>> getSuperTypes(Class<?> clazz) {
+        return superTypesByClass.computeIfAbsent(clazz, c -> TypeToken.of(c).getTypes().rawTypes());
     }
 
     public void resetUnorderedNotification() {
